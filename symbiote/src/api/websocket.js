@@ -27,6 +27,7 @@
                     this.send('GET_CHARACTERS', {});
                     this.send('GET_SCENES', {});
                     this.send('GET_BOOKMARKS', {});
+                    this.send('GET_VAULT_IMAGES', {});
                 };
 
                 this.ws.onmessage = (event) => {

@@ -13,6 +13,13 @@
                 this.render();
             }
             this.setupStoryViewHook();
+
+            window.TBState.on('vaultImages', () => {
+                this.render();
+            });
+            window.TBState.on('activeHandout', () => {
+                this.render();
+            });
         }
 
         render() {
@@ -53,14 +60,17 @@
 
                         ${this.activeType === 'image' ? `
                             <div class="input-group">
-                                <label>Файл из хранилища Obsidian (Attachments)</label>
+                                <label>Изображение из папки public/</label>
                                 <select id="bcVaultImageSelect">
-                                    <option value="">-- Выбрать из Obsidian (${vaultImages.length} файлов) --</option>
+                                    <option value="">-- Выберите изображение (${vaultImages.length} в public/) --</option>
                                     ${vaultImages.map(img => `<option value="${this.escapeHtml(img.path)}">${this.escapeHtml(img.name)}</option>`).join('')}
                                 </select>
                             </div>
+                            <div id="bcImagePreviewBox" class="bc-image-preview-box" style="display: none;">
+                                <img id="bcImagePreview" src="" alt="Предпросмотр" class="bc-preview-img" />
+                            </div>
                             <div class="input-group">
-                                <label>Или прямая ссылка на изображение (URL)</label>
+                                <label>Или прямая веб-ссылка (URL)</label>
                                 <input type="text" id="bcUrl" placeholder="https://example.com/art.png" />
                             </div>
                         ` : ''}
@@ -101,14 +111,43 @@
                 });
             });
 
-            // Vault image select sync with URL input
+            // Vault image select sync with URL input and live preview
             const vaultSelect = this.container.querySelector('#bcVaultImageSelect');
             const urlInput = this.container.querySelector('#bcUrl');
+            const titleInput = this.container.querySelector('#bcTitle');
+            const previewBox = this.container.querySelector('#bcImagePreviewBox');
+            const previewImg = this.container.querySelector('#bcImagePreview');
+
+            const updatePreview = (val) => {
+                if (val && previewBox && previewImg) {
+                    const resolved = (val.startsWith('http://') || val.startsWith('https://')) 
+                        ? val 
+                        : `http://127.0.0.1:30123/vault-file?path=${encodeURIComponent(val)}`;
+                    previewImg.src = resolved;
+                    previewBox.style.display = 'block';
+                } else if (previewBox) {
+                    previewBox.style.display = 'none';
+                }
+            };
+
             if (vaultSelect && urlInput) {
                 vaultSelect.addEventListener('change', () => {
                     if (vaultSelect.value) {
                         urlInput.value = vaultSelect.value;
+                        if (titleInput && !titleInput.value) {
+                            const fileName = vaultSelect.value.split(/[\\/]/).pop().replace(/\.[^/.]+$/, '');
+                            titleInput.value = fileName;
+                        }
+                        updatePreview(vaultSelect.value);
+                    } else {
+                        updatePreview(urlInput.value);
                     }
+                });
+            }
+
+            if (urlInput) {
+                urlInput.addEventListener('input', () => {
+                    updatePreview(urlInput.value);
                 });
             }
 

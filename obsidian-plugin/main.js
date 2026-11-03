@@ -888,6 +888,11 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 this.send('GET_BOOKMARKS', {});
                 await this.scanAndSendCharacters();
                 await this.scanAndSendScenes();
+                const images = this.scanVaultImages();
+                this.wss.send(client, {
+                    type: 'VAULT_IMAGES_LIST',
+                    payload: images
+                });
                 if (this.currentHandout) {
                     this.wss.send(client, {
                         type: 'MEDIA_HANDOUT',
@@ -1184,22 +1189,34 @@ class TaleBridgePlugin extends obsidian.Plugin {
             return true;
         }
 
-        if (req.url.startsWith('/vault-file')) {
+        if (req.url.startsWith('/vault-file') || req.url.startsWith('/public/')) {
             try {
-                const parsedUrl = new URL(req.url, 'http://127.0.0.1');
-                const filePath = decodeURIComponent(parsedUrl.searchParams.get('path') || '');
-                const file = this.app.vault.getAbstractFileByPath(filePath);
+                let filePath = '';
+                if (req.url.startsWith('/public/')) {
+                    filePath = decodeURIComponent(req.url.slice(1));
+                } else {
+                    const parsedUrl = new URL(req.url, 'http://127.0.0.1');
+                    filePath = decodeURIComponent(parsedUrl.searchParams.get('path') || '');
+                }
+
+                // Check direct path or prefixed with public/
+                let file = this.app.vault.getAbstractFileByPath(filePath);
+                if (!file && !filePath.toLowerCase().startsWith('public/')) {
+                    file = this.app.vault.getAbstractFileByPath(`public/${filePath}`);
+                }
+
                 if (file && file instanceof obsidian.TFile) {
                     const ext = file.extension.toLowerCase();
                     let mime = 'application/octet-stream';
                     if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext)) {
-                        mime = ext === 'jpg' ? 'image/jpeg' : (ext === 'svg' ? 'image/svg+xml' : `image/${ext}`);
+                        mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : (ext === 'svg' ? 'image/svg+xml' : `image/${ext}`);
                     }
                     const data = await this.app.vault.readBinary(file);
                     const buf = Buffer.from(data);
                     res.writeHead(200, {
                         'Content-Type': mime,
-                        'Content-Length': buf.length
+                        'Content-Length': buf.length,
+                        'Access-Control-Allow-Origin': '*'
                     });
                     res.end(buf);
                     return true;
@@ -1229,15 +1246,39 @@ class TaleBridgePlugin extends obsidian.Plugin {
         const files = this.app.vault.getFiles();
         const imageExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
         const images = [];
+
+        // 1. Prioritize images from public/ directory
         for (const f of files) {
-            if (imageExtensions.includes(f.extension.toLowerCase())) {
-                images.push({
-                    name: f.name,
-                    path: f.path,
-                    extension: f.extension
-                });
+            const ext = f.extension.toLowerCase();
+            if (imageExtensions.includes(ext)) {
+                const normPath = f.path.replace(/\\/g, '/');
+                if (normPath.toLowerCase().startsWith('public/')) {
+                    images.push({
+                        name: f.name,
+                        path: normPath,
+                        extension: ext,
+                        isPublic: true
+                    });
+                }
             }
         }
+
+        // 2. If none found in public/, fallback to all images in vault
+        if (images.length === 0) {
+            for (const f of files) {
+                const ext = f.extension.toLowerCase();
+                if (imageExtensions.includes(ext)) {
+                    images.push({
+                        name: f.name,
+                        path: f.path.replace(/\\/g, '/'),
+                        extension: ext,
+                        isPublic: false
+                    });
+                }
+            }
+        }
+
+        images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
         return images;
     }
 
