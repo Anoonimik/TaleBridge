@@ -92,51 +92,67 @@
 
             Object.keys(sessionGroups).forEach(sessionName => {
                 const groupEl = document.createElement('div');
-                groupEl.className = 'scene-session-group';
+                groupEl.className = 'dir-session-group';
 
-                const gTitle = document.createElement('div');
-                gTitle.className = 'scene-session-title';
-                gTitle.textContent = sessionName;
-                groupEl.appendChild(gTitle);
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'dir-session-header';
+                groupHeader.innerHTML = `
+                    <div class="dir-session-left">
+                        <span class="dir-session-badge">СЕССИЯ</span>
+                        <span class="dir-session-title">${sessionName}</span>
+                    </div>
+                    <span class="dir-session-count">${sessionGroups[sessionName].length}</span>
+                `;
+                groupEl.appendChild(groupHeader);
+
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'dir-session-cards';
 
                 sessionGroups[sessionName].forEach(sc => {
-                    const item = document.createElement('div');
-                    item.className = `scene-drawer-item ${sc.id === activeId ? 'active' : ''}`;
+                    const card = document.createElement('div');
+                    card.className = `scene-directory-card ${sc.id === activeId ? 'active' : ''}`;
 
-                    const titleRow = document.createElement('div');
-                    titleRow.className = 'scene-drawer-item-title';
-                    titleRow.textContent = sc.title;
-                    item.appendChild(titleRow);
+                    const top = document.createElement('div');
+                    top.className = 'dir-card-top';
 
-                    const metaRow = document.createElement('div');
-                    metaRow.className = 'scene-drawer-item-meta';
+                    const title = document.createElement('div');
+                    title.className = 'dir-card-title';
+                    title.textContent = sc.title;
+                    top.appendChild(title);
 
                     if (sc.location) {
-                        const locBadge = document.createElement('span');
-                        locBadge.className = 'drawer-badge loc';
-                        locBadge.textContent = sc.location;
-                        metaRow.appendChild(locBadge);
+                        const loc = document.createElement('span');
+                        loc.className = 'dir-card-location';
+                        loc.textContent = sc.location;
+                        top.appendChild(loc);
+                    }
+                    card.appendChild(top);
+
+                    if (sc.goal) {
+                        const goal = document.createElement('div');
+                        goal.className = 'dir-card-goal';
+                        goal.innerHTML = `<b>Цель:</b> ${sc.goal}`;
+                        card.appendChild(goal);
                     }
 
                     if (sc.cast && sc.cast.length > 0) {
-                        const castBadge = document.createElement('span');
-                        castBadge.className = 'drawer-badge cast';
-                        castBadge.textContent = `${sc.cast.length} NPC`;
-                        metaRow.appendChild(castBadge);
+                        const castRow = document.createElement('div');
+                        castRow.className = 'dir-card-cast';
+                        castRow.innerHTML = `<span class="cast-label">Участники:</span> ${sc.cast.join(', ')}`;
+                        card.appendChild(castRow);
                     }
 
-                    item.appendChild(metaRow);
-
-                    item.onclick = () => {
+                    card.addEventListener('click', () => {
                         this.close();
                         if (this.onSelectCallback) {
                             this.onSelectCallback(sc.id);
                         }
-                    };
+                    });
 
-                    groupEl.appendChild(item);
+                    cardsContainer.appendChild(card);
                 });
 
+                groupEl.appendChild(cardsContainer);
                 this.listEl.appendChild(groupEl);
             });
         }

@@ -358,6 +358,15 @@ async function updateCharacterSection(vault, file, sectionHeaderName, newSection
     return updatedContent;
 }
 
+function hasTag(tags, targetTags) {
+    if (!tags) return false;
+    const tagArray = (Array.isArray(tags) ? tags : [tags]).flatMap(t => 
+        String(t).toLowerCase().replace(/^#+/, '').split(/[\s,/#]+/)
+    );
+    const targets = targetTags.map(t => t.toLowerCase());
+    return tagArray.some(t => targets.includes(t));
+}
+
 async function scanCharacters(vault, metadataCache) {
     const files = vault.getMarkdownFiles();
     const roster = [];
@@ -369,7 +378,11 @@ async function scanCharacters(vault, metadataCache) {
         const fm = cache.frontmatter;
         const tags = fm.tags ? (Array.isArray(fm.tags) ? fm.tags : [fm.tags]) : [];
 
-        const isNpc = tags.some(t => String(t).match(/npc|бестиарий|персонажи|игрок|боссфайт|monster|bestiary|character|player|pc|creature/i)) || fm.hp || fm.ac;
+        const isNpc = hasTag(tags, [
+            'npc', 'бестиарий', 'персонажи', 'персонаж', 'игрок', 'игроки', 
+            'боссфайт', 'босс', 'monster', 'bestiary', 'character', 'characters', 
+            'player', 'players', 'pc', 'creature'
+        ]) || fm.hp || fm.ac;
 
         if (isNpc) {
             let attacks = [];
@@ -397,24 +410,34 @@ async function scanCharacters(vault, metadataCache) {
                 console.error(`TaleBridge: Ошибка парсинга для ${file.path}:`, e);
             }
 
-            let category = 'NPC';
-            if (tags.some(t => String(t).match(/бестиарий|боссфайт|конструкт|стража|bestiary|monster|creature|boss/i))) {
-                category = 'Бестиарий';
-            } else if (tags.some(t => String(t).match(/игрок|player|pc|party/i))) {
-                category = 'Игроки';
-            } else if (tags.some(t => String(t).match(/союзник|ally/i))) {
-                category = 'Союзники';
-            } else if (tags.some(t => String(t).match(/антагонист|босс|враг|enemy|villain/i))) {
-                category = 'Враги';
+            let isPlayable = false;
+            if (fm.playable === false || fm.is_player === false || fm.pc === false) {
+                isPlayable = false;
+            } else if (fm.playable === true || fm.is_player === true || fm.pc === true) {
+                isPlayable = true;
+            } else if (hasTag(tags, ['игрок', 'игроки', 'player', 'players', 'pc', 'party'])) {
+                isPlayable = true;
+            } else if (file.basename.includes('Артём') || file.basename.includes('Глицин')) {
+                isPlayable = true;
             }
 
-            const isPlayable = fm.playable === true || tags.some(t => String(t).match(/игрок|player|pc/i)) || (file.basename.includes('Артём') || file.basename.includes('Глицин'));
+            let category = 'NPC';
+            if (hasTag(tags, ['бестиарий', 'боссфайт', 'босс', 'конструкт', 'стража', 'bestiary', 'monster', 'creature', 'boss'])) {
+                category = 'Бестиарий';
+            } else if (isPlayable) {
+                category = 'Игроки';
+            } else if (hasTag(tags, ['союзник', 'союзники', 'ally', 'allies'])) {
+                category = 'Союзники';
+            } else if (hasTag(tags, ['антагонист', 'антагонисты', 'враг', 'враги', 'enemy', 'villain'])) {
+                category = 'Враги';
+            }
 
             roster.push({
                 name: file.basename,
                 path: file.path,
                 category: category,
                 playable: isPlayable,
+                tags: tags,
                 hp: fm.hp || '-',
                 hp_max: fm.hp_max || fm.hp || '-',
                 ac: fm.ac || '-',

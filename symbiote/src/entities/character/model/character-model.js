@@ -3,19 +3,55 @@
 (function() {
     const TBCharacterModel = {
         /**
+         * Checks if tags array/string matches any target tags with exact matching
+         * @param {Array|string} tags 
+         * @param {Array<string>} targetTags 
+         * @returns {boolean}
+         */
+        hasTag(tags, targetTags) {
+            if (!tags) return false;
+            const tagArray = (Array.isArray(tags) ? tags : [tags]).flatMap(t => 
+                String(t).toLowerCase().replace(/^#+/, '').split(/[\s,/#]+/)
+            );
+            const targets = targetTags.map(t => t.toLowerCase());
+            return tagArray.some(t => targets.includes(t));
+        },
+
+        /**
          * Returns canonical playable characters list with permanent anchors for 'Артём' and 'Пачка Глицина'
          * @param {Array} roster 
          * @returns {Array}
          */
         getPlayableCharacters(roster = []) {
             const list = roster || [];
-            const playable = list.filter(c => 
-                c.playable === true || 
-                c.category === 'Игроки' || 
-                c.name === 'Артём' || 
-                c.name.includes('Глицин') || 
-                (c.tags && (Array.isArray(c.tags) ? c.tags : [c.tags]).some(t => String(t).match(/игрок|player|pc/i)))
-            );
+            const playable = list.filter(c => {
+                // If explicitly non-playable, strictly exclude
+                if (c.playable === false || c.is_player === false || c.pc === false) {
+                    return false;
+                }
+
+                // If explicitly marked playable
+                if (c.playable === true || c.is_player === true || c.pc === true) {
+                    return true;
+                }
+
+                // Canonical player names
+                if (c.name === 'Артём' || (typeof c.name === 'string' && c.name.includes('Глицин'))) {
+                    return true;
+                }
+
+                // Check tags with exact word matching (no partial 'npc' matching 'pc')
+                if (c.tags && this.hasTag(c.tags, ['игрок', 'игроки', 'player', 'players', 'pc', 'party'])) {
+                    return true;
+                }
+
+                // Category assigned by plugin
+                if (c.category === 'Игроки') {
+                    return true;
+                }
+
+                return false;
+            });
 
             // If the vault has playable characters, return them directly
             if (playable.length > 0) {

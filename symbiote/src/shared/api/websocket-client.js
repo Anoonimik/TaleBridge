@@ -105,14 +105,16 @@
 
                     const playable = window.TBCharacterModel?.getPlayableCharacters(list) || [];
                     let curChar = window.TBState?.get('playerCharacter');
-                    if (!curChar && playable.length > 0) {
-                        curChar = playable[0].name;
-                        window.TBState?.setPlayerCharacter(curChar);
+                    if (!curChar || (playable.length > 0 && !playable.some(p => p.name === curChar))) {
+                        if (playable.length > 0) {
+                            curChar = playable[0].name;
+                            window.TBState?.setPlayerCharacter(curChar);
+                        }
                     }
 
-                    // Request initial player data only if not loaded yet
+                    // Request initial player data only if not loaded yet or if character changed
                     const curData = window.TBState?.get('playerData');
-                    if (!curData || !curData.name) {
+                    if (!curData || !curData.name || curData.name !== curChar) {
                         if (curChar) {
                             this.send('GET_PLAYER_DATA', { characterName: curChar });
                         }
