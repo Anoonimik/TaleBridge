@@ -29,13 +29,20 @@
                 (c.category === 'Игроки' && (c.name.includes('Артём') || c.name.includes('Глицин')))
             );
 
-            if (playable.length > 0) return playable;
-
-            // Fallback safe defaults if roster is loading
-            return [
+            // Canonical playable hero defaults (guarantees both heroes are always present even during vault re-indexing)
+            const defaults = [
                 { name: 'Артём', class: 'Воин / Плут', category: 'Игроки', playable: true },
                 { name: 'Пачка Глицина', class: 'Варвар (Берсерк)', category: 'Игроки', playable: true }
             ];
+
+            const result = [...playable];
+            for (const def of defaults) {
+                if (!result.some(r => r.name === def.name || (r.name && (r.name.includes(def.name) || def.name.includes(r.name))))) {
+                    result.push(def);
+                }
+            }
+
+            return result;
         }
 
         requestGmPassword() {

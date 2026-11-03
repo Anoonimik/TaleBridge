@@ -1127,7 +1127,6 @@ class TaleBridgePlugin extends obsidian.Plugin {
                             type: 'CHARACTER_HP_UPDATED',
                             payload: { characterName: payload.characterName, hp: payload.hp, maxHp: payload.maxHp }
                         });
-                        await this.scanAndSendCharacters();
                     }
                 }
                 break;

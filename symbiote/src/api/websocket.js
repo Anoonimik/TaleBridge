@@ -92,18 +92,16 @@
                     window.TBState.set('roster', list);
                     window.TBLogger.log(`Загружено ${list.length} персонажей/существ`, 'sys');
 
-                    // Filter only playable characters (Artem and Glycine)
-                    const playable = list.filter(c => c.playable || (c.category === 'Игроки' && (c.name.includes('Артём') || c.name.includes('Глицин'))));
+                    // If current character is not yet selected, set default 'Артём'
                     let curChar = window.TBState.get('playerCharacter');
-
-                    // If current character is not in playable list, assign first playable
-                    if (!curChar || (playable.length > 0 && !playable.some(p => p.name === curChar))) {
-                        curChar = playable[0] ? playable[0].name : 'Артём';
+                    if (!curChar) {
+                        curChar = 'Артём';
                         window.TBState.setPlayerCharacter(curChar);
                     }
 
-                    // Request player data for the currently selected character without resetting!
-                    if (curChar) {
+                    // Request initial player data only if not loaded yet
+                    const curData = window.TBState.get('playerData');
+                    if (!curData || !curData.name) {
                         this.send('GET_PLAYER_DATA', { characterName: curChar });
                     }
                     break;
@@ -143,15 +141,31 @@
                     break;
 
                 case 'CHARACTER_HP_UPDATED':
-                    if (payload && payload.characterName === window.TBState.get('playerCharacter')) {
-                        const cur = window.TBState.get('playerData');
-                        if (cur) {
-                            cur.hp = payload.hp;
-                            if (payload.maxHp) cur.hp_max = payload.maxHp;
-                            window.TBState.set('playerData', { ...cur });
+                    if (payload && payload.characterName) {
+                        // 1. Update character in roster cache
+                        const roster = window.TBState.get('roster') || [];
+                        const targetChar = roster.find(r => r.name === payload.characterName || (r.name && payload.characterName.includes(r.name)));
+                        if (targetChar) {
+                            targetChar.hp = payload.hp;
+                            if (payload.maxHp) targetChar.hp_max = payload.maxHp;
                         }
-                        if (window.TBPlayerView) {
-                            window.TBPlayerView.updateHpDisplay(payload.hp, payload.maxHp || cur?.hp_max);
+
+                        // 2. If it's the active player character, update HP display smoothly without full re-render
+                        const curChar = window.TBState.get('playerCharacter');
+                        const isCurrent = curChar && (
+                            payload.characterName === curChar ||
+                            payload.characterName.includes(curChar) ||
+                            curChar.includes(payload.characterName)
+                        );
+                        if (isCurrent) {
+                            const cur = window.TBState.get('playerData');
+                            if (cur) {
+                                cur.hp = payload.hp;
+                                if (payload.maxHp) cur.hp_max = payload.maxHp;
+                            }
+                            if (window.TBPlayerView) {
+                                window.TBPlayerView.updateHpDisplay(payload.hp, payload.maxHp || cur?.hp_max);
+                            }
                         }
                     }
                     break;
