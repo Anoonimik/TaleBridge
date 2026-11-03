@@ -6,6 +6,18 @@
 
     class GmAuthFeature {
         /**
+         * Returns active GM PIN configured in Obsidian or constants
+         * @returns {string}
+         */
+        getExpectedPin() {
+            const dynamic = window.TBState?.get('gmPin');
+            if (dynamic !== undefined && dynamic !== null) {
+                return String(dynamic).trim();
+            }
+            return String(window.TBConfig?.GM_PIN ?? '5').trim();
+        }
+
+        /**
          * Checks if GM is already authenticated in this session
          * @returns {boolean}
          */
@@ -26,7 +38,11 @@
          */
         requestGmPassword() {
             return new Promise((resolve) => {
-                if (this.isAuthenticated()) {
+                const expectedPin = this.getExpectedPin();
+
+                // If PIN is empty, password protection is disabled by GM
+                if (!expectedPin || this.isAuthenticated()) {
+                    sessionStorage.setItem(authKey, 'true');
                     resolve(true);
                     return;
                 }
@@ -65,7 +81,7 @@
 
                 const checkPassword = () => {
                     const val = (input.value || '').trim();
-                    if (val === correctPin) {
+                    if (val === expectedPin) {
                         sessionStorage.setItem(authKey, 'true');
                         cleanup(true);
                     } else {

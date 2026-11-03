@@ -369,7 +369,7 @@ async function scanCharacters(vault, metadataCache) {
         const fm = cache.frontmatter;
         const tags = fm.tags ? (Array.isArray(fm.tags) ? fm.tags : [fm.tags]) : [];
 
-        const isNpc = tags.some(t => String(t).match(/npc|бестиарий|персонажи|игрок|боссфайт/i)) || fm.hp || fm.ac;
+        const isNpc = tags.some(t => String(t).match(/npc|бестиарий|персонажи|игрок|боссфайт|monster|bestiary|character|player|pc|creature/i)) || fm.hp || fm.ac;
 
         if (isNpc) {
             let attacks = [];
@@ -398,17 +398,17 @@ async function scanCharacters(vault, metadataCache) {
             }
 
             let category = 'NPC';
-            if (tags.some(t => String(t).match(/бестиарий|боссфайт|конструкт|стража/i))) {
+            if (tags.some(t => String(t).match(/бестиарий|боссфайт|конструкт|стража|bestiary|monster|creature|boss/i))) {
                 category = 'Бестиарий';
-            } else if (tags.some(t => String(t).match(/игрок/i))) {
+            } else if (tags.some(t => String(t).match(/игрок|player|pc|party/i))) {
                 category = 'Игроки';
-            } else if (tags.some(t => String(t).match(/союзник/i))) {
+            } else if (tags.some(t => String(t).match(/союзник|ally/i))) {
                 category = 'Союзники';
-            } else if (tags.some(t => String(t).match(/антагонист|босс/i))) {
+            } else if (tags.some(t => String(t).match(/антагонист|босс|враг|enemy|villain/i))) {
                 category = 'Враги';
             }
 
-            const isPlayable = fm.playable === true || (tags.some(t => String(t).match(/игрок/i)) && (file.basename.includes('Артём') || file.basename.includes('Глицин')));
+            const isPlayable = fm.playable === true || tags.some(t => String(t).match(/игрок|player|pc/i)) || (file.basename.includes('Артём') || file.basename.includes('Глицин'));
 
             roster.push({
                 name: file.basename,
@@ -458,7 +458,8 @@ async function scanScenes(vault, metadataCache) {
             ? (Array.isArray(cache.frontmatter.tags) ? cache.frontmatter.tags : [cache.frontmatter.tags]) 
             : [];
         
-        const isSceneFile = tags.some(t => String(t).match(/сцены|сюжет/i)) || file.basename.match(/сцены|сюжет/i);
+        const isSceneFile = tags.some(t => String(t).match(/сцены|сюжет|scene|scenes|story|encounter/i)) || 
+            file.basename.match(/сцены|сюжет|scene|encounter/i);
         if (!isSceneFile) continue;
 
         const session = cache?.frontmatter?.session || 
@@ -627,7 +628,8 @@ async function scanScenes(vault, metadataCache) {
 // =============================================================================
 const DEFAULT_SETTINGS = {
     port: 30123,
-    autoOpenCreatureNote: true
+    autoOpenCreatureNote: true,
+    gmPin: '5'
 };
 
 class BookmarkSuggestModal extends obsidian.FuzzySuggestModal {
@@ -684,6 +686,18 @@ class TaleBridgeSettingTab extends obsidian.PluginSettingTab {
                 .onChange(async (val) => {
                     this.plugin.settings.autoOpenCreatureNote = val;
                     await this.plugin.saveSettings();
+                }));
+
+        new obsidian.Setting(containerEl)
+            .setName('PIN-код Мастера')
+            .setDesc('Пароль для перехода из режима Игрока в режим Гейм-Мастера в симбиоте (по умолчанию 5; оставьте пустым для входа без пароля)')
+            .addText(text => text
+                .setPlaceholder('5')
+                .setValue(String(this.plugin.settings.gmPin ?? '5'))
+                .onChange(async (val) => {
+                    this.plugin.settings.gmPin = val.trim();
+                    await this.plugin.saveSettings();
+                    this.plugin.send('CONFIG_UPDATE', { gmPin: this.plugin.settings.gmPin });
                 }));
     }
 }
@@ -884,7 +898,11 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 new obsidian.Notice('TaleSpire подключен к TaleBridge');
                 this.wss.send(client, {
                     type: 'HANDSHAKE_ACK',
-                    payload: { vault: this.app.vault.getName(), version: '0.6.0' }
+                    payload: { 
+                        vault: this.app.vault.getName(), 
+                        version: '0.6.0',
+                        gmPin: this.settings.gmPin ?? '5'
+                    }
                 });
                 this.send('GET_BOOKMARKS', {});
                 await this.scanAndSendCharacters();
@@ -1029,7 +1047,11 @@ class TaleBridgePlugin extends obsidian.Plugin {
             case 'HANDSHAKE':
                 this.wss.send(client, {
                     type: 'HANDSHAKE_ACK',
-                    payload: { vault: this.app.vault.getName(), version: '0.5.0' }
+                    payload: { 
+                        vault: this.app.vault.getName(), 
+                        version: '0.6.0',
+                        gmPin: this.settings.gmPin ?? '5'
+                    }
                 });
                 break;
 

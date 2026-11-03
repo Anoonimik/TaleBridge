@@ -325,6 +325,50 @@
     color: #fff;
 }
 
+/* Rest Buttons Row */
+.hp-rest-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-rest {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.btn-rest.short {
+    background: #1e293b;
+    border-color: #334155;
+    color: #93c5fd;
+}
+
+.btn-rest.short:hover {
+    background: #2563eb;
+    color: #fff;
+    border-color: #3b82f6;
+}
+
+.btn-rest.long {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #a7f3d0;
+}
+
+.btn-rest.long:hover,
+.btn-rest.long.rested {
+    background: #10b981;
+    color: #fff;
+}
+
 /* Defenses Grid */
 .sheet-defense-grid {
     display: grid;

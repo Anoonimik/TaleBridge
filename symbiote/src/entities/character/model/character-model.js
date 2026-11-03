@@ -11,25 +11,22 @@
             const list = roster || [];
             const playable = list.filter(c => 
                 c.playable === true || 
+                c.category === 'Игроки' || 
                 c.name === 'Артём' || 
                 c.name.includes('Глицин') || 
-                (c.category === 'Игроки' && (c.name.includes('Артём') || c.name.includes('Глицин')))
+                (c.tags && (Array.isArray(c.tags) ? c.tags : [c.tags]).some(t => String(t).match(/игрок|player|pc/i)))
             );
 
-            // Canonical playable hero defaults (guarantees both heroes are always present even during vault re-indexing)
-            const defaults = [
+            // If the vault has playable characters, return them directly
+            if (playable.length > 0) {
+                return playable;
+            }
+
+            // Fallback demo defaults only if vault has no playable characters loaded yet
+            return [
                 { name: 'Артём', class: 'Воин / Плут', category: 'Игроки', playable: true },
                 { name: 'Пачка Глицина', class: 'Варвар (Берсерк)', category: 'Игроки', playable: true }
             ];
-
-            const result = [...playable];
-            for (const def of defaults) {
-                if (!result.some(r => r.name === def.name || (r.name && (r.name.includes(def.name) || def.name.includes(r.name))))) {
-                    result.push(def);
-                }
-            }
-
-            return result;
         },
 
         /**

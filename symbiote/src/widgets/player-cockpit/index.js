@@ -313,6 +313,14 @@
                             <button id="btnHpDamage" class="btn-hp-action dmg">Урон</button>
                             <button id="btnHpHeal" class="btn-hp-action heal">Лечение</button>
                         </div>
+                        <div class="hp-rest-row">
+                            <button id="btnShortRest" class="btn-rest short" title="Короткий отдых: бросить кость хитов в лоток TaleSpire">
+                                Короткий отдых
+                            </button>
+                            <button id="btnLongRest" class="btn-rest long" title="Долгий отдых: полностью восстановить ХП">
+                                Долгий отдых
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Core Defenses & Vitals (AC, Speed, Initiative) -->
@@ -397,6 +405,53 @@
             // Delegate HP modification to feature
             if (window.TBFeatureApplyDamage) {
                 window.TBFeatureApplyDamage.bindEvents(this.container, data);
+            }
+
+            // Long Rest button
+            const btnLong = this.container.querySelector('#btnLongRest');
+            if (btnLong) {
+                btnLong.addEventListener('click', () => {
+                    const max = parseInt(data.hp_max, 10) || parseInt(data.hp, 10) || 20;
+                    const cur = parseInt(data.hp, 10) || 0;
+                    const delta = max - cur;
+                    if (window.TBFeatureApplyDamage && delta > 0) {
+                        window.TBFeatureApplyDamage.modifyHp(data, delta, this.container);
+                    }
+                    const orig = btnLong.textContent;
+                    btnLong.textContent = 'Отдых завершён!';
+                    btnLong.classList.add('rested');
+                    setTimeout(() => {
+                        btnLong.textContent = orig;
+                        btnLong.classList.remove('rested');
+                    }, 2000);
+
+                    if (window.TBApi?.sendChatMessage) {
+                        window.TBApi.sendChatMessage(`${data.name} завершает Долгий отдых (ХП: ${max}/${max})`);
+                    }
+                });
+            }
+
+            // Short Rest button
+            const btnShort = this.container.querySelector('#btnShortRest');
+            if (btnShort) {
+                btnShort.addEventListener('click', async () => {
+                    const cls = (data.class || '').toLowerCase();
+                    let die = '1d8';
+                    if (cls.includes('варвар')) die = '1d12';
+                    else if (cls.includes('воин') || cls.includes('паладин') || cls.includes('следопыт')) die = '1d10';
+                    else if (cls.includes('чародей') || cls.includes('волшебник')) die = '1d6';
+
+                    const stats = data.stats || {};
+                    const conMod = (stats.con && String(stats.con).match(/\(([+-]?\d+)\)/)?.[1]) || '+0';
+                    const formula = `${die}${conMod.startsWith('+') || conMod.startsWith('-') ? conMod : '+' + conMod}`;
+
+                    if (window.TBFeatureRollDice) {
+                        await window.TBFeatureRollDice.roll(formula, `${data.name}: Кость Хитов (Короткий отдых)`);
+                    }
+                    if (window.TBApi?.sendChatMessage) {
+                        window.TBApi.sendChatMessage(`${data.name} совершает Короткий отдых и бросает Кость Хитов (${formula})`);
+                    }
+                });
             }
 
             // Roll initiative

@@ -86,7 +86,16 @@
 
                 case 'HANDSHAKE_ACK':
                     window.TBLogger?.log(`Obsidian Vault: "${payload.vault}" на связи`, 'sys');
+                    if (payload && payload.gmPin !== undefined) {
+                        window.TBState?.set('gmPin', payload.gmPin);
+                    }
                     this.send('GET_CURRENT_HANDOUT', {});
+                    break;
+
+                case 'CONFIG_UPDATE':
+                    if (payload && payload.gmPin !== undefined) {
+                        window.TBState?.set('gmPin', payload.gmPin);
+                    }
                     break;
 
                 case 'CHARACTERS_LIST': {
@@ -94,17 +103,19 @@
                     window.TBState?.set('roster', list);
                     window.TBLogger?.log(`Загружено ${list.length} персонажей/существ`, 'sys');
 
-                    // If current character is not yet selected, set default 'Артём'
+                    const playable = window.TBCharacterModel?.getPlayableCharacters(list) || [];
                     let curChar = window.TBState?.get('playerCharacter');
-                    if (!curChar) {
-                        curChar = 'Артём';
+                    if (!curChar && playable.length > 0) {
+                        curChar = playable[0].name;
                         window.TBState?.setPlayerCharacter(curChar);
                     }
 
                     // Request initial player data only if not loaded yet
                     const curData = window.TBState?.get('playerData');
                     if (!curData || !curData.name) {
-                        this.send('GET_PLAYER_DATA', { characterName: curChar });
+                        if (curChar) {
+                            this.send('GET_PLAYER_DATA', { characterName: curChar });
+                        }
                     }
                     break;
                 }
