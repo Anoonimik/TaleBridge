@@ -201,6 +201,9 @@
             const btnDismissAll = this.container.querySelector('#btnDismissBroadcastAll');
             const dismissHandler = () => {
                 window.TBState.set('activeHandout', null);
+                if (window.TBMediaHandout) {
+                    window.TBMediaHandout.hide();
+                }
                 window.TBNetwork.send('DISMISS_HANDOUT', {});
                 this.render();
             };

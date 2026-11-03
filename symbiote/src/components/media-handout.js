@@ -27,6 +27,9 @@
             this.currentHandout = handout;
             if (!this.overlay) this.init();
 
+            // Stop any existing playback before opening new media
+            this.stopAllMedia();
+
             const type = (handout.type || handout.mediaType || 'text').toLowerCase();
             const title = handout.title || 'Послание от Мастера';
             const desc = handout.description || handout.content || '';
@@ -45,7 +48,7 @@
             } else if (type === 'video' || type === 'видео') {
                 const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
                 if (ytMatch) {
-                    const embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+                    const embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&enablejsapi=1`;
                     contentHtml = `
                         <div class="handout-video-wrapper">
                             <iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="handout-iframe"></iframe>
@@ -144,12 +147,57 @@
             }
         }
 
+        /**
+         * Silences, freezes and detaches all active video/audio/iframes
+         */
+        stopAllMedia() {
+            if (!this.overlay) return;
+
+            // 1. Immediately pause and unload HTML5 video tags
+            this.overlay.querySelectorAll('video').forEach(video => {
+                try {
+                    video.pause();
+                    video.currentTime = 0;
+                    video.removeAttribute('src');
+                    video.load();
+                } catch (_) {}
+            });
+
+            // 2. Immediately pause and unload HTML5 audio tags
+            this.overlay.querySelectorAll('audio').forEach(audio => {
+                try {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.removeAttribute('src');
+                    audio.load();
+                } catch (_) {}
+            });
+
+            // 3. Command YouTube / external iframes to stop playback and blank src
+            this.overlay.querySelectorAll('iframe').forEach(iframe => {
+                try {
+                    iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                    iframe.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
+                } catch (_) {}
+                try {
+                    iframe.src = 'about:blank';
+                } catch (_) {}
+            });
+        }
+
         hide() {
             if (this.overlay) {
+                // Instantly silence all audio and pause media
+                this.stopAllMedia();
+
                 this.overlay.classList.remove('visible');
                 setTimeout(() => {
-                    if (this.overlay) this.overlay.style.display = 'none';
-                }, 250);
+                    if (this.overlay) {
+                        this.overlay.style.display = 'none';
+                        // Completely flush the dialog DOM to release decoders and memory
+                        this.overlay.innerHTML = '';
+                    }
+                }, 200);
             }
         }
 
