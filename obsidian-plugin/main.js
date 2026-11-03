@@ -407,10 +407,13 @@ async function scanCharacters(vault, metadataCache) {
                 category = 'Враги';
             }
 
+            const isPlayable = fm.playable === true || (tags.some(t => String(t).match(/игрок/i)) && (file.basename.includes('Артём') || file.basename.includes('Глицин')));
+
             roster.push({
                 name: file.basename,
                 path: file.path,
                 category: category,
+                playable: isPlayable,
                 hp: fm.hp || '-',
                 hp_max: fm.hp_max || fm.hp || '-',
                 ac: fm.ac || '-',
@@ -1025,6 +1028,7 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 break;
 
             case 'GET_ROSTER':
+            case 'GET_CHARACTERS':
                 await this.scanAndSendCharacters();
                 break;
 

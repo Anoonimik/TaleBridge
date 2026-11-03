@@ -81,6 +81,7 @@
 
         renderRoster() {
             if (!this.container) return;
+            const prevScroll = this.container.scrollTop;
             this.container.innerHTML = '';
 
             const roster = window.TBState.get('roster') || [];
@@ -104,6 +105,10 @@
             filtered.forEach(item => {
                 this.container.appendChild(this.buildCard(item));
             });
+
+            if (prevScroll > 0) {
+                this.container.scrollTop = prevScroll;
+            }
         }
 
         buildCard(item) {

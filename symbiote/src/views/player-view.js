@@ -9,20 +9,117 @@
 
         init(containerId = 'playerContainer') {
             this.container = document.getElementById(containerId);
+
+            // Default to player mode if not yet authenticated as GM in this session
+            if (sessionStorage.getItem('tb_gm_auth') !== 'true') {
+                window.TBState.setRole('player');
+            }
+
             this.setupRoleToggle();
             this.setupStateListeners();
             this.applyCurrentRole();
+        }
+
+        getPlayableCharacters() {
+            const roster = window.TBState.get('roster') || [];
+            const playable = roster.filter(c => 
+                c.playable === true || 
+                c.name === 'Артём' || 
+                c.name.includes('Глицин') || 
+                (c.category === 'Игроки' && (c.name.includes('Артём') || c.name.includes('Глицин')))
+            );
+
+            if (playable.length > 0) return playable;
+
+            // Fallback safe defaults if roster is loading
+            return [
+                { name: 'Артём', class: 'Воин / Плут', category: 'Игроки', playable: true },
+                { name: 'Пачка Глицина', class: 'Варвар (Берсерк)', category: 'Игроки', playable: true }
+            ];
+        }
+
+        requestGmPassword() {
+            return new Promise((resolve) => {
+                if (sessionStorage.getItem('tb_gm_auth') === 'true') {
+                    resolve(true);
+                    return;
+                }
+
+                const modal = document.createElement('div');
+                modal.className = 'gm-auth-modal';
+                modal.innerHTML = `
+                    <div class="gm-auth-backdrop"></div>
+                    <div class="gm-auth-card">
+                        <div class="gm-auth-title">Доступ к пульту Гейм-Мастера</div>
+                        <div class="gm-auth-desc">Введите пароль для перехода в режим управления:</div>
+                        <div class="gm-auth-input-box">
+                            <input type="password" id="gmAuthPasswordInput" class="gm-auth-input" placeholder="Пароль" autofocus autocomplete="off" />
+                        </div>
+                        <div id="gmAuthError" class="gm-auth-error" style="display: none;">Неверный пароль Мастера</div>
+                        <div class="gm-auth-actions">
+                            <button id="btnGmAuthSubmit" class="btn-primary">Войти</button>
+                            <button id="btnGmAuthCancel" class="btn-secondary">Отмена</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                const input = modal.querySelector('#gmAuthPasswordInput');
+                const error = modal.querySelector('#gmAuthError');
+                const btnSubmit = modal.querySelector('#btnGmAuthSubmit');
+                const btnCancel = modal.querySelector('#btnGmAuthCancel');
+                const backdrop = modal.querySelector('.gm-auth-backdrop');
+
+                input.focus();
+
+                const cleanup = (result) => {
+                    modal.remove();
+                    resolve(result);
+                };
+
+                const checkPassword = () => {
+                    const val = (input.value || '').trim();
+                    if (val === '5') {
+                        sessionStorage.setItem('tb_gm_auth', 'true');
+                        cleanup(true);
+                    } else {
+                        error.style.display = 'block';
+                        input.value = '';
+                        input.focus();
+                        modal.querySelector('.gm-auth-card')?.classList.add('shake');
+                        setTimeout(() => modal.querySelector('.gm-auth-card')?.classList.remove('shake'), 400);
+                    }
+                };
+
+                btnSubmit.onclick = checkPassword;
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') checkPassword();
+                    if (e.key === 'Escape') cleanup(false);
+                };
+                btnCancel.onclick = () => cleanup(false);
+                backdrop.onclick = () => cleanup(false);
+            });
         }
 
         setupRoleToggle() {
             const btnToggle = document.getElementById('btnRoleToggle');
             if (!btnToggle) return;
 
-            btnToggle.addEventListener('click', () => {
+            btnToggle.addEventListener('click', async () => {
                 const currentRole = window.TBState.get('role');
-                const nextRole = currentRole === 'gm' ? 'player' : 'gm';
-                window.TBState.setRole(nextRole);
-                this.applyCurrentRole();
+                if (currentRole === 'player') {
+                    // Switching to GM mode requires password "5"
+                    const ok = await this.requestGmPassword();
+                    if (ok) {
+                        window.TBState.setRole('gm');
+                        this.applyCurrentRole();
+                    }
+                } else {
+                    // Switching from GM to Player mode
+                    sessionStorage.removeItem('tb_gm_auth');
+                    window.TBState.setRole('player');
+                    this.applyCurrentRole();
+                }
             });
         }
 
@@ -56,11 +153,11 @@
                 if (btnToggle) {
                     btnToggle.textContent = 'Режим: Игрок';
                     btnToggle.className = 'btn-role-toggle mode-player';
-                    btnToggle.title = 'Переключиться в режим Гейм-Мастера';
+                    btnToggle.title = 'Переключиться в режим Гейм-Мастера (требуется пароль)';
                 }
                 if (brandSub) brandSub.textContent = 'Player Cockpit';
 
-                // Hide GM screens & Token HUD
+                // Hide GM screen elements & Token HUD
                 if (gmTabs) gmTabs.style.display = 'none';
                 gmContents.forEach(c => c.style.display = 'none');
                 if (tokenHud) tokenHud.style.display = 'none';
@@ -88,11 +185,26 @@
                 if (brandSub) brandSub.textContent = 'GM Screen';
 
                 if (gmTabs) gmTabs.style.display = 'flex';
-                const activeTabBtn = document.querySelector('.tab-btn.active');
-                const targetId = activeTabBtn ? activeTabBtn.dataset.tab : 'tab-story';
+
+                // Clear inline style.display from tab-content so CSS .tab-content.active controls flex layout
                 gmContents.forEach(c => {
-                    c.style.display = (c.id === targetId) ? 'block' : 'none';
+                    c.style.display = '';
                 });
+
+                // Ensure currently active tab button matches active tab content
+                let activeBtn = document.querySelector('.tab-btn.active');
+                if (!activeBtn) {
+                    activeBtn = document.querySelector('.tab-btn');
+                    if (activeBtn) activeBtn.classList.add('active');
+                }
+                const targetId = activeBtn ? activeBtn.dataset.tab : 'tab-story';
+                gmContents.forEach(c => {
+                    c.classList.toggle('active', c.id === targetId);
+                });
+
+                if (tokenHud) {
+                    tokenHud.style.display = window.TBState.get('activeToken') ? 'block' : 'none';
+                }
 
                 if (this.container) {
                     this.container.style.display = 'none';
@@ -102,16 +214,16 @@
 
         renderEmpty() {
             if (!this.container) return;
-            const roster = window.TBState.get('roster') || [];
+            const playable = this.getPlayableCharacters();
             this.container.innerHTML = `
                 <div class="player-empty-box">
                     <div class="player-select-card">
                         <h2>Выберите своего персонажа</h2>
-                        <p class="select-desc">Для загрузки статов, инвентаря и личного журнала выберите своего героя:</p>
+                        <p class="select-desc">Доступные игровые персонажи:</p>
                         <div class="player-char-picker">
                             <select id="initialCharSelect" class="char-dropdown-select">
                                 <option value="">-- Выберите персонажа --</option>
-                                ${roster.map(c => `<option value="${this.escapeHtml(c.name)}">${this.escapeHtml(c.name)} [${c.category}]</option>`).join('')}
+                                ${playable.map(c => `<option value="${this.escapeHtml(c.name)}">${this.escapeHtml(c.name)} (${c.class || 'Игрок'})</option>`).join('')}
                             </select>
                             <button id="btnConfirmInitialChar" class="btn-primary" style="margin-top: 10px;">Войти в игру</button>
                         </div>
@@ -139,8 +251,9 @@
                 return;
             }
 
-            const roster = window.TBState.get('roster') || [];
+            const playable = this.getPlayableCharacters();
             const currentChar = window.TBState.get('playerCharacter') || data.name;
+            const activeTab = this.activeSubTab || 'character';
 
             this.container.innerHTML = `
                 <div class="player-cockpit">
@@ -149,9 +262,9 @@
                         <div class="char-picker-group">
                             <span class="char-label">Герой:</span>
                             <select id="playerCharSelect" class="char-dropdown-select">
-                                ${roster.map(c => `
+                                ${playable.map(c => `
                                     <option value="${this.escapeHtml(c.name)}" ${c.name === currentChar ? 'selected' : ''}>
-                                        ${this.escapeHtml(c.name)} (${c.class || c.category})
+                                        ${this.escapeHtml(c.name)} (${c.class || 'Игрок'})
                                     </option>
                                 `).join('')}
                             </select>
@@ -161,31 +274,31 @@
 
                     <!-- Player Sub-Tabs -->
                     <div class="player-subtabs">
-                        <button class="player-subtab-btn ${this.activeSubTab === 'character' ? 'active' : ''}" data-subtab="character">
+                        <button class="player-subtab-btn ${activeTab === 'character' ? 'active' : ''}" data-subtab="character">
                             Персонаж
                         </button>
-                        <button class="player-subtab-btn ${this.activeSubTab === 'inventory' ? 'active' : ''}" data-subtab="inventory">
+                        <button class="player-subtab-btn ${activeTab === 'inventory' ? 'active' : ''}" data-subtab="inventory">
                             Инвентарь (${data.inventory?.length || 0})
                         </button>
-                        <button class="player-subtab-btn ${this.activeSubTab === 'notes' ? 'active' : ''}" data-subtab="notes">
+                        <button class="player-subtab-btn ${activeTab === 'notes' ? 'active' : ''}" data-subtab="notes">
                             Заметки
                         </button>
-                        <button class="player-subtab-btn ${this.activeSubTab === 'clues' ? 'active' : ''}" data-subtab="clues">
+                        <button class="player-subtab-btn ${activeTab === 'clues' ? 'active' : ''}" data-subtab="clues">
                             Улики (${(window.TBState.get('cluesArchive') || []).length})
                         </button>
                     </div>
 
                     <!-- Sub-Tab Containers -->
-                    <div id="pTabCharacter" class="player-tab-pane" style="display: ${this.activeSubTab === 'character' ? 'block' : 'none'};">
+                    <div id="pTabCharacter" class="player-tab-pane" style="display: ${activeTab === 'character' ? 'block' : 'none'};">
                         ${this.renderCharacterSheet(data)}
                     </div>
-                    <div id="pTabInventory" class="player-tab-pane" style="display: ${this.activeSubTab === 'inventory' ? 'block' : 'none'};">
+                    <div id="pTabInventory" class="player-tab-pane" style="display: ${activeTab === 'inventory' ? 'block' : 'none'};">
                         <div id="playerInventoryBox"></div>
                     </div>
-                    <div id="pTabNotes" class="player-tab-pane" style="display: ${this.activeSubTab === 'notes' ? 'block' : 'none'};">
+                    <div id="pTabNotes" class="player-tab-pane" style="display: ${activeTab === 'notes' ? 'block' : 'none'};">
                         <div id="playerNotesBox"></div>
                     </div>
-                    <div id="pTabClues" class="player-tab-pane" style="display: ${this.activeSubTab === 'clues' ? 'block' : 'none'};">
+                    <div id="pTabClues" class="player-tab-pane" style="display: ${activeTab === 'clues' ? 'block' : 'none'};">
                         <div id="playerCluesBox"></div>
                     </div>
                 </div>
@@ -204,6 +317,23 @@
             }
             if (window.TBMediaHandout) {
                 window.TBMediaHandout.renderCluesArchive('playerCluesBox');
+            }
+        }
+
+        updateCharacterSelector() {
+            const charSelect = this.container?.querySelector('#playerCharSelect');
+            if (!charSelect) return;
+            const playable = this.getPlayableCharacters();
+            const currentChar = window.TBState.get('playerCharacter');
+
+            charSelect.innerHTML = playable.map(c => `
+                <option value="${this.escapeHtml(c.name)}" ${c.name === currentChar ? 'selected' : ''}>
+                    ${this.escapeHtml(c.name)} (${c.class || 'Игрок'})
+                </option>
+            `).join('');
+
+            if (currentChar) {
+                charSelect.value = currentChar;
             }
         }
 
@@ -476,19 +606,6 @@
                 barFill.style.width = `${pct}%`;
                 barFill.className = `hp-bar-fill ${pct <= 25 ? 'critical' : (pct <= 50 ? 'warning' : 'healthy')}`;
             }
-        }
-
-        updateCharacterSelector() {
-            const charSelect = this.container?.querySelector('#playerCharSelect');
-            if (!charSelect) return;
-            const roster = window.TBState.get('roster') || [];
-            const currentChar = window.TBState.get('playerCharacter');
-
-            charSelect.innerHTML = roster.map(c => `
-                <option value="${this.escapeHtml(c.name)}" ${c.name === currentChar ? 'selected' : ''}>
-                    ${this.escapeHtml(c.name)} (${c.class || c.category})
-                </option>
-            `).join('');
         }
 
         capitalize(str) {

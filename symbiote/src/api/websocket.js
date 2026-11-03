@@ -83,26 +83,30 @@
 
                 case 'HANDSHAKE_ACK':
                     window.TBLogger.log(`Obsidian Vault: "${payload.vault}" на связи`, 'sys');
-                    // If player character is configured, request player data immediately
-                    const savedChar = window.TBState.get('playerCharacter');
-                    if (savedChar) {
-                        this.send('GET_PLAYER_DATA', { characterName: savedChar });
-                    }
                     this.send('GET_CURRENT_HANDOUT', {});
                     break;
 
-                case 'CHARACTERS_LIST':
-                    window.TBState.set('roster', payload || []);
-                    window.TBLogger.log(`Загружено ${payload?.length || 0} персонажей/существ`, 'sys');
-                    // If player character not yet set, default to first player character
-                    if (!window.TBState.get('playerCharacter') && payload && payload.length > 0) {
-                        const firstPlayer = payload.find(c => c.category === 'Игроки') || payload[0];
-                        if (firstPlayer) {
-                            window.TBState.setPlayerCharacter(firstPlayer.name);
-                            this.send('GET_PLAYER_DATA', { characterName: firstPlayer.name });
-                        }
+                case 'CHARACTERS_LIST': {
+                    const list = payload || [];
+                    window.TBState.set('roster', list);
+                    window.TBLogger.log(`Загружено ${list.length} персонажей/существ`, 'sys');
+
+                    // Filter only playable characters (Artem and Glycine)
+                    const playable = list.filter(c => c.playable || (c.category === 'Игроки' && (c.name.includes('Артём') || c.name.includes('Глицин'))));
+                    let curChar = window.TBState.get('playerCharacter');
+
+                    // If current character is not in playable list, assign first playable
+                    if (!curChar || (playable.length > 0 && !playable.some(p => p.name === curChar))) {
+                        curChar = playable[0] ? playable[0].name : 'Артём';
+                        window.TBState.setPlayerCharacter(curChar);
+                    }
+
+                    // Request player data for the currently selected character without resetting!
+                    if (curChar) {
+                        this.send('GET_PLAYER_DATA', { characterName: curChar });
                     }
                     break;
+                }
 
                 case 'SCENES_LIST':
                     window.TBState.set('scenes', payload || []);
