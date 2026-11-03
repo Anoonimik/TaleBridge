@@ -72,7 +72,7 @@
         async handleMessage(data) {
             const { type, payload } = data;
 
-            if (type !== 'CHARACTERS_LIST' && type !== 'SCENES_LIST' && type !== 'NOTE_CONTENT') {
+            if (type !== 'CHARACTERS_LIST' && type !== 'SCENES_LIST' && type !== 'NOTE_CONTENT' && type !== 'PLAYER_DATA') {
                 window.TBLogger.log(`← ${type}: ${JSON.stringify(payload || {})}`, 'in');
             }
 
@@ -83,16 +83,93 @@
 
                 case 'HANDSHAKE_ACK':
                     window.TBLogger.log(`Obsidian Vault: "${payload.vault}" на связи`, 'sys');
+                    // If player character is configured, request player data immediately
+                    const savedChar = window.TBState.get('playerCharacter');
+                    if (savedChar) {
+                        this.send('GET_PLAYER_DATA', { characterName: savedChar });
+                    }
+                    this.send('GET_CURRENT_HANDOUT', {});
                     break;
 
                 case 'CHARACTERS_LIST':
                     window.TBState.set('roster', payload || []);
                     window.TBLogger.log(`Загружено ${payload?.length || 0} персонажей/существ`, 'sys');
+                    // If player character not yet set, default to first player character
+                    if (!window.TBState.get('playerCharacter') && payload && payload.length > 0) {
+                        const firstPlayer = payload.find(c => c.category === 'Игроки') || payload[0];
+                        if (firstPlayer) {
+                            window.TBState.setPlayerCharacter(firstPlayer.name);
+                            this.send('GET_PLAYER_DATA', { characterName: firstPlayer.name });
+                        }
+                    }
                     break;
 
                 case 'SCENES_LIST':
                     window.TBState.set('scenes', payload || []);
                     window.TBLogger.log(`Загружено ${payload?.length || 0} сюжетных сцен`, 'sys');
+                    break;
+
+                case 'PLAYER_DATA':
+                    if (payload && !payload.error) {
+                        window.TBState.set('playerData', payload);
+                        if (window.TBPlayerView) {
+                            window.TBPlayerView.render(payload);
+                        }
+                    }
+                    break;
+
+                case 'INVENTORY_UPDATED':
+                    if (payload && payload.characterName === window.TBState.get('playerCharacter')) {
+                        const curData = window.TBState.get('playerData');
+                        if (curData) {
+                            curData.inventory = payload.items;
+                            window.TBState.set('playerData', { ...curData });
+                        }
+                        if (window.TBPlayerInventory) {
+                            window.TBPlayerInventory.render(payload.items);
+                        }
+                    }
+                    break;
+
+                case 'PLAYER_NOTES_UPDATED':
+                    if (window.TBPlayerNotes) {
+                        window.TBPlayerNotes.onSaved();
+                    }
+                    break;
+
+                case 'CHARACTER_HP_UPDATED':
+                    if (payload && payload.characterName === window.TBState.get('playerCharacter')) {
+                        const cur = window.TBState.get('playerData');
+                        if (cur) {
+                            cur.hp = payload.hp;
+                            if (payload.maxHp) cur.hp_max = payload.maxHp;
+                            window.TBState.set('playerData', { ...cur });
+                        }
+                        if (window.TBPlayerView) {
+                            window.TBPlayerView.updateHpDisplay(payload.hp, payload.maxHp || cur?.hp_max);
+                        }
+                    }
+                    break;
+
+                case 'MEDIA_HANDOUT':
+                    window.TBState.set('activeHandout', payload);
+                    if (window.TBMediaHandout) {
+                        window.TBMediaHandout.show(payload);
+                    }
+                    break;
+
+                case 'DISMISS_HANDOUT':
+                    window.TBState.set('activeHandout', null);
+                    if (window.TBMediaHandout) {
+                        window.TBMediaHandout.hide();
+                    }
+                    break;
+
+                case 'VAULT_IMAGES_LIST':
+                    window.TBState.set('vaultImages', payload || []);
+                    if (window.TBBroadcastView) {
+                        window.TBBroadcastView.updateVaultImages(payload || []);
+                    }
                     break;
 
                 case 'NOTE_CONTENT':

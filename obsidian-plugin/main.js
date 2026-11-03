@@ -7,17 +7,29 @@ const EventEmitter = require('events');
 // SECTION 1: Lightweight Built-in RFC 6455 WebSocket Server
 // =============================================================================
 class SimpleWebSocketServer extends EventEmitter {
-    constructor(port = 30123) {
+    constructor(port = 30123, httpHandler = null) {
         super();
         this.port = port;
+        this.httpHandler = httpHandler;
         this.clients = new Set();
         this.server = null;
     }
 
     start() {
         return new Promise((resolve, reject) => {
-            this.server = http.createServer((req, res) => {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
+            this.server = http.createServer(async (req, res) => {
+                if (this.httpHandler) {
+                    try {
+                        const handled = await this.httpHandler(req, res);
+                        if (handled) return;
+                    } catch (e) {
+                        console.error('TaleBridge HTTP Error:', e);
+                    }
+                }
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
                 res.end(JSON.stringify({
                     app: 'TaleBridge Obsidian Host',
                     status: 'online',
@@ -70,10 +82,19 @@ class SimpleWebSocketServer extends EventEmitter {
                 });
             });
 
-            this.server.listen(this.port, '127.0.0.1', () => {
+            this.server.listen(this.port, '0.0.0.0', () => {
                 this.emit('listening', this.port);
                 resolve(this.port);
-            }).on('error', (err) => reject(err));
+            }).on('error', (err) => {
+                try {
+                    this.server.listen(this.port, '127.0.0.1', () => {
+                        this.emit('listening', this.port);
+                        resolve(this.port);
+                    }).on('error', (e) => reject(e));
+                } catch (e2) {
+                    reject(err);
+                }
+            });
         });
     }
 
@@ -193,8 +214,149 @@ class SimpleWebSocketServer extends EventEmitter {
 }
 
 // =============================================================================
-// SECTION 2: Vault Scanner (Characters, Bestiary & Scenes)
+// SECTION 2: Vault Scanner & Character State Engine
 // =============================================================================
+function parseAbilityScores(content) {
+    if (!content) return null;
+    const headerRegex = /\|\s*(?:Сила|СИЛ|STR)\s*\|\s*(?:Ловкость|ЛОВ|DEX)\s*\|\s*(?:Телосложение|ТЕЛ|CON)\s*\|\s*(?:Интеллект|ИНТ|INT)\s*\|\s*(?:Мудрость|МУД|WIS)\s*\|\s*(?:Харизма|ХАР|CHA)\s*\|/i;
+    const match = content.match(headerRegex);
+    if (!match) return null;
+
+    const afterHeader = content.slice(match.index + match[0].length);
+    const lines = afterHeader.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+        const line = lines[i];
+        if (line.includes('---')) continue;
+        const cells = line.split('|').map(c => c.trim()).filter(Boolean);
+        if (cells.length >= 6) {
+            return {
+                str: cells[0],
+                dex: cells[1],
+                con: cells[2],
+                int: cells[3],
+                wis: cells[4],
+                cha: cells[5]
+            };
+        }
+    }
+    return null;
+}
+
+function extractSection(text, headerName) {
+    if (!text) return '';
+    const regex = new RegExp(`(^|\\n)##\\s*${headerName}[^\\n]*`, 'i');
+    const m = text.match(regex);
+    if (!m) return '';
+    const rest = text.slice(m.index + m[0].length);
+    const nextMatch = rest.match(/\n##?\s+/);
+    return nextMatch ? rest.slice(0, nextMatch.index).trim() : rest.trim();
+}
+
+function parseInventory(content) {
+    const sectionText = extractSection(content, 'Инвентарь');
+    if (!sectionText) return [];
+
+    const items = [];
+    const lines = sectionText.split(/\r?\n/);
+
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line || !line.startsWith('-')) continue;
+
+        let equipped = false;
+        let rest = line.replace(/^-\s*/, '');
+        if (rest.startsWith('[x]') || rest.startsWith('[X]')) {
+            equipped = true;
+            rest = rest.replace(/^\[[xX]\]\s*/, '');
+        } else if (rest.startsWith('[ ]')) {
+            equipped = false;
+            rest = rest.replace(/^\[\s*\]\s*/, '');
+        }
+
+        let description = '';
+        const descMatch = rest.match(/\s+[—–-]\s+(.*)$/);
+        if (descMatch) {
+            description = descMatch[1].trim();
+            rest = rest.slice(0, descMatch.index).trim();
+        }
+
+        let category = 'Снаряжение';
+        const catMatch = rest.match(/\[(.*?)\]/);
+        if (catMatch) {
+            category = catMatch[1].trim();
+            rest = rest.replace(/\[(.*?)\]/, '').trim();
+        }
+
+        let quantity = 1;
+        let weight = 0;
+        const metaMatch = rest.match(/\((.*?)\)/);
+        if (metaMatch) {
+            const metaContent = metaMatch[1];
+            const qtyM = metaContent.match(/кол-во:\s*(\d+)/i) || metaContent.match(/qty:\s*(\d+)/i) || metaContent.match(/(\d+)\s*шт/i);
+            if (qtyM) quantity = parseInt(qtyM[1], 10) || 1;
+
+            const weightM = metaContent.match(/вес:\s*([\d.]+)/i) || metaContent.match(/weight:\s*([\d.]+)/i) || metaContent.match(/([\d.]+)\s*(?:кг|фунт|lb)/i);
+            if (weightM) weight = parseFloat(weightM[1]) || 0;
+
+            rest = rest.replace(/\((.*?)\)/, '').trim();
+        }
+
+        const name = rest.trim();
+        if (name && name !== '(Инвентарь пуст)') {
+            items.push({
+                id: 'it_' + Math.random().toString(36).substring(2, 9),
+                name,
+                equipped,
+                quantity,
+                weight,
+                category,
+                description
+            });
+        }
+    }
+    return items;
+}
+
+function serializeInventory(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+        return '## Инвентарь\n- (Инвентарь пуст)';
+    }
+
+    const lines = ['## Инвентарь'];
+    for (const it of items) {
+        const check = it.equipped ? '[x]' : '[ ]';
+        const qty = it.quantity || 1;
+        const wt = (it.weight !== undefined && it.weight !== null && it.weight !== '') ? `, вес: ${it.weight} кг` : '';
+        const cat = it.category ? ` [${it.category}]` : '';
+        const desc = it.description ? ` — ${it.description}` : '';
+        lines.push(`- ${check} ${it.name} (кол-во: ${qty}${wt})${cat}${desc}`);
+    }
+    return lines.join('\n');
+}
+
+function parsePlayerNotes(content) {
+    return extractSection(content, 'Заметки игрока');
+}
+
+function serializePlayerNotes(notesText) {
+    const clean = (notesText || '').trim();
+    return `## Заметки игрока\n\n${clean}`;
+}
+
+async function updateCharacterSection(vault, file, sectionHeaderName, newSectionText) {
+    const content = await vault.read(file);
+    const regex = new RegExp(`(^|\\r?\\n)##\\s*${sectionHeaderName}[^\\n]*([\\s\\S]*?)(?=\\r?\\n##?\\s+|$)`, 'i');
+
+    let updatedContent;
+    if (regex.test(content)) {
+        updatedContent = content.replace(regex, `$1${newSectionText}\n\n`).replace(/\n{3,}/g, '\n\n').trim() + '\n';
+    } else {
+        updatedContent = content.trimEnd() + '\n\n' + newSectionText + '\n';
+    }
+    await vault.modify(file, updatedContent);
+    return updatedContent;
+}
+
 async function scanCharacters(vault, metadataCache) {
     const files = vault.getMarkdownFiles();
     const roster = [];
@@ -210,8 +372,12 @@ async function scanCharacters(vault, metadataCache) {
 
         if (isNpc) {
             let attacks = [];
+            let content = '';
+            let stats = null;
+            let inventory = [];
+            let playerNotes = '';
             try {
-                const content = await vault.read(file);
+                content = await vault.read(file);
                 const regex = /```dnd-action\s*([\s\S]*?)```/g;
                 let m;
                 while ((m = regex.exec(content)) !== null) {
@@ -223,8 +389,11 @@ async function scanCharacters(vault, metadataCache) {
                     const aDesc = block.match(/desc:\s*(.*)/i)?.[1]?.trim() || '';
                     attacks.push({ name: aName, hit: aHit, dmg: aDmg, type: aType, desc: aDesc });
                 }
+                stats = parseAbilityScores(content);
+                inventory = parseInventory(content);
+                playerNotes = parsePlayerNotes(content);
             } catch (e) {
-                console.error(`TaleBridge: Ошибка парсинга атак для ${file.path}:`, e);
+                console.error(`TaleBridge: Ошибка парсинга для ${file.path}:`, e);
             }
 
             let category = 'NPC';
@@ -243,6 +412,7 @@ async function scanCharacters(vault, metadataCache) {
                 path: file.path,
                 category: category,
                 hp: fm.hp || '-',
+                hp_max: fm.hp_max || fm.hp || '-',
                 ac: fm.ac || '-',
                 speed: fm.speed || '-',
                 race: fm.race || '',
@@ -250,7 +420,10 @@ async function scanCharacters(vault, metadataCache) {
                 status: fm.status || '',
                 talespire_id: fm.talespire_id || '',
                 talespire_name: fm.talespire_name || '',
-                attacks: attacks
+                attacks: attacks,
+                stats: stats,
+                inventoryCount: inventory.length,
+                hasPlayerNotes: playerNotes.length > 0
             });
         }
     }
@@ -521,6 +694,7 @@ class TaleBridgePlugin extends obsidian.Plugin {
 
         this.lastSelectedCreature = null;
         this.currentBookmarks = [];
+        this.currentHandout = null;
 
         // Status bar indicator
         this.statusBarEl = this.addStatusBarItem();
@@ -693,7 +867,7 @@ class TaleBridgePlugin extends obsidian.Plugin {
     // --- WebSocket Server Lifecycle ---
     async startServer() {
         try {
-            this.wss = new SimpleWebSocketServer(this.settings.port);
+            this.wss = new SimpleWebSocketServer(this.settings.port, (req, res) => this.handleHttpRequest(req, res));
 
             this.wss.on('listening', (port) => {
                 console.log(`TaleBridge WS Server запущен на порту ${port}`);
@@ -706,11 +880,17 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 new obsidian.Notice('TaleSpire подключен к TaleBridge');
                 this.wss.send(client, {
                     type: 'HANDSHAKE_ACK',
-                    payload: { vault: this.app.vault.getName(), version: '0.5.0' }
+                    payload: { vault: this.app.vault.getName(), version: '0.6.0' }
                 });
                 this.send('GET_BOOKMARKS', {});
                 await this.scanAndSendCharacters();
                 await this.scanAndSendScenes();
+                if (this.currentHandout) {
+                    this.wss.send(client, {
+                        type: 'MEDIA_HANDOUT',
+                        payload: this.currentHandout
+                    });
+                }
             });
 
             this.wss.on('disconnect', (client) => {
@@ -882,6 +1062,104 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 }
                 break;
 
+            case 'GET_PLAYER_DATA':
+                if (payload && payload.characterName) {
+                    const pData = await this.getCharacterPlayerData(payload.characterName);
+                    this.wss.send(client, {
+                        type: 'PLAYER_DATA',
+                        payload: pData
+                    });
+                }
+                break;
+
+            case 'UPDATE_INVENTORY':
+                if (payload && payload.characterName && payload.items) {
+                    const file = this.findCharacterFile(payload.characterName);
+                    if (file) {
+                        const serialized = serializeInventory(payload.items);
+                        await updateCharacterSection(this.app.vault, file, 'Инвентарь', serialized);
+                        this.wss.broadcast({
+                            type: 'INVENTORY_UPDATED',
+                            payload: { characterName: payload.characterName, items: payload.items }
+                        });
+                        new obsidian.Notice(`Инвентарь сохранен: ${payload.characterName}`);
+                    }
+                }
+                break;
+
+            case 'UPDATE_PLAYER_NOTES':
+                if (payload && payload.characterName) {
+                    const file = this.findCharacterFile(payload.characterName);
+                    if (file) {
+                        const serialized = serializePlayerNotes(payload.notes || '');
+                        await updateCharacterSection(this.app.vault, file, 'Заметки игрока', serialized);
+                        this.wss.send(client, {
+                            type: 'PLAYER_NOTES_UPDATED',
+                            payload: { characterName: payload.characterName, savedAt: Date.now() }
+                        });
+                        this.wss.broadcast({
+                            type: 'PLAYER_NOTES_SYNC',
+                            payload: { characterName: payload.characterName, notes: payload.notes || '' }
+                        });
+                    }
+                }
+                break;
+
+            case 'UPDATE_CHARACTER_HP':
+                if (payload && payload.characterName) {
+                    const file = this.findCharacterFile(payload.characterName);
+                    if (file) {
+                        await this.app.fileManager.processFrontMatter(file, (fm) => {
+                            fm.hp = payload.hp;
+                            if (payload.maxHp) fm.hp_max = payload.maxHp;
+                        });
+                        this.wss.broadcast({
+                            type: 'CHARACTER_HP_UPDATED',
+                            payload: { characterName: payload.characterName, hp: payload.hp, maxHp: payload.maxHp }
+                        });
+                        await this.scanAndSendCharacters();
+                    }
+                }
+                break;
+
+            case 'BROADCAST_HANDOUT':
+                if (payload) {
+                    this.currentHandout = payload;
+                    this.wss.broadcast({
+                        type: 'MEDIA_HANDOUT',
+                        payload: payload
+                    });
+                    new obsidian.Notice(`Трансляция игрокам: ${payload.title || 'Медиа'}`);
+                }
+                break;
+
+            case 'DISMISS_HANDOUT':
+                this.currentHandout = null;
+                this.wss.broadcast({
+                    type: 'DISMISS_HANDOUT',
+                    payload: payload || {}
+                });
+                new obsidian.Notice('Трансляция снята у всех игроков');
+                break;
+
+            case 'GET_CURRENT_HANDOUT':
+                if (this.currentHandout) {
+                    this.wss.send(client, {
+                        type: 'MEDIA_HANDOUT',
+                        payload: this.currentHandout
+                    });
+                }
+                break;
+
+            case 'GET_VAULT_IMAGES': {
+                const images = this.scanVaultImages();
+                this.wss.send(client, {
+                    type: 'VAULT_IMAGES_LIST',
+                    payload: images
+                });
+                break;
+            }
+
             case 'PING':
                 this.wss.send(client, { type: 'PONG', payload: { time: Date.now() } });
                 break;
@@ -889,6 +1167,163 @@ class TaleBridgePlugin extends obsidian.Plugin {
             default:
                 break;
         }
+    }
+
+    async handleHttpRequest(req, res) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+
+        if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return true;
+        }
+
+        if (req.url.startsWith('/vault-file')) {
+            try {
+                const parsedUrl = new URL(req.url, 'http://127.0.0.1');
+                const filePath = decodeURIComponent(parsedUrl.searchParams.get('path') || '');
+                const file = this.app.vault.getAbstractFileByPath(filePath);
+                if (file && file instanceof obsidian.TFile) {
+                    const ext = file.extension.toLowerCase();
+                    let mime = 'application/octet-stream';
+                    if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext)) {
+                        mime = ext === 'jpg' ? 'image/jpeg' : (ext === 'svg' ? 'image/svg+xml' : `image/${ext}`);
+                    }
+                    const data = await this.app.vault.readBinary(file);
+                    const buf = Buffer.from(data);
+                    res.writeHead(200, {
+                        'Content-Type': mime,
+                        'Content-Length': buf.length
+                    });
+                    res.end(buf);
+                    return true;
+                } else {
+                    res.writeHead(404, { 'Content-Type': 'text/plain' });
+                    res.end('File not found in vault');
+                    return true;
+                }
+            } catch (err) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('Error serving vault file');
+                return true;
+            }
+        }
+
+        if (req.url === '/api/vault-images') {
+            const images = this.scanVaultImages();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(images));
+            return true;
+        }
+
+        return false;
+    }
+
+    scanVaultImages() {
+        const files = this.app.vault.getFiles();
+        const imageExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
+        const images = [];
+        for (const f of files) {
+            if (imageExtensions.includes(f.extension.toLowerCase())) {
+                images.push({
+                    name: f.name,
+                    path: f.path,
+                    extension: f.extension
+                });
+            }
+        }
+        return images;
+    }
+
+    findCharacterFile(characterName) {
+        if (!characterName) return null;
+        const clean = characterName.toLowerCase().trim();
+        const files = this.app.vault.getMarkdownFiles();
+
+        let file = files.find(f => f.basename.toLowerCase().trim() === clean);
+        if (file) return file;
+
+        file = files.find(f => {
+            const cache = this.app.metadataCache.getFileCache(f);
+            return cache?.frontmatter?.talespire_name?.toLowerCase().trim() === clean;
+        });
+        if (file) return file;
+
+        file = files.find(f => {
+            const cache = this.app.metadataCache.getFileCache(f);
+            const aliases = cache?.frontmatter?.aliases;
+            if (Array.isArray(aliases)) {
+                return aliases.some(a => String(a).toLowerCase().trim() === clean);
+            }
+            return false;
+        });
+        if (file) return file;
+
+        file = files.find(f => {
+            const b = f.basename.toLowerCase().trim();
+            return b.includes(clean) || clean.includes(b);
+        });
+        return file || null;
+    }
+
+    async getCharacterPlayerData(characterName) {
+        const file = this.findCharacterFile(characterName);
+        if (!file) {
+            return { error: 'Персонаж не найден', characterName };
+        }
+
+        const content = await this.app.vault.read(file);
+        const cache = this.app.metadataCache.getFileCache(file);
+        const fm = cache?.frontmatter || {};
+
+        const attacks = [];
+        const regex = /```dnd-action\s*([\s\S]*?)```/g;
+        let m;
+        while ((m = regex.exec(content)) !== null) {
+            const block = m[1];
+            const aName = block.match(/name:\s*(.*)/i)?.[1]?.trim() || 'Атака';
+            const aHit = block.match(/hit:\s*(.*)/i)?.[1]?.trim() || '';
+            const aDmg = block.match(/dmg:\s*(.*)/i)?.[1]?.trim() || '';
+            const aType = block.match(/type:\s*(.*)/i)?.[1]?.trim() || '';
+            const aDesc = block.match(/desc:\s*(.*)/i)?.[1]?.trim() || '';
+            attacks.push({ name: aName, hit: aHit, dmg: aDmg, type: aType, desc: aDesc });
+        }
+
+        const stats = parseAbilityScores(content);
+        const inventory = parseInventory(content);
+        const playerNotes = parsePlayerNotes(content);
+
+        let hp = fm.hp !== undefined ? fm.hp : 20;
+        let hpMax = fm.hp_max || fm.max_hp;
+        if (typeof hp === 'string' && hp.includes('/')) {
+            const parts = hp.split('/');
+            hp = parseInt(parts[0], 10) || 0;
+            hpMax = parseInt(parts[1], 10) || hp;
+        } else {
+            hp = parseInt(hp, 10) || 20;
+            if (!hpMax) hpMax = hp;
+        }
+
+        return {
+            name: file.basename,
+            path: file.path,
+            hp: hp,
+            hp_max: hpMax,
+            ac: fm.ac || 10,
+            speed: fm.speed || '9 м',
+            race: fm.race || '',
+            class: fm.class || '',
+            level: fm.level || 1,
+            status: fm.status || '',
+            talespire_id: fm.talespire_id || '',
+            talespire_name: fm.talespire_name || '',
+            stats: stats,
+            attacks: attacks,
+            inventory: inventory,
+            playerNotes: playerNotes
+        };
     }
 
     async tryOpenCreatureNote(creature) {

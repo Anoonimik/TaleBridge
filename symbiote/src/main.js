@@ -54,10 +54,15 @@
         window.TBNoteViewer.init();
         window.TBToolsView.init();
 
-        // 6. Connect WebSocket Client to Obsidian Host
+        // 6. Initialize Player Cockpit & Media Handout
+        if (window.TBMediaHandout) window.TBMediaHandout.init('cinemaOverlay');
+        if (window.TBBroadcastView) window.TBBroadcastView.init('gmBroadcastBox');
+        if (window.TBPlayerView) window.TBPlayerView.init('playerContainer');
+
+        // 7. Connect WebSocket Client to Obsidian Host
         window.TBNetwork.connect();
 
-        window.TBLogger.log('Все GM-модули и Active Token HUD готовы', 'sys');
+        window.TBLogger.log('Все GM-модули, Player Cockpit и Cinema Handout готовы', 'sys');
     }
 
     if (document.readyState === 'loading') {

@@ -14,6 +14,10 @@
             <span class="brand-sub">GM Screen</span>
         </div>
         <div class="header-controls">
+            <!-- Role Toggle: GM Screen vs Player Cockpit -->
+            <button id="btnRoleToggle" class="btn-role-toggle mode-gm" title="Переключиться в интерфейс Игрока">
+                Режим: Мастер
+            </button>
             <!-- Auto-inspect toggle: automatically opens character card when clicked on board -->
             <button id="btnAutoInspect" class="btn-auto-inspect" title="Автоматически открывать карточку персонажа при клике по фигурке на столе">
                 Авто: ВЫКЛ
@@ -60,6 +64,9 @@
         <!-- Quick Attack Chips Row -->
         <div id="hudAttacksBox" class="hud-attacks-box" style="display: none;"></div>
     </div>
+
+    <!-- PLAYER COCKPIT (Visible only in Player Mode) -->
+    <div id="playerContainer" class="player-container" style="display: none;"></div>
 
     <!-- Navigation Tabs -->
     <div class="tabs">
@@ -177,10 +184,16 @@
                 <span class="empty-hint">Нажмите «Синхр. локаций» для чтения закладок</span>
             </div>
 
-            <div class="section-title" style="margin-top: 6px;">Журнал событий моста</div>
+            <div class="section-title">Вещание медиа игрокам</div>
+            <div id="gmBroadcastBox"></div>
+
+            <div class="section-title" style="margin-top: 10px;">Журнал событий моста</div>
             <div id="logContainer" class="log-box"></div>
         </div>
     </div>
+
+    <!-- Media Handout Cinema Showcase (Fullscreen Overlay) -->
+    <div id="cinemaOverlay" class="cinema-overlay" style="display: none;"></div>
 
     <!-- Modular Architecture Scripts -->
     <!-- 1. Core Primitives -->
@@ -196,12 +209,17 @@
     <script src="src/components/token-hud.js"></script>
     <script src="src/components/scene-drawer.js"></script>
     <script src="src/components/scene-card-renderer.js"></script>
+    <script src="src/components/player-inventory.js"></script>
+    <script src="src/components/player-notes.js"></script>
+    <script src="src/components/media-handout.js"></script>
 
     <!-- 4. Screen Views -->
     <script src="src/views/story-view.js"></script>
     <script src="src/views/roster-view.js"></script>
     <script src="src/views/note-viewer-view.js"></script>
     <script src="src/views/tools-view.js"></script>
+    <script src="src/views/player-view.js"></script>
+    <script src="src/views/media-broadcast-view.js"></script>
 
     <!-- 5. Main Bootstrap -->
     <script src="src/main.js"></script>

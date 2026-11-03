@@ -1,0 +1,209 @@
+/* --- TaleBridge GM Media Broadcast Control Styles --- */
+
+.broadcast-control-panel {
+    background: #15171f;
+    border: 1px solid #242735;
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Active Broadcast Pulsing Banner */
+.active-broadcast-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #23192e;
+    border: 1px solid #7c3aed;
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.2);
+    animation: fadeIn 0.2s ease;
+}
+
+.active-badge-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #a855f7;
+    box-shadow: 0 0 8px #a855f7;
+    animation: pulse 1.5s infinite;
+}
+
+.active-broadcast-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.active-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #c084fc;
+    text-transform: uppercase;
+    display: block;
+}
+
+.active-title {
+    font-size: 13px;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+}
+
+.active-type {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-left: 4px;
+}
+
+.btn-dismiss-broadcast {
+    background: #4c1d95;
+    border: 1px solid #6d28d9;
+    color: #ede9fe;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-dismiss-broadcast:hover {
+    background: #7c3aed;
+    color: #fff;
+}
+
+/* Broadcast Type Tabs */
+.broadcast-type-tabs {
+    display: flex;
+    gap: 4px;
+    background: #0f1015;
+    border: 1px solid #232634;
+    border-radius: 5px;
+    padding: 3px;
+}
+
+.b-type-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.b-type-btn:hover {
+    color: #fff;
+    background: #1c1e28;
+}
+
+.b-type-btn.active {
+    background: #2c2f42;
+    color: #fff;
+    border-color: #6366f1;
+}
+
+/* Broadcast Form Grid */
+.broadcast-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.broadcast-form-grid .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.broadcast-form-grid label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.broadcast-form-grid input,
+.broadcast-form-grid select,
+.broadcast-form-grid textarea {
+    background: #0d0f14;
+    border: 1px solid #252837;
+    border-radius: 4px;
+    color: #f1f5f9;
+    padding: 6px 8px;
+    font-size: 12px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.broadcast-form-grid input:focus,
+.broadcast-form-grid select:focus,
+.broadcast-form-grid textarea:focus {
+    border-color: #6366f1;
+}
+
+.broadcast-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btn-primary-broadcast {
+    flex: 2;
+    background: #6366f1;
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary-broadcast:hover {
+    background: #4f46e5;
+}
+
+.btn-secondary-broadcast {
+    flex: 1;
+    background: #222533;
+    border: 1px solid #33384a;
+    color: #cbd5e1;
+    font-size: 11px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-secondary-broadcast:hover {
+    background: #2b2f42;
+    color: #fff;
+}
+
+/* Hooked button in Read-Aloud callouts in Story View */
+.btn-broadcast-quote {
+    background: #312e81;
+    border: 1px solid #4338ca;
+    color: #c7d2fe;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.15s ease;
+}
+
+.btn-broadcast-quote:hover {
+    background: #4338ca;
+    color: #fff;
+}

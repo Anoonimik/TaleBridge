@@ -97,7 +97,7 @@
                 // Update header quick pill
                 if (this.headerActiveToken) {
                     this.headerActiveToken.style.display = 'inline-flex';
-                    this.headerActiveToken.innerHTML = `<span>🎯 ${token.name}</span><b style="color:#a5b4fc">${hpText}</b>`;
+                    this.headerActiveToken.innerHTML = `<span>[Токен] ${token.name}</span><b style="color:#a5b4fc">${hpText}</b>`;
                 }
 
                 window.TBLogger.log(`Выбран токен: "${token.name}"`, 'sys');
