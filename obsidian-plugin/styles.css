@@ -1,0 +1,138 @@
+.talebridge-status {
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.talebridge-status.connected {
+    color: #4ade80;
+}
+
+.talebridge-status.disconnected {
+    color: #f87171;
+}
+
+/* Action Card */
+.tb-action-card {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-left: 4px solid var(--interactive-accent);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 10px 0;
+}
+
+.tb-action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.tb-action-name {
+    font-weight: 600;
+    font-size: 1.05em;
+    color: var(--text-normal);
+}
+
+.tb-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.tb-btn-roll {
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.9em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tb-btn-roll:hover {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+    transform: translateY(-1px);
+}
+
+.tb-btn-roll.hit {
+    border-left: 3px solid #3b82f6;
+}
+
+.tb-btn-roll.dmg {
+    border-left: 3px solid #ef4444;
+}
+
+.tb-btn-camera {
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.9em;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+    transition: all 0.15s ease;
+}
+
+.tb-btn-camera:hover {
+    background: #6366f1;
+    color: #ffffff;
+    border-color: #6366f1;
+    transform: translateY(-1px);
+}
+
+.tb-action-desc {
+    font-size: 0.88em;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 4px;
+}
+
+/* Inline badges: [dice:1d20+5|Атака] and [camera:Тронный Зал] */
+.tb-inline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    margin: 0 2px;
+    transition: all 0.15s ease;
+}
+
+.tb-inline-badge.roll {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.tb-inline-badge.roll:hover {
+    background: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.tb-inline-badge.camera {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.tb-inline-badge.camera:hover {
+    background: #10b981;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}

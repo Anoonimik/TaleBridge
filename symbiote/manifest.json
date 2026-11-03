@@ -1,0 +1,38 @@
+{
+  "manifestVersion": 1,
+  "name": "TaleBridge",
+  "summary": "Obsidian Companion & Bridge for TaleSpire",
+  "descriptionFilePath": "/README.md",
+  "version": "0.3.1",
+  "license": "MIT",
+  "about": {
+    "website": "",
+    "authors": ["GM"]
+  },
+  "kind": "webView",
+  "entryPoint": "/index.html",
+  "api": {
+    "version": "0.1",
+    "subscriptions": {
+      "dice": {
+        "onRollResults": "handleRollResults"
+      },
+      "symbiote": {
+        "onVisibilityEvent": "handleVisibilityEvent",
+        "onStateChangeEvent": "onStateChangeEvent"
+      },
+      "creatures": {
+        "onCreatureStateChange": "handleCreatureStateChange"
+      }
+    }
+  },
+  "controls": {
+    "reload": true
+  },
+  "environment": {
+    "capabilities": [
+      "runInBackground"
+    ],
+    "webViewBackgroundColor": "#141416"
+  }
+}

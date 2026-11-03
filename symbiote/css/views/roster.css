@@ -1,0 +1,192 @@
+/* --- TaleBridge Roster & Bestiary Styles --- */
+
+.roster-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    gap: 6px;
+}
+
+/* Quick Access Pinned Bar */
+.pinned-bar {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.pinned-chip {
+    background: #1e2029;
+    border: 1px solid var(--accent);
+    color: #e0e7ff;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.12s ease;
+}
+
+.pinned-chip:hover {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+.pinned-star {
+    color: var(--star-gold);
+    font-size: 11px;
+}
+
+/* Roster List Scrollbox */
+.roster-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.roster-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.roster-card:hover {
+    border-color: #4b4e5a;
+    background: var(--bg-card-hover);
+}
+
+.roster-card.focused {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.roster-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.roster-title-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.roster-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #ffffff;
+}
+
+.roster-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+}
+
+.btn-pin {
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+    transition: color 0.12s ease;
+}
+
+.btn-pin:hover,
+.btn-pin.pinned {
+    color: var(--star-gold);
+}
+
+.roster-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.roster-meta b {
+    color: #ffffff;
+    font-size: 13px;
+}
+
+/* Attacks Section */
+.roster-attacks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.attack-chip {
+    background: #23252c;
+    border: 1px solid var(--border-color);
+    color: #c7d2fe;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.attack-chip:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+}
+
+.btn-open-viewer,
+.btn-open-note {
+    background: #23252c;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.btn-open-viewer:hover {
+    color: #ffffff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn-open-note:hover {
+    color: #ffffff;
+    background: #333640;
+}
