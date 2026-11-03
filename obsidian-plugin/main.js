@@ -1,6 +1,7 @@
 const obsidian = require('obsidian');
 const http = require('http');
 const crypto = require('crypto');
+const cp = require('child_process');
 const EventEmitter = require('events');
 
 // =============================================================================
@@ -1173,20 +1174,128 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 this.wss.send(client, { type: 'PONG', payload: { time: Date.now() } });
                 break;
 
+            case 'GET_SYSTEM_CLIPBOARD': {
+                const text = await this.readSystemClipboard();
+                this.wss.send(client, {
+                    type: 'SYSTEM_CLIPBOARD',
+                    payload: { text, requestId: data.requestId || null }
+                });
+                break;
+            }
+
+            case 'SET_SYSTEM_CLIPBOARD': {
+                if (data.payload && typeof data.payload.text === 'string') {
+                    await this.writeSystemClipboard(data.payload.text);
+                }
+                break;
+            }
+
             default:
                 break;
         }
     }
 
+    async readSystemClipboard() {
+        // 1. Try electron clipboard
+        try {
+            let electron = null;
+            try { electron = require('electron'); } catch (_) {}
+            if (!electron && typeof window !== 'undefined' && window.require) {
+                try { electron = window.require('electron'); } catch (_) {}
+            }
+            if (electron && electron.clipboard && typeof electron.clipboard.readText === 'function') {
+                const txt = electron.clipboard.readText();
+                if (typeof txt === 'string' && txt.length > 0) return txt;
+            }
+        } catch (_) {}
+
+        // 2. Try PowerShell fallback on Windows
+        return new Promise((resolve) => {
+            try {
+                cp.execFile('powershell.exe', ['-NoProfile', '-Command', 'Get-Clipboard'], { timeout: 3000 }, (err, stdout) => {
+                    if (!err && stdout) {
+                        resolve(stdout.replace(/\r\n$/, '').replace(/\n$/, ''));
+                    } else {
+                        resolve('');
+                    }
+                });
+            } catch (_) {
+                resolve('');
+            }
+        });
+    }
+
+    async writeSystemClipboard(text) {
+        if (typeof text !== 'string') return;
+        try {
+            let electron = null;
+            try { electron = require('electron'); } catch (_) {}
+            if (!electron && typeof window !== 'undefined' && window.require) {
+                try { electron = window.require('electron'); } catch (_) {}
+            }
+            if (electron && electron.clipboard && typeof electron.clipboard.writeText === 'function') {
+                electron.clipboard.writeText(text);
+                return;
+            }
+        } catch (_) {}
+
+        try {
+            const child = cp.execFile('powershell.exe', ['-NoProfile', '-Command', 'Set-Clipboard -Value $input'], { timeout: 3000 }, () => {});
+            if (child && child.stdin) {
+                child.stdin.write(text);
+                child.stdin.end();
+            }
+        } catch (_) {}
+    }
+
     async handleHttpRequest(req, res) {
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', '*');
 
         if (req.method === 'OPTIONS') {
             res.writeHead(204);
             res.end();
             return true;
+        }
+
+        if (req.url.startsWith('/clipboard-write') && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => { body += chunk; });
+            req.on('end', async () => {
+                try {
+                    const data = JSON.parse(body || '{}');
+                    await this.writeSystemClipboard(data.text || '');
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    });
+                    res.end(JSON.stringify({ ok: true }));
+                } catch (_) {
+                    res.writeHead(400);
+                    res.end();
+                }
+            });
+            return true;
+        }
+
+        if (req.url.startsWith('/clipboard')) {
+            try {
+                const text = await this.readSystemClipboard();
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({ text: text || '' }));
+                return true;
+            } catch (err) {
+                res.writeHead(500, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({ text: '', error: String(err) }));
+                return true;
+            }
         }
 
         if (req.url.startsWith('/vault-file') || req.url.startsWith('/public/')) {

@@ -1,0 +1,79 @@
+/* --- TaleBridge Context Menu & Quick Paste Styles --- */
+
+.tb-context-menu {
+    position: fixed;
+    z-index: 10000;
+    background: #181920;
+    border: 1px solid #323644;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+    border-radius: 6px;
+    padding: 4px 0;
+    min-width: 170px;
+    font-family: inherit;
+    font-size: 12px;
+    user-select: none;
+}
+
+.tb-context-menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 14px;
+    color: #e0e3eb;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+
+.tb-context-menu-item:hover {
+    background: #2a2e3d;
+    color: #ffffff;
+}
+
+.tb-context-menu-item .shortcut {
+    color: #727a8e;
+    font-size: 10px;
+    margin-left: 16px;
+    font-family: monospace;
+}
+
+.tb-context-menu-divider {
+    height: 1px;
+    background: #262936;
+    margin: 4px 0;
+}
+
+/* Quick paste button in input headers */
+.input-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.input-header-row label {
+    margin-bottom: 0;
+}
+
+.btn-paste-quick {
+    background: #20222a;
+    border: 1px solid #363a48;
+    color: #9aa2b5;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.3;
+}
+
+.btn-paste-quick:hover {
+    background: #2d3240;
+    color: #ffffff;
+    border-color: #535b70;
+}
+
+.btn-paste-quick.pasted {
+    background: #1b3d2b;
+    border-color: #2e8b57;
+    color: #85e8a5;
+}

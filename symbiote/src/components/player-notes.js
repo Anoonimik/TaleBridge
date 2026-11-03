@@ -35,6 +35,7 @@
                         <button type="button" class="btn-notes-tool" data-action="bold"><b>B</b> Жирный</button>
                         <button type="button" class="btn-notes-tool" data-action="quote">" Цитата</button>
                         <button type="button" class="btn-notes-tool" data-action="crystal">Кристалл Резонанса</button>
+                        <button type="button" class="btn-notes-tool btn-paste-quick" data-paste-target="playerNotesArea" title="Вставить из буфера обмена">Вставить</button>
                         <button type="button" class="btn-notes-tool secondary" id="btnNotesForceSave">Сохранить сейчас</button>
                     </div>
                     <div class="notes-editor-box">

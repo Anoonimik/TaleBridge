@@ -48,6 +48,7 @@
         });
 
         // 5. Initialize Components & Screen Views
+        if (window.TBClipboard) window.TBClipboard.init();
         window.TBTokenHud.init();
         window.TBStoryView.init();
         window.TBRosterView.init();

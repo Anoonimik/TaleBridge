@@ -54,7 +54,10 @@
 
                     <div class="broadcast-form-grid">
                         <div class="input-group">
-                            <label>Заголовок материала</label>
+                            <div class="input-header-row">
+                                <label>Заголовок материала</label>
+                                <button type="button" class="btn-paste-quick" data-paste-target="bcTitle" title="Вставить из буфера обмена">Вставить</button>
+                            </div>
                             <input type="text" id="bcTitle" placeholder="Например: План Катакомб или Записка Калиокса" />
                         </div>
 
@@ -70,20 +73,29 @@
                                 <img id="bcImagePreview" src="" alt="Предпросмотр" class="bc-preview-img" />
                             </div>
                             <div class="input-group">
-                                <label>Или прямая веб-ссылка (URL)</label>
+                                <div class="input-header-row">
+                                    <label>Или прямая веб-ссылка (URL)</label>
+                                    <button type="button" class="btn-paste-quick" data-paste-target="bcUrl" title="Вставить из буфера обмена">Вставить</button>
+                                </div>
                                 <input type="text" id="bcUrl" placeholder="https://example.com/art.png" />
                             </div>
                         ` : ''}
 
                         ${this.activeType === 'video' ? `
                             <div class="input-group">
-                                <label>Ссылка на видео (YouTube / MP4 / WebM)</label>
+                                <div class="input-header-row">
+                                    <label>Ссылка на видео (YouTube / MP4 / WebM)</label>
+                                    <button type="button" class="btn-paste-quick" data-paste-target="bcUrl" title="Вставить из буфера обмена">Вставить</button>
+                                </div>
                                 <input type="text" id="bcUrl" placeholder="https://www.youtube.com/watch?v=... или .mp4" />
                             </div>
                         ` : ''}
 
                         <div class="input-group">
-                            <label>${this.activeType === 'text' ? 'Текст манускрипта / письма' : 'Подпись к материалу (опционально)'}</label>
+                            <div class="input-header-row">
+                                <label>${this.activeType === 'text' ? 'Текст манускрипта / письма' : 'Подпись к материалу (опционально)'}</label>
+                                <button type="button" class="btn-paste-quick" data-paste-target="bcContent" title="Вставить из буфера обмена">Вставить</button>
+                            </div>
                             <textarea id="bcContent" rows="${this.activeType === 'text' ? '5' : '2'}" placeholder="${this.activeType === 'text' ? 'Введите текст послания или записки...' : 'Краткое пояснение для игроков'}"></textarea>
                         </div>
                     </div>
