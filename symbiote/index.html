@@ -195,34 +195,65 @@
     <!-- Media Handout Cinema Showcase (Fullscreen Overlay) -->
     <div id="cinemaOverlay" class="cinema-overlay" style="display: none;"></div>
 
-    <!-- Modular Architecture Scripts -->
-    <!-- 1. Core Primitives -->
-    <script src="src/core/state.js"></script>
-    <script src="src/core/logger.js"></script>
-    <script src="src/core/text-utils.js"></script>
-    <script src="src/core/clipboard-manager.js"></script>
+    <!-- FSD (Feature-Sliced Design) Modular Architecture Scripts -->
+    <!-- 1. Shared Layer: Config, Libs, APIs -->
+    <script src="src/shared/config/constants.js"></script>
+    <script src="src/shared/lib/logger.js"></script>
+    <script src="src/shared/lib/store.js"></script>
+    <script src="src/shared/lib/text-utils.js"></script>
+    <script src="src/shared/lib/clipboard.js"></script>
+    <script src="src/shared/api/talespire-driver.js"></script>
+    <script src="src/shared/api/websocket-client.js"></script>
+    <script src="src/shared/index.js"></script>
 
-    <!-- 2. Integration APIs -->
-    <script src="src/api/talespire.js"></script>
-    <script src="src/api/websocket.js"></script>
+    <!-- 2. Entities Layer: Character, Inventory Item, Clue, Scene -->
+    <script src="src/entities/character/model/character-model.js"></script>
+    <script src="src/entities/character/ui/ability-cell.js"></script>
+    <script src="src/entities/character/ui/attack-card.js"></script>
+    <script src="src/entities/character/ui/character-card.js"></script>
+    <script src="src/entities/character/index.js"></script>
 
-    <!-- 3. UI Components -->
-    <script src="src/components/token-hud.js"></script>
-    <script src="src/components/scene-drawer.js"></script>
-    <script src="src/components/scene-card-renderer.js"></script>
-    <script src="src/components/player-inventory.js"></script>
-    <script src="src/components/player-notes.js"></script>
-    <script src="src/components/media-handout.js"></script>
+    <script src="src/entities/inventory-item/model/inventory-model.js"></script>
+    <script src="src/entities/inventory-item/ui/item-card.js"></script>
+    <script src="src/entities/inventory-item/index.js"></script>
 
-    <!-- 4. Screen Views -->
-    <script src="src/views/story-view.js"></script>
-    <script src="src/views/roster-view.js"></script>
-    <script src="src/views/note-viewer-view.js"></script>
-    <script src="src/views/tools-view.js"></script>
-    <script src="src/views/player-view.js"></script>
-    <script src="src/views/media-broadcast-view.js"></script>
+    <script src="src/entities/clue/model/clue-model.js"></script>
+    <script src="src/entities/clue/ui/clue-card.js"></script>
+    <script src="src/entities/clue/index.js"></script>
 
-    <!-- 5. Main Bootstrap -->
-    <script src="src/main.js"></script>
+    <script src="src/entities/scene/model/scene-model.js"></script>
+    <script src="src/entities/scene/ui/scene-card.js"></script>
+    <script src="src/entities/scene/index.js"></script>
+
+    <script src="src/entities/index.js"></script>
+
+    <!-- 3. Features Layer: User Actions & Interactivity -->
+    <script src="src/features/apply-damage/index.js"></script>
+    <script src="src/features/manage-inventory/index.js"></script>
+    <script src="src/features/save-notes/index.js"></script>
+    <script src="src/features/archive-clues/index.js"></script>
+    <script src="src/features/broadcast-media/index.js"></script>
+    <script src="src/features/roll-dice/index.js"></script>
+    <script src="src/features/gm-auth/index.js"></script>
+    <script src="src/features/index.js"></script>
+
+    <!-- 4. Widgets Layer: Composite UI Blocks -->
+    <script src="src/widgets/app-header/index.js"></script>
+    <script src="src/widgets/token-hud/index.js"></script>
+    <script src="src/widgets/cinema-overlay/index.js"></script>
+    <script src="src/widgets/player-cockpit/index.js"></script>
+    <script src="src/widgets/story-tracker/index.js"></script>
+    <script src="src/widgets/character-roster/index.js"></script>
+    <script src="src/widgets/note-viewer/index.js"></script>
+    <script src="src/widgets/tools-panel/index.js"></script>
+    <script src="src/widgets/index.js"></script>
+
+    <!-- 5. Pages Layer: Screen Controllers -->
+    <script src="src/pages/gm-screen/index.js"></script>
+    <script src="src/pages/player-screen/index.js"></script>
+    <script src="src/pages/index.js"></script>
+
+    <!-- 6. App Layer: Composition Root & Bootstrap -->
+    <script src="src/app/main.js"></script>
 </body>
 </html>
