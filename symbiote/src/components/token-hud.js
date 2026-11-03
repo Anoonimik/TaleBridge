@@ -38,6 +38,17 @@
 
             // React to activeToken changes
             window.TBState.on('activeToken', (token) => this.render(token));
+
+            // React to role changes (strictly hide token HUD & controls in player mode)
+            window.TBState.on('role', (role) => {
+                if (role === 'player') {
+                    if (this.container) this.container.style.display = 'none';
+                    if (this.btnAutoInspect) this.btnAutoInspect.style.display = 'none';
+                } else {
+                    if (this.btnAutoInspect) this.btnAutoInspect.style.display = 'inline-flex';
+                    this.render(window.TBState.get('activeToken'));
+                }
+            });
         }
 
         matchRosterCharacter(token) {
@@ -81,6 +92,12 @@
 
         render(token) {
             if (!this.container) return;
+
+            // Never show Token HUD in Player mode!
+            if (window.TBState.get('role') === 'player') {
+                this.container.style.display = 'none';
+                return;
+            }
 
             if (!token) {
                 this.container.style.display = 'none';

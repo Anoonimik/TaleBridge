@@ -94,10 +94,14 @@
                 if (this.selectedTokenDetails) this.selectedTokenDetails.textContent = `ID: ${String(token.id).substring(0, 8)}... | ${hpText}`;
                 if (this.btnLinkToObsidian) this.btnLinkToObsidian.style.display = 'block';
 
-                // Update header quick pill
+                // Update header quick pill (only for GM!)
                 if (this.headerActiveToken) {
-                    this.headerActiveToken.style.display = 'inline-flex';
-                    this.headerActiveToken.innerHTML = `<span>[Токен] ${token.name}</span><b style="color:#a5b4fc">${hpText}</b>`;
+                    if (window.TBState.get('role') === 'player') {
+                        this.headerActiveToken.style.display = 'none';
+                    } else {
+                        this.headerActiveToken.style.display = 'inline-flex';
+                        this.headerActiveToken.innerHTML = `<span>[Токен] ${token.name}</span><b style="color:#a5b4fc">${hpText}</b>`;
+                    }
                 }
 
                 window.TBLogger.log(`Выбран токен: "${token.name}"`, 'sys');

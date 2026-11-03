@@ -162,6 +162,12 @@
             const gmContents = document.querySelectorAll('.tab-content');
             const tokenHud = document.getElementById('activeTokenHud');
             const brandSub = document.querySelector('.brand-sub');
+            const btnAuto = document.getElementById('btnAutoInspect');
+            const headerActiveToken = document.getElementById('headerActiveToken');
+
+            // Apply body classes for CSS enforcement
+            document.body.classList.toggle('mode-player', role === 'player');
+            document.body.classList.toggle('mode-gm', role !== 'player');
 
             if (role === 'player') {
                 if (btnToggle) {
@@ -171,10 +177,12 @@
                 }
                 if (brandSub) brandSub.textContent = 'Player Cockpit';
 
-                // Hide GM screen elements & Token HUD
+                // Strictly hide GM screen elements, Token HUD & GM buttons
                 if (gmTabs) gmTabs.style.display = 'none';
                 gmContents.forEach(c => c.style.display = 'none');
                 if (tokenHud) tokenHud.style.display = 'none';
+                if (btnAuto) btnAuto.style.display = 'none';
+                if (headerActiveToken) headerActiveToken.style.display = 'none';
 
                 // Show Player container
                 if (this.container) {
@@ -199,6 +207,7 @@
                 if (brandSub) brandSub.textContent = 'GM Screen';
 
                 if (gmTabs) gmTabs.style.display = 'flex';
+                if (btnAuto) btnAuto.style.display = 'inline-flex';
 
                 // Clear inline style.display from tab-content so CSS .tab-content.active controls flex layout
                 gmContents.forEach(c => {

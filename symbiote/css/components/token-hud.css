@@ -1,5 +1,13 @@
 /* --- TaleBridge Active Token HUD (Always-Visible Miniature Inspector) --- */
 
+/* When in Player Mode, activeTokenHud and GM token inspector are STRICTLY hidden */
+body.mode-player .active-token-hud,
+body.mode-player #activeTokenHud,
+body.mode-player #btnAutoInspect,
+body.mode-player #headerActiveToken {
+    display: none !important;
+}
+
 .active-token-hud {
     background: linear-gradient(180deg, #1c1e27 0%, #13141a 100%);
     border: 1px solid var(--accent);
