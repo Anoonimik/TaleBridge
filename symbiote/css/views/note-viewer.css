@@ -139,6 +139,30 @@
 .note-callout.tip { border-left-color: #10b981; }
 .note-callout.abstract { border-left-color: #8b5cf6; }
 .note-callout.quote { border-left-color: #6366f1; font-style: italic; background: rgba(99, 102, 241, 0.08); }
+.note-callout.warning { border-left-color: #f59e0b; }
+.note-callout.danger { border-left-color: #ef4444; }
+.note-callout.note { border-left-color: #6366f1; }
+
+.note-li.task {
+    margin-left: 12px;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.note-li.task.checked {
+    color: var(--text-muted);
+}
+
+.note-li.task.checked .task-box {
+    color: #10b981;
+}
+
+.note-li.task .task-box {
+    color: #94a3b8;
+    margin-right: 6px;
+    font-weight: 700;
+}
 
 .callout-header {
     font-weight: 700;
