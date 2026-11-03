@@ -139,6 +139,13 @@
                     this.updateCharacterSelector();
                 }
             });
+
+            window.TBState.on('cluesArchive', (clues) => {
+                const cluesBtn = this.container?.querySelector('.player-subtab-btn[data-subtab="clues"]');
+                if (cluesBtn) {
+                    cluesBtn.textContent = `Улики (${(clues || []).length})`;
+                }
+            });
         }
 
         applyCurrentRole() {

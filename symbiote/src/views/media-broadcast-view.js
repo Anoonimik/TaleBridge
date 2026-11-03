@@ -172,7 +172,12 @@
                     const content = (this.container.querySelector('#bcContent')?.value || '').trim();
 
                     if (this.activeType !== 'text' && !url && !content) {
-                        alert('Укажите ссылку, выберите файл или введите текст');
+                        const urlInput = this.container.querySelector('#bcUrl');
+                        if (urlInput) {
+                            urlInput.focus();
+                            urlInput.classList.add('input-error-shake');
+                            setTimeout(() => urlInput.classList.remove('input-error-shake'), 600);
+                        }
                         return;
                     }
 

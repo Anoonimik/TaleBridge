@@ -53,3 +53,27 @@ button.secondary:hover {
     gap: 6px;
     margin-bottom: 8px;
 }
+
+.btn-delete-item.confirm-delete {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    border: none !important;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+    animation: pulse-danger 0.3s ease;
+}
+
+.input-error-shake {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+    animation: input-shake 0.4s ease;
+}
+
+@keyframes input-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}

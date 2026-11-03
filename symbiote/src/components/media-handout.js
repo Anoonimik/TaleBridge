@@ -73,6 +73,11 @@
                 `;
             }
 
+            const clues = window.TBState.get('cluesArchive') || [];
+            const existingClue = clues.find(c => c.id === handout.id || (c.url && c.url === handout.url) || (c.title === handout.title && c.content === handout.content));
+            const isAlreadyInClues = !!existingClue;
+            const clueIdToDelete = existingClue ? existingClue.id : handout.id;
+
             this.overlay.innerHTML = `
                 <div class="cinema-backdrop"></div>
                 <div class="cinema-dialog">
@@ -82,9 +87,15 @@
                             <span class="cinema-title">${this.escapeHtml(title)}</span>
                         </div>
                         <div class="cinema-header-actions">
-                            <button id="btnSaveToClues" class="btn-cinema-action" title="Сохранить в личный архив улик">
-                                В архив улик
-                            </button>
+                            ${isAlreadyInClues ? `
+                                <button id="btnDeleteFromClues" class="btn-cinema-action danger" title="Удалить эту улику из личного архива">
+                                    Удалить из архива
+                                </button>
+                            ` : `
+                                <button id="btnSaveToClues" class="btn-cinema-action" title="Сохранить в личный архив улик">
+                                    В архив улик
+                                </button>
+                            `}
                             <button id="btnCloseCinema" class="btn-cinema-close" title="Закрыть окно">✕</button>
                         </div>
                     </div>
@@ -120,6 +131,15 @@
                         btnSaveClues.textContent = 'В архив улик';
                         btnSaveClues.classList.remove('saved');
                     }, 2000);
+                });
+            }
+
+            const btnDeleteClue = this.overlay.querySelector('#btnDeleteFromClues');
+            if (btnDeleteClue) {
+                btnDeleteClue.addEventListener('click', () => {
+                    window.TBState.removeClue(clueIdToDelete);
+                    this.hide();
+                    this.renderCluesArchive('playerCluesBox');
                 });
             }
         }
@@ -164,12 +184,39 @@
             });
 
             container.querySelectorAll('.btn-delete-clue').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const id = btn.dataset.id;
-                    if (confirm('Удалить эту улику из архива?')) {
+                    if (!id) return;
+
+                    // Direct delete if holding Shift or already primed
+                    if (e.shiftKey || btn.dataset.primed === 'true') {
+                        if (btn._resetTimer) clearTimeout(btn._resetTimer);
                         window.TBState.removeClue(id);
                         this.renderCluesArchive(containerId);
+                        return;
                     }
+
+                    // Reset any previously primed buttons
+                    container.querySelectorAll('.btn-delete-clue[data-primed="true"]').forEach(other => {
+                        if (other._resetTimer) clearTimeout(other._resetTimer);
+                        other.dataset.primed = 'false';
+                        other.classList.remove('confirm-delete');
+                        other.textContent = '✕';
+                        other.title = 'Удалить';
+                    });
+
+                    btn.dataset.primed = 'true';
+                    btn.classList.add('confirm-delete');
+                    btn.textContent = 'Удалить?';
+                    btn.title = 'Нажмите ещё раз для подтверждения';
+
+                    btn._resetTimer = setTimeout(() => {
+                        btn.dataset.primed = 'false';
+                        btn.classList.remove('confirm-delete');
+                        btn.textContent = '✕';
+                        btn.title = 'Удалить';
+                    }, 3500);
                 });
             });
         }

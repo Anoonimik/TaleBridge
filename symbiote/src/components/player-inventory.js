@@ -199,9 +199,14 @@
             const btnSave = this.container.querySelector('#btnSaveNewItem');
             if (btnSave) {
                 btnSave.addEventListener('click', () => {
-                    const name = (this.container.querySelector('#newItName')?.value || '').trim();
+                    const nameInput = this.container.querySelector('#newItName');
+                    const name = (nameInput?.value || '').trim();
                     if (!name) {
-                        alert('Введите название предмета');
+                        if (nameInput) {
+                            nameInput.focus();
+                            nameInput.classList.add('input-error-shake');
+                            setTimeout(() => nameInput.classList.remove('input-error-shake'), 600);
+                        }
                         return;
                     }
                     const category = this.container.querySelector('#newItCategory')?.value || 'Снаряжение';
@@ -248,10 +253,9 @@
                             item.quantity -= 1;
                             this.saveInventory(items);
                         } else {
-                            if (confirm(`Удалить «${item.name}» из инвентаря?`)) {
-                                const remaining = items.filter(it => it.id !== itemId);
-                                this.saveInventory(remaining);
-                            }
+                            // If quantity is 1 and minus is clicked, delete item
+                            const remaining = items.filter(it => it.id !== itemId);
+                            this.saveInventory(remaining);
                         }
                     });
                 }
@@ -268,11 +272,27 @@
                 // Delete
                 const btnDel = card.querySelector('.btn-delete-item');
                 if (btnDel) {
-                    btnDel.addEventListener('click', () => {
-                        if (confirm(`Удалить «${item.name}»?`)) {
+                    btnDel.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (e.shiftKey || btnDel.dataset.primed === 'true') {
+                            if (btnDel._resetTimer) clearTimeout(btnDel._resetTimer);
                             const remaining = items.filter(it => it.id !== itemId);
                             this.saveInventory(remaining);
+                            return;
                         }
+
+                        // Prime for deletion
+                        btnDel.dataset.primed = 'true';
+                        btnDel.classList.add('confirm-delete');
+                        btnDel.textContent = 'Удалить?';
+                        btnDel.title = 'Нажмите ещё раз для подтверждения удаления';
+
+                        btnDel._resetTimer = setTimeout(() => {
+                            btnDel.dataset.primed = 'false';
+                            btnDel.classList.remove('confirm-delete');
+                            btnDel.textContent = '✕';
+                            btnDel.title = 'Удалить';
+                        }, 3500);
                     });
                 }
             });

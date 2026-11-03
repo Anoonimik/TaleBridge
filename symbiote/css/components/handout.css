@@ -133,6 +133,18 @@
     color: #a7f3d0;
 }
 
+.btn-cinema-action.danger {
+    background: #451a1a;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+.btn-cinema-action.danger:hover {
+    background: #7f1d1d;
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
 .btn-cinema-close {
     background: transparent;
     border: none;
@@ -395,4 +407,22 @@
 .btn-delete-clue:hover {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-delete-clue.confirm-delete {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    border: none !important;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+    animation: pulse-danger 0.3s ease;
+}
+
+@keyframes pulse-danger {
+    0% { transform: scale(0.92); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
 }
