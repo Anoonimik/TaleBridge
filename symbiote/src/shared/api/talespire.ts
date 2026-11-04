@@ -64,7 +64,9 @@ class TaleSpireDriver {
   private pollInterval: any = null;
 
   constructor() {
-    this.init();
+    if (typeof window !== 'undefined') {
+      setTimeout(() => this.init(), 0);
+    }
   }
 
   public isReady(): boolean {
@@ -107,15 +109,17 @@ class TaleSpireDriver {
     };
 
     // 2. WebSocket bridge hooks for bookmarks
-    wsBridge.subscribe('GET_BOOKMARKS', () => {
-      this.getBookmarks();
-    });
+    if (typeof wsBridge !== 'undefined' && wsBridge?.subscribe) {
+      wsBridge.subscribe('GET_BOOKMARKS', () => {
+        this.getBookmarks();
+      });
 
-    wsBridge.subscribe('GOTO_BOOKMARK', (payload: any) => {
-      if (payload) {
-        this.gotoBookmark(payload.id, payload.name);
-      }
-    });
+      wsBridge.subscribe('GOTO_BOOKMARK', (payload: any) => {
+        if (payload) {
+          this.gotoBookmark(payload.id, payload.name);
+        }
+      });
+    }
 
     // 3. Start polling selected creatures every 400ms
     if (this.pollInterval) clearInterval(this.pollInterval);
