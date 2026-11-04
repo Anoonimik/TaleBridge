@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaleBridge GM Companion</title>
+    <!-- Modular CSS Architecture -->
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-top-row">
+            <div class="brand-box">
+                <span class="brand">TaleBridge</span>
+                <span class="brand-sub">GM Screen</span>
+            </div>
+            <div id="statusBadge" class="status-badge">
+                <span class="status-dot"></span>
+                <span id="statusText">Obsidian: Поиск...</span>
+            </div>
+        </div>
+        <div class="header-controls">
+            <!-- Role Toggle: GM Screen vs Player Cockpit -->
+            <button id="btnRoleToggle" type="button" class="btn-role-toggle mode-gm" title="Переключиться в интерфейс Игрока">
+                Режим: Мастер
+            </button>
+            <!-- Auto-inspect toggle: automatically opens character card when clicked on board -->
+            <button id="btnAutoInspect" type="button" class="btn-auto-inspect" title="Автоматически открывать карточку персонажа при клике по фигурке на столе">
+                Авто: ВЫКЛ
+            </button>
+            <!-- GM Dice Visibility Toggle: Secret (GM Tray) vs Open (Public Tray) -->
+            <button id="btnGmDiceMode" type="button" class="btn-gm-dice-mode secret" title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в Открытые">
+                Броски: Скрытые
+            </button>
+            <button id="btnScaleToggle" type="button" class="btn-scale-toggle" title="Переключить масштаб интерфейса (100% / 85%)">
+                Масштаб: 100%
+            </button>
+        </div>
+    </div>
+
+    <!-- ALWAYS-VISIBLE ACTIVE TOKEN HUD (Appears when any miniature is selected in TaleSpire) -->
+    <div id="activeTokenHud" class="active-token-hud" style="display: none;">
+        <div class="hud-top-row">
+            <div class="hud-identity">
+                <span class="hud-marker-dot"></span>
+                <span id="hudTokenName" class="hud-token-name">Миниатюра</span>
+                <span id="hudTokenBadge" class="hud-badge">NPC</span>
+            </div>
+            <div class="hud-hp-box">
+                <div id="hudHpText" class="hud-hp-text">14/14 HP</div>
+                <div class="hud-hp-bar-bg">
+                    <div id="hudHpBarFill" class="hud-hp-bar-fill" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="hud-details-row">
+            <div id="hudMetaStats" class="hud-meta-stats">КД: 12 • Скорость: 30 фт.</div>
+            <div class="hud-buttons">
+                <button id="btnHudViewNote" class="btn-hud-action primary" title="Открыть полный текст заметки в Obsidian-ридере">
+                    Заметка
+                </button>
+                <button id="btnHudViewCard" class="btn-hud-action" title="Сфокусировать карточку в ростере">
+                    В ростере
+                </button>
+                <button id="btnHudLinkNote" class="btn-hud-action link-btn" style="display: none;" title="Привязать этот токен к открытой в Obsidian заметке">
+                    + Привязать
+                </button>
+            </div>
+        </div>
+        <!-- Quick Attack Chips Row -->
+        <div id="hudAttacksBox" class="hud-attacks-box" style="display: none;"></div>
+    </div>
+
+    <!-- PLAYER COCKPIT (Visible only in Player Mode) -->
+    <div id="playerContainer" class="player-container" style="display: none;"></div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-story">Сюжет</button>
+        <button class="tab-btn" data-tab="tab-characters">Персонажи</button>
+        <button class="tab-btn" data-tab="tab-combat">Бой <span id="combatBadge" class="combat-badge" style="display: none;">R1</span></button>
+        <button class="tab-btn" data-tab="tab-tools">Утилиты</button>
+    </div>
+
+    <!-- TAB 1: STORY (Narrative Flow, Read-Aloud & Dialogue Cues) -->
+    <div id="tab-story" class="tab-content active">
+        <div class="story-container">
+            <!-- Non-Linear Scene Selector Bar -->
+            <div class="scene-nav-header">
+                <button id="btnSceneHistoryBack" class="btn-scene-history" title="Вернуться к предыдущей сцене" disabled>◂ Назад</button>
+                <div id="btnOpenSceneDirectory" class="scene-active-pill" title="Открыть полный каталог сцен">
+                    <span class="active-scene-badge">Сцена</span>
+                    <span id="activeSceneTitleDisplay" class="active-scene-title">Загрузка сцен...</span>
+                    <span class="scene-dropdown-badge">Каталог ▾</span>
+                </div>
+                <button id="btnReloadScenes" class="btn-reload-scenes" title="Обновить сцены из Obsidian">⟳</button>
+            </div>
+
+            <!-- Full-Screen / Popover Scene Directory Drawer -->
+            <div id="sceneDirectoryDrawer" class="scene-directory-drawer" style="display: none;">
+                <div class="scene-directory-header">
+                    <div class="scene-directory-title">Каталог сцен (<span id="sceneCountDisplay">0</span>)</div>
+                    <button id="btnCloseSceneDirectory" class="btn-close-drawer" title="Закрыть каталог">✕</button>
+                </div>
+                <div class="scene-directory-search">
+                    <input type="text" id="sceneSearchInput" placeholder="Поиск по названию, локации, цели или NPC..." />
+                </div>
+                <div id="sceneDirectoryList" class="scene-directory-list">
+                    <div class="empty-hint">Загрузка списка сцен...</div>
+                </div>
+            </div>
+
+            <!-- Quick View Filter Bar (All / Read-Aloud / Roleplay / Checks / Branches) with Number Hotkeys -->
+            <div class="scene-mode-bar">
+                <button class="scene-mode-btn active" data-mode="all" title="Горячая клавиша: 1"><span class="key-hint">1</span> Все</button>
+                <button class="scene-mode-btn" data-mode="readAloud" title="Горячая клавиша: 2"><span class="key-hint">2</span> Зачитка</button>
+                <button class="scene-mode-btn" data-mode="roleplay" title="Горячая клавиша: 3"><span class="key-hint">3</span> Отыгрыш</button>
+                <button class="scene-mode-btn" data-mode="mechanics" title="Горячая клавиша: 4"><span class="key-hint">4</span> Проверки</button>
+                <button class="scene-mode-btn" data-mode="branches" title="Горячая клавиша: 5"><span class="key-hint">5</span> Развилки</button>
+            </div>
+
+            <!-- Scene Dynamic Body -->
+            <div id="sceneBody" class="scene-body">
+                <div class="empty-hint">Выберите сцену из каталога</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: CHARACTERS (Roster, Pinned Quick Bar, Bestiary & Integrated Note Viewer) -->
+    <div id="tab-characters" class="tab-content">
+        <!-- Sub-View A: Roster List View -->
+        <div id="rosterListView" class="roster-view-panel">
+            <div class="roster-container">
+                <!-- Pinned Quick Bar (Key NPCs of the current scene) -->
+                <div id="pinnedBar" class="pinned-bar" style="display: none;"></div>
+
+                <!-- Search and Category Filters -->
+                <div class="search-bar">
+                    <input type="text" id="charSearch" placeholder="Быстрый поиск NPC или существа..." />
+                </div>
+                <div class="filter-pills">
+                    <span class="pill active" data-filter="all">Все</span>
+                    <span class="pill" data-filter="pinned">★ Закрепленные</span>
+                    <span class="pill" data-filter="Бестиарий">Бестиарий</span>
+                    <span class="pill" data-filter="Игроки">Игроки</span>
+                    <span class="pill" data-filter="Союзники">Союзники</span>
+                    <span class="pill" data-filter="Враги">Враги</span>
+                </div>
+
+                <!-- Roster Scrollbox -->
+                <div id="characterRoster" class="roster-list">
+                    <div class="empty-hint">Загрузка персонажей из Obsidian...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub-View B: Integrated Note Viewer View -->
+        <div id="rosterNoteView" class="roster-view-panel roster-note-panel" style="display: none;">
+            <div class="note-viewer-header">
+                <button id="btnNoteBack" class="btn-note-nav" title="Вернуться к списку персонажей">← К списку персонажей</button>
+                <span id="noteViewerTitle" class="note-viewer-title">Выберите заметку</span>
+                <button id="btnNoteInObsidian" class="btn-note-nav">В Obsidian</button>
+            </div>
+            <div id="noteContentContainer" class="note-content-box">
+                <div class="empty-hint">Кликните «Заметка» у любого персонажа или в сцене, чтобы прочитать полный лор</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: COMBAT TRACKER (Initiative Order, Rounds & D&D 5e Conditions) -->
+    <div id="tab-combat" class="tab-content">
+        <div id="combatTrackerContainer" class="combat-tracker-wrapper"></div>
+    </div>
+
+    <!-- TAB 4: TOOLS & TABLE (Background Sync, Token Inspector, Log) -->
+    <div id="tab-tools" class="tab-content">
+        <div class="tools-body">
+            <div class="section-title">Выделенный токен на столе</div>
+            <div class="tools-card token-inspector-card">
+                <div id="selectedTokenName" class="token-name">Токен не выбран</div>
+                <div id="selectedTokenDetails" class="token-details">Выделите миниатюру на доске TaleSpire</div>
+                <button id="btnLinkToObsidian" class="btn-link" style="display: none; margin-top: 8px;">
+                    Привязать к открытой заметке в Obsidian
+                </button>
+            </div>
+
+            <div class="section-title">Синхронизация и действия</div>
+            <div class="tools-actions-grid">
+                <button id="btnGetSelected">Опросить токен</button>
+                <button id="btnSyncBookmarks" class="secondary">Синхр. локаций</button>
+                <button id="btnSyncRoster" class="secondary">Синхр. ростера</button>
+                <button id="btnSyncScenes" class="secondary">Синхр. сцен</button>
+                <button id="btnRollTest" class="secondary">Тест 1d20+5</button>
+            </div>
+
+            <div class="section-title">Закладки локаций доски (<span id="bookmarkCount">0</span>)</div>
+            <div id="bookmarkList" class="bookmarks-container">
+                <span class="empty-hint">Нажмите «Синхр. локаций» для чтения закладок</span>
+            </div>
+
+            <div class="section-title">Вещание медиа игрокам</div>
+            <div id="gmBroadcastBox"></div>
+
+            <div class="section-title" style="margin-top: 10px;">Журнал событий моста</div>
+            <div id="logContainer" class="log-box"></div>
+        </div>
+    </div>
+
+    <!-- Media Handout Cinema Showcase (Fullscreen Overlay) -->
+    <div id="cinemaOverlay" class="cinema-overlay" style="display: none;"></div>
+
+    <!-- FSD (Feature-Sliced Design) Modular Architecture Scripts -->
+    <!-- 1. Shared Layer: Config, Libs, APIs -->
+    <script src="src/shared/config/constants.js"></script>
+    <script src="src/shared/lib/logger.js"></script>
+    <script src="src/shared/lib/store.js"></script>
+    <script src="src/shared/lib/text-utils.js"></script>
+    <script src="src/shared/lib/clipboard.js"></script>
+    <script src="src/shared/api/talespire-driver.js"></script>
+    <script src="src/shared/api/websocket-client.js"></script>
+    <script src="src/shared/index.js"></script>
+
+    <!-- 2. Entities Layer: Character, Inventory Item, Clue, Scene -->
+    <script src="src/entities/character/model/character-model.js"></script>
+    <script src="src/entities/character/ui/ability-cell.js"></script>
+    <script src="src/entities/character/ui/attack-card.js"></script>
+    <script src="src/entities/character/ui/character-card.js"></script>
+    <script src="src/entities/character/index.js"></script>
+
+    <script src="src/entities/inventory-item/model/inventory-model.js"></script>
+    <script src="src/entities/inventory-item/ui/item-card.js"></script>
+    <script src="src/entities/inventory-item/index.js"></script>
+
+    <script src="src/entities/clue/model/clue-model.js"></script>
+    <script src="src/entities/clue/ui/clue-card.js"></script>
+    <script src="src/entities/clue/index.js"></script>
+
+    <script src="src/entities/scene/model/scene-model.js"></script>
+    <script src="src/entities/scene/ui/scene-card.js"></script>
+    <script src="src/entities/scene/index.js"></script>
+
+    <script src="src/entities/index.js"></script>
+
+    <!-- 3. Features Layer: User Actions & Interactivity -->
+    <script src="src/features/apply-damage/index.js"></script>
+    <script src="src/features/manage-inventory/index.js"></script>
+    <script src="src/features/save-notes/index.js"></script>
+    <script src="src/features/archive-clues/index.js"></script>
+    <script src="src/features/broadcast-media/index.js"></script>
+    <script src="src/features/roll-dice/index.js"></script>
+    <script src="src/features/gm-auth/index.js"></script>
+    <script src="src/features/manage-combat/index.js"></script>
+    <script src="src/features/index.js"></script>
+
+    <!-- 4. Widgets Layer: Composite UI Blocks -->
+    <script src="src/widgets/app-header/index.js"></script>
+    <script src="src/widgets/token-hud/index.js"></script>
+    <script src="src/widgets/cinema-overlay/index.js"></script>
+    <script src="src/widgets/player-cockpit/index.js"></script>
+    <script src="src/widgets/story-tracker/index.js"></script>
+    <script src="src/widgets/character-roster/index.js"></script>
+    <script src="src/widgets/combat-tracker/index.js"></script>
+    <script src="src/widgets/player-combat-hud/index.js"></script>
+    <script src="src/widgets/note-viewer/index.js"></script>
+    <script src="src/widgets/tools-panel/index.js"></script>
+    <script src="src/widgets/index.js"></script>
+
+    <!-- 5. Pages Layer: Screen Controllers -->
+    <script src="src/pages/gm-screen/index.js"></script>
+    <script src="src/pages/player-screen/index.js"></script>
+    <script src="src/pages/index.js"></script>
+
+    <!-- 6. App Layer: Composition Root & Bootstrap -->
+    <script src="src/app/main.js"></script>
+</body>
+</html>

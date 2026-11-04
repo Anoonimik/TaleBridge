@@ -10,7 +10,7 @@
     "authors": ["GM"]
   },
   "kind": "webView",
-  "entryPoint": "/index.html",
+  "entryPoint": "/dist/index.html",
   "api": {
     "version": "0.1",
     "subscriptions": {
