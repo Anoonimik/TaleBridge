@@ -113,10 +113,22 @@
 
         setCombatState(data) {
             if (!data) return;
-            if (typeof data.active === 'boolean') this.state.combatActive = data.active;
-            if (typeof data.round === 'number') this.state.combatRound = data.round;
-            if (typeof data.turnIndex === 'number') this.state.combatTurnIndex = data.turnIndex;
-            if (Array.isArray(data.combatants)) this.state.combatants = data.combatants;
+            if (typeof data.active === 'boolean') {
+                this.state.combatActive = data.active;
+                this.notify('combatActive', data.active);
+            }
+            if (typeof data.round === 'number') {
+                this.state.combatRound = data.round;
+                this.notify('combatRound', data.round);
+            }
+            if (typeof data.turnIndex === 'number') {
+                this.state.combatTurnIndex = data.turnIndex;
+                this.notify('combatTurnIndex', data.turnIndex);
+            }
+            if (Array.isArray(data.combatants)) {
+                this.state.combatants = data.combatants;
+                this.notify('combatants', data.combatants);
+            }
             this.persistCombatState();
             this.notify('combatState', this.getCombatState());
         }

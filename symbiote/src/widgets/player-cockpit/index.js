@@ -19,6 +19,7 @@
 
             this.setupStateListeners();
             this.applyCurrentRole();
+            window.TBWidgetPlayerCombatHud?.init('playerCombatHudBox');
         }
 
         getPlayableCharacters() {
@@ -51,15 +52,8 @@
             });
 
             const reRenderCombat = () => {
-                if (window.TBState?.get('role') === 'player' && this.activeSubTab === 'character') {
-                    const curData = window.TBState?.get('playerData');
-                    if (curData) {
-                        const charPane = this.container?.querySelector('#playerSubpane-character');
-                        if (charPane) {
-                            charPane.innerHTML = this.renderCharacterSheet(curData);
-                            this.bindInteractiveElements(curData);
-                        }
-                    }
+                if (window.TBWidgetPlayerCombatHud) {
+                    window.TBWidgetPlayerCombatHud.render();
                 }
             };
             window.TBState?.on('combatState', reRenderCombat);
@@ -219,6 +213,9 @@
                         <button id="btnRefreshPlayerData" class="btn-refresh-player" title="Обновить данные из Obsidian">⟳</button>
                     </div>
 
+                    <!-- Modular Player Combat HUD (Appears reactively during active combat) -->
+                    <div id="playerCombatHudBox" class="player-combat-hud-box"></div>
+
                     <!-- Player Sub-Tabs -->
                     <div class="player-subtabs">
                         <button class="player-subtab-btn ${activeTab === 'character' ? 'active' : ''}" data-subtab="character">
@@ -252,6 +249,11 @@
             `;
 
             this.bindEvents(data);
+
+            // Render modular Player Combat HUD
+            if (window.TBWidgetPlayerCombatHud) {
+                window.TBWidgetPlayerCombatHud.render();
+            }
 
             // Render sub-components using FSD feature slices
             if (window.TBFeatureManageInventory) {
@@ -362,38 +364,10 @@
                 </div>
             ` : '';
 
-            // Combat Tracker banner & Conditions for active Player
-            const combatActive = window.TBState?.get('combatActive') || false;
-            const round = window.TBState?.get('combatRound') || 1;
-            const turnIndex = window.TBState?.get('combatTurnIndex') || 0;
+            // Conditions for active Player
             const combatants = window.TBState?.get('combatants') || [];
-            const activeCombatant = combatants[turnIndex] || null;
-            const isMyTurn = combatActive && activeCombatant && (activeCombatant.name.toLowerCase() === data.name.toLowerCase());
-
             const myCombatant = combatants.find(c => c.name.toLowerCase() === data.name.toLowerCase());
             const myConditions = myCombatant?.conditions || [];
-
-            let combatBannerHtml = '';
-            if (combatActive) {
-                if (isMyTurn) {
-                    combatBannerHtml = `
-                        <div class="player-combat-banner your-turn">
-                            <div class="turn-title-box">
-                                <span class="combat-pulse-dot"></span>
-                                <span class="turn-label">РАУНД ${round} • <b>ВАШ ХОД!</b></span>
-                            </div>
-                            <button id="btnPlayerEndTurn" class="btn-player-end-turn" title="Завершить ход и передать инициативу следующему">Завершить ход ▸</button>
-                        </div>
-                    `;
-                } else {
-                    combatBannerHtml = `
-                        <div class="player-combat-banner waiting">
-                            <span class="combat-round-badge">Раунд ${round}</span>
-                            <span class="turn-label">Ход: <b>${escape(activeCombatant?.name || '...')}</b></span>
-                        </div>
-                    `;
-                }
-            }
 
             let conditionsStripHtml = '';
             if (myConditions.length > 0) {
@@ -416,7 +390,6 @@
 
             return `
                 <div class="player-sheet-container">
-                    ${combatBannerHtml}
 
                     <!-- Identity & Meta -->
                     <div class="sheet-hero-card">

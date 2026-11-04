@@ -10,6 +10,7 @@
         characterRoster: window.TBWidgetCharacterRoster,
         noteViewer: window.TBWidgetNoteViewer,
         toolsPanel: window.TBWidgetToolsPanel,
-        combatTracker: window.TBWidgetCombatTracker
+        combatTracker: window.TBWidgetCombatTracker,
+        playerCombatHud: window.TBWidgetPlayerCombatHud
     };
 })();

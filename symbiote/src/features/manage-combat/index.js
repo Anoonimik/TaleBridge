@@ -89,11 +89,16 @@
             const list = [...(window.TBState?.get('combatants') || [])];
             if (list.length === 0) return;
 
+            const rollDetails = [];
+
             list.forEach(c => {
                 if (forceRollAll || typeof c.initiative !== 'number' || isNaN(c.initiative)) {
                     const dexMod = this.extractDexModifier(c);
                     const d20 = Math.floor(Math.random() * 20) + 1;
-                    c.initiative = d20 + dexMod;
+                    const total = d20 + dexMod;
+                    c.initiative = total;
+                    const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
+                    rollDetails.push(`${c.name}: ${total} (d20: ${d20}, ЛОВ: ${modStr})`);
                 }
             });
 
@@ -103,18 +108,63 @@
             window.TBState?.set('combatants', list);
             window.TBState?.set('combatTurnIndex', 0);
             this.syncCombatState();
-            window.TBLogger?.log('Инициатива брошена для всех участников боя', 'sys');
+
+            if (rollDetails.length > 0) {
+                window.TBLogger?.log(`Инициатива брошена: ${rollDetails.slice(0, 3).join('; ')}${rollDetails.length > 3 ? '...' : ''}`, 'sys');
+            } else {
+                window.TBLogger?.log('Инициатива брошена для всех участников боя', 'sys');
+            }
         }
 
         /**
-         * Extracts DEX modifier from combatant object or character model
+         * Extracts DEX modifier from combatant object or character model.
+         * Correctly calculates D&D 5e modifier from ability score or parses explicit signed modifier.
          */
         extractDexModifier(c) {
-            if (c.dexMod !== undefined) return Number(c.dexMod) || 0;
-            if (c.stats && c.stats.dex) {
-                const match = String(c.stats.dex).match(/([+-]?\d+)/);
-                if (match) return parseInt(match[1], 10);
+            if (!c) return 0;
+            if (typeof c.dexMod === 'number' && !isNaN(c.dexMod)) return c.dexMod;
+
+            // Check stats on combatant object or fallback to roster / player data
+            let stats = c.stats;
+            if (!stats) {
+                const roster = window.TBState?.get('roster') || [];
+                const matched = roster.find(r => r.name && r.name.toLowerCase() === (c.name || '').toLowerCase());
+                if (matched?.stats) {
+                    stats = matched.stats;
+                }
             }
+            if (!stats && (c.isPlayer || c.category === 'Игроки')) {
+                const curPlayer = window.TBState?.get('playerData');
+                if (curPlayer && curPlayer.name && curPlayer.name.toLowerCase() === (c.name || '').toLowerCase() && curPlayer.stats) {
+                    stats = curPlayer.stats;
+                }
+            }
+
+            if (stats && stats.dex !== undefined && stats.dex !== null) {
+                const str = String(stats.dex).trim();
+
+                // Case 1: Formatted score with modifier in parentheses: "16 (+3)" or "8 (-1)"
+                const parenMatch = str.match(/\(([+-]?\d+)\)/);
+                if (parenMatch) {
+                    return parseInt(parenMatch[1], 10);
+                }
+
+                // Case 2: Explicit signed modifier: "+3" or "-1"
+                const signedMatch = str.match(/^([+-]\d+)$/);
+                if (signedMatch) {
+                    return parseInt(signedMatch[1], 10);
+                }
+
+                // Case 3: Raw numeric score e.g. "14" or 14 -> D&D 5e modifier is Math.floor((score - 10) / 2)
+                const rawNum = parseInt(str, 10);
+                if (!isNaN(rawNum)) {
+                    if (rawNum >= 1 && rawNum <= 30) {
+                        return Math.floor((rawNum - 10) / 2);
+                    }
+                    return rawNum;
+                }
+            }
+
             return 0;
         }
 
@@ -125,10 +175,37 @@
             const list = [...(window.TBState?.get('combatants') || [])];
             const id = data.id || ('cmb_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
 
+            // Resolve stats and dexMod if not directly provided
+            let stats = data.stats || null;
+            let dexMod = data.dexMod !== undefined ? data.dexMod : null;
+
+            if (!stats) {
+                const roster = window.TBState?.get('roster') || [];
+                const matched = roster.find(r => r.name && r.name.toLowerCase() === (data.name || '').toLowerCase());
+                if (matched?.stats) {
+                    stats = matched.stats;
+                }
+            }
+            if (!stats && (data.isPlayer || data.category === 'Игроки')) {
+                const curPlayer = window.TBState?.get('playerData');
+                if (curPlayer && curPlayer.name && curPlayer.name.toLowerCase() === (data.name || '').toLowerCase() && curPlayer.stats) {
+                    stats = curPlayer.stats;
+                }
+            }
+
+            if (dexMod === null) {
+                dexMod = this.extractDexModifier({ name: data.name, stats, isPlayer: data.isPlayer });
+            }
+
             // Check if already in combat
             const existingIdx = list.findIndex(c => (c.creatureId && c.creatureId === data.creatureId) || (c.name.toLowerCase() === data.name.toLowerCase()));
             if (existingIdx >= 0) {
-                list[existingIdx] = { ...list[existingIdx], ...data };
+                list[existingIdx] = {
+                    ...list[existingIdx],
+                    ...data,
+                    stats: stats || list[existingIdx].stats,
+                    dexMod: dexMod !== null ? dexMod : list[existingIdx].dexMod
+                };
             } else {
                 list.push({
                     id,
@@ -142,7 +219,9 @@
                     conditions: Array.isArray(data.conditions) ? data.conditions : [],
                     creatureId: data.creatureId || null,
                     path: data.path || null,
-                    isPlayer: Boolean(data.isPlayer || data.playable || data.category === 'Игроки')
+                    isPlayer: Boolean(data.isPlayer || data.playable || data.category === 'Игроки'),
+                    stats,
+                    dexMod
                 });
             }
 
@@ -281,7 +360,9 @@
                     ac: h.ac || 14,
                     speed: h.speed || '30 фт.',
                     isPlayer: true,
-                    path: h.path || null
+                    path: h.path || null,
+                    stats: h.stats,
+                    dexMod: h.dexMod
                 });
             });
         }
@@ -308,7 +389,9 @@
                 speed: matched?.speed || '30 фт.',
                 creatureId: token.id,
                 path: matched?.path || null,
-                isPlayer: Boolean(matched?.playable || matched?.category === 'Игроки')
+                isPlayer: Boolean(matched?.playable || matched?.category === 'Игроки'),
+                stats: matched?.stats,
+                dexMod: matched?.dexMod
             });
 
             window.TBLogger?.log(`Миниатюра [${token.name}] добавлена в трекер боя`, 'sys');

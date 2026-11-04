@@ -196,6 +196,18 @@
     border-color: #ef4444;
 }
 
+.btn-combat-tool.danger {
+    background: #7f1d1d !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.btn-combat-tool.danger:hover {
+    background: #991b1b !important;
+    border-color: #f87171 !important;
+}
+
 /* Roster Dropdown Drawer */
 .combat-roster-dropdown {
     position: absolute;

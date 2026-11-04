@@ -130,12 +130,15 @@
             if (c.isPlayer || category === 'Игроки') catClass = 'player';
             else if (category === 'Союзники') catClass = 'ally';
 
+            const dexMod = window.TBFeatureManageCombat?.extractDexModifier(c) || 0;
+            const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
+
             return `
                 <div class="combatant-card ${isTurn ? 'is-current-turn' : ''} ${catClass}" data-id="${c.id}">
                     <div class="combatant-init-box">
                         ${isTurn ? '<div class="turn-indicator-badge">ХОД</div>' : ''}
-                        <input type="number" class="combatant-init-input" value="${c.initiative ?? 10}" data-id="${c.id}" title="Инициатива (кликните для изменения)" />
-                        <button class="btn-re-roll-init" data-id="${c.id}" title="Перебросить инициативу (d20+ЛОВ)">d20</button>
+                        <input type="number" class="combatant-init-input" value="${c.initiative ?? 10}" data-id="${c.id}" title="Инициатива: d20 ${modStr} ЛОВ (кликните для изменения)" />
+                        <button class="btn-re-roll-init" data-id="${c.id}" title="Перебросить инициативу (d20 ${modStr} ЛОВ)">d20</button>
                     </div>
 
                     <div class="combatant-main-info">
@@ -235,10 +238,27 @@
 
             const btnClear = this.container.querySelector('#btnCombatClear');
             if (btnClear) {
-                btnClear.onclick = () => {
-                    if (confirm('Очистить трекер боя?')) {
+                btnClear.onclick = (e) => {
+                    e.stopPropagation();
+                    if (e.shiftKey || btnClear.dataset.primed === 'true') {
+                        if (btnClear._resetTimer) clearTimeout(btnClear._resetTimer);
+                        btnClear.dataset.primed = 'false';
+                        btnClear.textContent = 'Очистить';
+                        btnClear.classList.remove('danger');
                         window.TBFeatureManageCombat?.clearCombat();
+                        return;
                     }
+
+                    btnClear.dataset.primed = 'true';
+                    btnClear.textContent = 'Точно очистить?';
+                    btnClear.classList.add('danger');
+
+                    if (btnClear._resetTimer) clearTimeout(btnClear._resetTimer);
+                    btnClear._resetTimer = setTimeout(() => {
+                        btnClear.dataset.primed = 'false';
+                        btnClear.textContent = 'Очистить';
+                        btnClear.classList.remove('danger');
+                    }, 3500);
                 };
             }
 
@@ -288,7 +308,10 @@
                     if (c) {
                         const dexMod = window.TBFeatureManageCombat?.extractDexModifier(c) || 0;
                         const d20 = Math.floor(Math.random() * 20) + 1;
-                        window.TBFeatureManageCombat?.setInitiative(id, d20 + dexMod);
+                        const total = d20 + dexMod;
+                        const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
+                        window.TBFeatureManageCombat?.setInitiative(id, total);
+                        window.TBLogger?.log(`Переброс инициативы [${c.name}]: ${total} (d20: ${d20}, ЛОВ: ${modStr})`, 'sys');
                     }
                 };
             });
