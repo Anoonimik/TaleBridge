@@ -60,16 +60,23 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
 
   return (
     <div className="bg-[#141622] border border-[#262a3d] hover:border-[#383d57] rounded-lg p-2.5 flex flex-col gap-2 transition-all shadow-sm relative">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center justify-between gap-1.5 min-w-0">
+        <div
+          className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer hover:opacity-85 transition-opacity"
+          onClick={() => onOpenNote(character)}
+          title="Нажмите, чтобы открыть карточку заметки"
+        >
           <button
             type="button"
-            className={`w-6 h-6 flex items-center justify-center rounded text-sm transition-colors cursor-pointer shrink-0 ${
+            className={`w-5 h-5 flex items-center justify-center rounded text-xs transition-colors cursor-pointer shrink-0 ${
               isPinned
                 ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20'
                 : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
             }`}
-            onClick={() => togglePinCharacter(character.name)}
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePinCharacter(character.name);
+            }}
             title={isPinned ? 'Открепить' : 'Закрепить'}
           >
             ★
@@ -78,16 +85,16 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
             {character.name}
           </span>
           <span
-            className={`text-[10px] px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 font-medium ${categoryBadgeColor}`}
+            className={`text-[9px] px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 font-medium ${categoryBadgeColor}`}
           >
             {character.category || 'Существо'}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0 relative">
+        <div className="flex items-center gap-1 shrink-0 relative">
           <button
             type="button"
-            className="px-2.5 py-1 bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] rounded text-xs cursor-pointer transition-colors"
+            className="px-2 py-0.5 bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] rounded text-xs cursor-pointer transition-colors"
             onClick={() => onOpenNote(character)}
             title="Открыть карточку заметки"
           >
@@ -96,7 +103,7 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
           {character.path && (
             <button
               type="button"
-              className="px-2.5 py-1 bg-[#1a1d2d] hover:bg-[#25293d] text-purple-300 border border-purple-500/20 rounded text-xs cursor-pointer transition-colors"
+              className="px-1.5 py-0.5 bg-[#1a1d2d] hover:bg-[#25293d] text-purple-300 border border-purple-500/20 rounded text-xs cursor-pointer transition-colors"
               onClick={handleOpenObsidian}
               title="Открыть заметку в Obsidian"
             >
@@ -108,11 +115,11 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
           <div className="relative">
             <button
               type="button"
-              className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded text-xs font-medium cursor-pointer transition-colors flex items-center gap-1"
+              className="px-2 py-0.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
               onClick={() => setShowSideSelector(!showSideSelector)}
               title="Добавить в трекер боя с выбором стороны"
             >
-              <span>В бой</span>
+              <span>+ В бой</span>
               <span className="text-[10px]">▾</span>
             </button>
 

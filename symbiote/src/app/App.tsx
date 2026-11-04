@@ -10,26 +10,29 @@ export const App = () => {
   const isGm = role === 'gm';
 
   useEffect(() => {
-    let zoomVal = '1';
+    let px = '16px';
     switch (scale) {
       case '115%':
-        zoomVal = '1.15';
+        px = '18.4px';
         break;
       case '125%':
-        zoomVal = '1.25';
+        px = '20px';
         break;
+      case '140%':
       case '150%':
-        zoomVal = '1.5';
+        px = '22.4px';
         break;
       case '85%':
-        zoomVal = '0.85';
+      case '90%':
+        px = '13.6px';
         break;
       case '100%':
       default:
-        zoomVal = '1';
+        px = '16px';
         break;
     }
-    (document.documentElement.style as any).zoom = zoomVal;
+    document.documentElement.style.fontSize = px;
+    (document.documentElement.style as any).zoom = '1';
     window.scrollTo(0, 0);
   }, [scale]);
 

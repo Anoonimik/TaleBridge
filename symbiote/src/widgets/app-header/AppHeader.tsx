@@ -41,17 +41,17 @@ export const AppHeader = () => {
 
   return (
     <>
-      <header className="h-11 bg-[#141622] border-b border-[#262a3d] px-3 flex items-center justify-between select-none shrink-0 z-30">
+      <header className="h-11 bg-[#141622] border-b border-[#262a3d] px-2 flex items-center justify-between select-none shrink-0 z-30 gap-1.5 overflow-x-hidden">
         {/* Left: Logo & Role Toggle */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 font-bold tracking-wider text-xs">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 font-bold tracking-wider text-xs shrink-0">
             <span className="text-amber-400">TALE</span>
             <span className="text-indigo-400">BRIDGE</span>
           </div>
 
           <button
             type="button"
-            className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`px-1.5 py-0.5 rounded text-xs font-bold border transition-colors cursor-pointer flex items-center gap-0.5 shrink-0 ${
               isGm
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                 : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
@@ -70,7 +70,7 @@ export const AppHeader = () => {
 
         {/* Center: Tabs */}
         {isGm ? (
-          <nav className="flex items-center gap-1 bg-[#10111a] p-0.5 rounded border border-[#262a3d]">
+          <nav className="flex items-center gap-0.5 bg-[#10111a] p-0.5 rounded border border-[#262a3d] shrink-0">
             {[
               { id: 'story' as const, label: 'Сюжет', badge: null },
               { id: 'characters' as const, label: 'Ростер', badge: (roster && roster.length > 0) ? roster.length : null },
@@ -82,7 +82,7 @@ export const AppHeader = () => {
                 <button
                   key={tab.id}
                   type="button"
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2 py-0.5 rounded text-xs font-medium transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
                     isActive
                       ? 'bg-[#1a1d2d] text-white shadow-xs font-semibold'
                       : 'text-slate-400 hover:text-slate-200'
@@ -108,11 +108,11 @@ export const AppHeader = () => {
         ) : null}
 
         {/* Right: Scale & Connection */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1.5 text-xs shrink-0">
           <select
             value={scale}
             onChange={(e) => setScale(e.target.value)}
-            className="bg-[#10111a] border border-[#262a3d] text-slate-300 text-xs rounded px-2 py-0.5 focus:outline-none cursor-pointer"
+            className="bg-[#10111a] border border-[#262a3d] text-slate-300 text-xs rounded px-1.5 py-0.5 focus:outline-none cursor-pointer shrink-0"
             title="Масштаб интерфейса"
           >
             <option value="100%">100%</option>
@@ -124,7 +124,7 @@ export const AppHeader = () => {
 
           <button
             type="button"
-            className={`w-6 h-6 flex items-center justify-center rounded bg-[#10111a] hover:bg-[#1a1d2d] text-slate-300 border border-[#262a3d] text-xs cursor-pointer ${
+            className={`w-6 h-6 flex items-center justify-center rounded bg-[#10111a] hover:bg-[#1a1d2d] text-slate-300 border border-[#262a3d] text-xs cursor-pointer shrink-0 ${
               isRefreshing ? 'rotating' : ''
             }`}
             onClick={handleRefresh}
@@ -134,15 +134,15 @@ export const AppHeader = () => {
           </button>
 
           <div
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#10111a] border border-[#262a3d]"
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#10111a] border border-[#262a3d] shrink-0"
             title={connected ? `Подключено: ${vaultName}` : 'Ожидание связи с Obsidian...'}
           >
             <span
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2 h-2 rounded-full shrink-0 ${
                 connected ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]' : 'bg-rose-500'
               }`}
             />
-            <span className="text-[10px] text-slate-400 max-w-[80px] truncate">
+            <span className="hidden 2xl:inline text-[10px] text-slate-400 max-w-[60px] truncate">
               {connected ? vaultName : 'Офлайн'}
             </span>
           </div>

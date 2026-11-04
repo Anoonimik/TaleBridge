@@ -84,7 +84,7 @@ export const CharacterRoster = () => {
       </div>
 
       {/* Roster Cards List */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 flex flex-col gap-2 scrollbar-thin">
         {filtered.length === 0 ? (
           <div className="text-center py-10 text-xs text-slate-500">
             {roster.length === 0
