@@ -175,21 +175,26 @@
             const list = [...(window.TBState?.get('combatants') || [])];
             const id = data.id || ('cmb_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
 
-            // Resolve stats and dexMod if not directly provided
+            // Resolve stats, dexMod and attacks if not directly provided
             let stats = data.stats || null;
             let dexMod = data.dexMod !== undefined ? data.dexMod : null;
+            let attacks = Array.isArray(data.attacks) ? data.attacks : null;
 
-            if (!stats) {
+            if (!stats || !attacks) {
                 const roster = window.TBState?.get('roster') || [];
                 const matched = roster.find(r => r.name && r.name.toLowerCase() === (data.name || '').toLowerCase());
-                if (matched?.stats) {
+                if (matched?.stats && !stats) {
                     stats = matched.stats;
                 }
+                if (matched?.attacks && !attacks) {
+                    attacks = matched.attacks;
+                }
             }
-            if (!stats && (data.isPlayer || data.category === 'Игроки')) {
+            if ((!stats || !attacks) && (data.isPlayer || data.category === 'Игроки')) {
                 const curPlayer = window.TBState?.get('playerData');
-                if (curPlayer && curPlayer.name && curPlayer.name.toLowerCase() === (data.name || '').toLowerCase() && curPlayer.stats) {
-                    stats = curPlayer.stats;
+                if (curPlayer && curPlayer.name && curPlayer.name.toLowerCase() === (data.name || '').toLowerCase()) {
+                    if (curPlayer.stats && !stats) stats = curPlayer.stats;
+                    if (curPlayer.attacks && !attacks) attacks = curPlayer.attacks;
                 }
             }
 
@@ -204,7 +209,8 @@
                     ...list[existingIdx],
                     ...data,
                     stats: stats || list[existingIdx].stats,
-                    dexMod: dexMod !== null ? dexMod : list[existingIdx].dexMod
+                    dexMod: dexMod !== null ? dexMod : list[existingIdx].dexMod,
+                    attacks: (attacks && attacks.length > 0) ? attacks : (list[existingIdx].attacks || [])
                 };
             } else {
                 list.push({
@@ -221,7 +227,8 @@
                     path: data.path || null,
                     isPlayer: Boolean(data.isPlayer || data.playable || data.category === 'Игроки'),
                     stats,
-                    dexMod
+                    dexMod,
+                    attacks: attacks || []
                 });
             }
 
@@ -362,7 +369,8 @@
                     isPlayer: true,
                     path: h.path || null,
                     stats: h.stats,
-                    dexMod: h.dexMod
+                    dexMod: h.dexMod,
+                    attacks: h.attacks
                 });
             });
         }
@@ -391,7 +399,8 @@
                 path: matched?.path || null,
                 isPlayer: Boolean(matched?.playable || matched?.category === 'Игроки'),
                 stats: matched?.stats,
-                dexMod: matched?.dexMod
+                dexMod: matched?.dexMod,
+                attacks: matched?.attacks
             });
 
             window.TBLogger?.log(`Миниатюра [${token.name}] добавлена в трекер боя`, 'sys');

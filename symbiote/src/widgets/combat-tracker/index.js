@@ -17,7 +17,58 @@
             window.TBState?.on('combatTurnIndex', () => this.render());
             window.TBState?.on('combatActive', () => this.render());
 
+            this.setupKeyboardHotkeys();
             this.render();
+        }
+
+        setupKeyboardHotkeys() {
+            if (this._hotkeysBound) return;
+            this._hotkeysBound = true;
+
+            document.addEventListener('keydown', (e) => {
+                // Ignore when user is typing in an input or textarea
+                const activeEl = document.activeElement;
+                if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+                    return;
+                }
+
+                // Hotkeys only apply in GM mode when Combat tab is active and combat is running
+                const role = window.TBState?.get('role') || 'gm';
+                if (role !== 'gm') return;
+
+                const combatTab = document.getElementById('tab-combat');
+                if (!combatTab || !combatTab.classList.contains('active')) return;
+
+                const combatActive = window.TBState?.get('combatActive');
+                if (!combatActive) return;
+
+                const turnIndex = window.TBState?.get('combatTurnIndex') || 0;
+                const combatants = window.TBState?.get('combatants') || [];
+                const cur = combatants[turnIndex];
+                if (!cur) return;
+
+                // Numbers 1-9 trigger attacks of the currently active creature
+                const num = parseInt(e.key, 10);
+                if (num >= 1 && num <= 9) {
+                    let attacks = Array.isArray(cur.attacks) ? cur.attacks : [];
+                    if (attacks.length === 0) {
+                        const roster = window.TBState?.get('roster') || [];
+                        const matched = roster.find(r => r.name && r.name.toLowerCase() === (cur.name || '').toLowerCase());
+                        if (matched?.attacks) attacks = matched.attacks;
+                    }
+                    const atk = attacks[num - 1];
+                    if (atk) {
+                        e.preventDefault();
+                        if (e.shiftKey && atk.dmg) {
+                            window.TBFeatureRollDice?.rollAttack(atk.dmg, `${cur.name}: ${atk.name}`, 'dmg', null);
+                        } else if (atk.hit) {
+                            window.TBFeatureRollDice?.rollAttack(atk.hit, `${cur.name}: ${atk.name}`, 'hit', null);
+                        } else if (atk.dmg) {
+                            window.TBFeatureRollDice?.rollAttack(atk.dmg, `${cur.name}: ${atk.name}`, 'dmg', null);
+                        }
+                    }
+                }
+            });
         }
 
         render() {
@@ -133,6 +184,24 @@
             const dexMod = window.TBFeatureManageCombat?.extractDexModifier(c) || 0;
             const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
 
+            // Resolve attacks for combatant (from c.attacks or fallback to roster / playerData)
+            let attacks = Array.isArray(c.attacks) ? c.attacks : [];
+            if (attacks.length === 0) {
+                const roster = window.TBState?.get('roster') || [];
+                const matched = roster.find(r => r.name && r.name.toLowerCase() === (c.name || '').toLowerCase());
+                if (matched?.attacks && matched.attacks.length > 0) {
+                    attacks = matched.attacks;
+                    c.attacks = attacks;
+                }
+            }
+            if (attacks.length === 0 && (c.isPlayer || category === 'Игроки')) {
+                const curPlayer = window.TBState?.get('playerData');
+                if (curPlayer && curPlayer.name && curPlayer.name.toLowerCase() === (c.name || '').toLowerCase() && curPlayer.attacks) {
+                    attacks = curPlayer.attacks;
+                    c.attacks = attacks;
+                }
+            }
+
             return `
                 <div class="combatant-card ${isTurn ? 'is-current-turn' : ''} ${catClass}" data-id="${c.id}">
                     <div class="combatant-init-box">
@@ -161,6 +230,33 @@
                                 <button class="btn-hp-delta heal" data-id="${c.id}" data-delta="5" title="Восстановить 5 ХП">+5</button>
                             </div>
                         </div>
+
+                        ${attacks.length > 0 ? `
+                            <div class="combatant-attacks-row">
+                                <span class="combatant-attacks-label">Атаки:</span>
+                                <div class="combatant-attacks-list">
+                                    ${attacks.map((att, atkIdx) => {
+                                        const diceMode = window.TBState?.get('gmDiceMode') === 'open' ? 'Открытый' : 'Скрытый (GM)';
+                                        return `
+                                            <div class="combat-atk-unit ${isTurn ? 'active-turn-atk' : ''}" title="${this.escape(att.desc || att.name)}">
+                                                ${isTurn ? `<span class="combat-atk-hotkey" title="Горячая клавиша: ${atkIdx + 1} (Атака), Shift+${atkIdx + 1} (Урон)">${atkIdx + 1}</span>` : ''}
+                                                <span class="combat-atk-name">${this.escape(att.name)}</span>
+                                                ${att.hit ? `
+                                                    <button type="button" class="btn-combat-atk hit" data-char="${this.escape(c.name)}" data-name="${this.escape(att.name)}" data-formula="${att.hit}" title="Бросок атаки: 1d20${att.hit.startsWith('+') || att.hit.startsWith('-') ? att.hit : '+' + att.hit} [${diceMode}]${isTurn ? ` (Клавиша: ${atkIdx + 1})` : ''}">
+                                                        Атк ${this.escape(att.hit)}
+                                                    </button>
+                                                ` : ''}
+                                                ${att.dmg ? `
+                                                    <button type="button" class="btn-combat-atk dmg" data-char="${this.escape(c.name)}" data-name="${this.escape(att.name)}" data-formula="${att.dmg}" title="Бросок урона: ${att.dmg} [${diceMode}]${isTurn ? ` (Клавиша: Shift+${atkIdx + 1})` : ''}">
+                                                        Урон ${this.escape(att.dmg)}
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
 
                         <div class="combatant-conditions-row">
                             <div class="conditions-block-header">
@@ -338,6 +434,27 @@
                     e.stopPropagation();
                     const id = btn.dataset.id;
                     this.openConditionsPicker(id);
+                };
+            });
+
+            // Attack Action Buttons (Hit and Damage Rolls)
+            this.container.querySelectorAll('.btn-combat-atk.hit').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const charName = btn.dataset.char || 'Существо';
+                    const atkName = btn.dataset.name || 'Атака';
+                    const hit = btn.dataset.formula || '+0';
+                    window.TBFeatureRollDice?.rollAttack(hit, `${charName}: ${atkName}`, 'hit', null);
+                };
+            });
+
+            this.container.querySelectorAll('.btn-combat-atk.dmg').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const charName = btn.dataset.char || 'Существо';
+                    const atkName = btn.dataset.name || 'Атака';
+                    const dmg = btn.dataset.formula || '1d6';
+                    window.TBFeatureRollDice?.rollAttack(dmg, `${charName}: ${atkName}`, 'dmg', null);
                 };
             });
 

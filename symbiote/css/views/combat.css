@@ -554,6 +554,112 @@
     color: #a7f3d0;
 }
 
+/* Combatant Attacks Row */
+.combatant-attacks-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.combatant-attacks-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.combatant-attacks-list {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.combat-atk-unit {
+    display: inline-flex;
+    align-items: center;
+    background: #181924;
+    border: 1px solid #2e3346;
+    border-radius: 4px;
+    padding: 1px 3px 1px 6px;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.combat-atk-unit:hover {
+    border-color: #4b526d;
+    background: #1d2030;
+}
+
+.combat-atk-unit.active-turn-atk {
+    border-color: #6366f1;
+    background: #1c1b2e;
+}
+
+.combat-atk-hotkey {
+    background: #312e81;
+    color: #e0e7ff;
+    font-size: 8.5px;
+    font-weight: 800;
+    padding: 0 4px;
+    border-radius: 3px;
+    border: 1px solid #4338ca;
+    flex-shrink: 0;
+    line-height: 14px;
+}
+
+.combat-atk-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+}
+
+.btn-combat-atk {
+    height: 19px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 3px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-combat-atk.hit {
+    background: #1e1b4b;
+    border-color: #4338ca;
+    color: #a5b4fc;
+}
+
+.btn-combat-atk.hit:hover {
+    background: #312e81;
+    border-color: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.btn-combat-atk.dmg {
+    background: #271216;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+.btn-combat-atk.dmg:hover {
+    background: #450a0a;
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
 /* Conditions Row & Descriptions */
 .combatant-conditions-row {
     display: flex;
