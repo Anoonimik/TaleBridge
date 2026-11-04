@@ -30,6 +30,7 @@
                     this.send('GET_SCENES', {});
                     this.send('GET_BOOKMARKS', {});
                     this.send('GET_VAULT_IMAGES', {});
+                    this.send('GET_COMBAT_STATE', {});
                 };
 
                 this.ws.onmessage = (event) => {
@@ -230,6 +231,12 @@
                 case 'BOOKMARKS_LIST':
                     if (payload && Array.isArray(payload)) {
                         window.TBState?.set('bookmarks', payload);
+                    }
+                    break;
+
+                case 'COMBAT_STATE_UPDATE':
+                    if (payload) {
+                        window.TBState?.setCombatState(payload);
                     }
                     break;
 

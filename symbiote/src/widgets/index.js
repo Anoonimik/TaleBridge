@@ -9,6 +9,7 @@
         storyTracker: window.TBWidgetStoryTracker,
         characterRoster: window.TBWidgetCharacterRoster,
         noteViewer: window.TBWidgetNoteViewer,
-        toolsPanel: window.TBWidgetToolsPanel
+        toolsPanel: window.TBWidgetToolsPanel,
+        combatTracker: window.TBWidgetCombatTracker
     };
 })();

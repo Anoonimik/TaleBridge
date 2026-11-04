@@ -80,6 +80,7 @@
     <div class="tabs">
         <button class="tab-btn active" data-tab="tab-story">Сюжет</button>
         <button class="tab-btn" data-tab="tab-characters">Персонажи</button>
+        <button class="tab-btn" data-tab="tab-combat">Бой <span id="combatBadge" class="combat-badge" style="display: none;">R1</span></button>
         <button class="tab-btn" data-tab="tab-note">Заметка</button>
         <button class="tab-btn" data-tab="tab-tools">Утилиты</button>
     </div>
@@ -154,7 +155,12 @@
         </div>
     </div>
 
-    <!-- TAB 3: NOTE VIEWER (In-Game Obsidian Reader) -->
+    <!-- TAB 3: COMBAT TRACKER (Initiative Order, Rounds & D&D 5e Conditions) -->
+    <div id="tab-combat" class="tab-content">
+        <div id="combatTrackerContainer" class="combat-tracker-wrapper"></div>
+    </div>
+
+    <!-- TAB 4: NOTE VIEWER (In-Game Obsidian Reader) -->
     <div id="tab-note" class="tab-content">
         <div class="note-viewer-header">
             <button id="btnNoteBack" class="btn-note-nav">← Назад</button>
@@ -243,6 +249,7 @@
     <script src="src/features/broadcast-media/index.js"></script>
     <script src="src/features/roll-dice/index.js"></script>
     <script src="src/features/gm-auth/index.js"></script>
+    <script src="src/features/manage-combat/index.js"></script>
     <script src="src/features/index.js"></script>
 
     <!-- 4. Widgets Layer: Composite UI Blocks -->
@@ -252,6 +259,7 @@
     <script src="src/widgets/player-cockpit/index.js"></script>
     <script src="src/widgets/story-tracker/index.js"></script>
     <script src="src/widgets/character-roster/index.js"></script>
+    <script src="src/widgets/combat-tracker/index.js"></script>
     <script src="src/widgets/note-viewer/index.js"></script>
     <script src="src/widgets/tools-panel/index.js"></script>
     <script src="src/widgets/index.js"></script>

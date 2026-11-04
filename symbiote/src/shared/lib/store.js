@@ -12,12 +12,18 @@
         constructor() {
             let savedPinned = [];
             let savedClues = [];
+            let savedCombat = { active: false, round: 1, turnIndex: 0, combatants: [] };
+
             try {
                 savedPinned = JSON.parse(localStorage.getItem(keys.PINNED_CHARS) || '[]');
             } catch (e) {}
 
             try {
                 savedClues = JSON.parse(localStorage.getItem(keys.CLUES_ARCHIVE) || '[]');
+            } catch (e) {}
+
+            try {
+                savedCombat = JSON.parse(localStorage.getItem(keys.COMBAT_STATE || 'tb_combat_state') || '{"active":false,"round":1,"turnIndex":0,"combatants":[]}');
             } catch (e) {}
 
             const savedRole = localStorage.getItem(keys.ROLE) || 'gm';
@@ -32,6 +38,10 @@
                 playerData: null,
                 playerTab: 'character', // 'character' | 'inventory' | 'notes' | 'clues'
                 cluesArchive: savedClues,
+                combatActive: savedCombat.active || false,
+                combatRound: savedCombat.round || 1,
+                combatTurnIndex: savedCombat.turnIndex || 0,
+                combatants: Array.isArray(savedCombat.combatants) ? savedCombat.combatants : [],
                 activeHandout: null,
                 vaultImages: [],
                 activeToken: null,
@@ -74,8 +84,41 @@
                 try {
                     localStorage.setItem(keys.GM_DICE_MODE || 'tb_gm_dice_mode', val);
                 } catch (e) {}
+            } else if (key === 'combatActive' || key === 'combatRound' || key === 'combatTurnIndex' || key === 'combatants') {
+                this.persistCombatState();
             }
             this.notify(key, val);
+        }
+
+        persistCombatState() {
+            try {
+                const data = {
+                    active: this.state.combatActive,
+                    round: this.state.combatRound,
+                    turnIndex: this.state.combatTurnIndex,
+                    combatants: this.state.combatants
+                };
+                localStorage.setItem(keys.COMBAT_STATE || 'tb_combat_state', JSON.stringify(data));
+            } catch (e) {}
+        }
+
+        getCombatState() {
+            return {
+                active: this.state.combatActive,
+                round: this.state.combatRound,
+                turnIndex: this.state.combatTurnIndex,
+                combatants: this.state.combatants || []
+            };
+        }
+
+        setCombatState(data) {
+            if (!data) return;
+            if (typeof data.active === 'boolean') this.state.combatActive = data.active;
+            if (typeof data.round === 'number') this.state.combatRound = data.round;
+            if (typeof data.turnIndex === 'number') this.state.combatTurnIndex = data.turnIndex;
+            if (Array.isArray(data.combatants)) this.state.combatants = data.combatants;
+            this.persistCombatState();
+            this.notify('combatState', this.getCombatState());
         }
 
         setRole(role) {

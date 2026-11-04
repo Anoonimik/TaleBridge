@@ -8,6 +8,7 @@
         archiveClues: window.TBFeatureArchiveClues,
         broadcastMedia: window.TBFeatureBroadcastMedia,
         rollDice: window.TBFeatureRollDice,
-        gmAuth: window.TBFeatureGmAuth
+        gmAuth: window.TBFeatureGmAuth,
+        manageCombat: window.TBFeatureManageCombat
     };
 })();

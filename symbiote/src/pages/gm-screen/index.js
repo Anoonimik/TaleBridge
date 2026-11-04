@@ -8,6 +8,7 @@
             // Initialize GM widgets
             if (window.TBWidgetStoryTracker) window.TBWidgetStoryTracker.init();
             if (window.TBWidgetCharacterRoster) window.TBWidgetCharacterRoster.init();
+            if (window.TBWidgetCombatTracker) window.TBWidgetCombatTracker.init('combatTrackerContainer');
             if (window.TBWidgetNoteViewer) window.TBWidgetNoteViewer.init();
             if (window.TBWidgetToolsPanel) window.TBWidgetToolsPanel.init();
 

@@ -1689,3 +1689,107 @@
     20%, 60% { transform: translateX(-6px); }
     40%, 80% { transform: translateX(6px); }
 }
+
+/* Combat Banner in Player Cockpit */
+.player-combat-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.player-combat-banner.your-turn {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(59, 130, 246, 0.45));
+    border: 1px solid #60a5fa;
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+    animation: playerTurnPulse 2s infinite ease-in-out;
+}
+
+@keyframes playerTurnPulse {
+    0% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(96, 165, 250, 0.6); }
+    100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+}
+
+.turn-title-box {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.combat-pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #60a5fa;
+    box-shadow: 0 0 8px #60a5fa;
+}
+
+.player-combat-banner .turn-label {
+    font-size: 13px;
+    color: #ffffff;
+}
+
+.player-combat-banner.your-turn .turn-label b {
+    color: #fde047;
+}
+
+.btn-player-end-turn {
+    height: 26px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    border-radius: 4px;
+    background: #f59e0b;
+    border: 1px solid #fbbf24;
+    color: #1e1b2e;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-player-end-turn:hover {
+    background: #d97706;
+    color: #ffffff;
+}
+
+.player-combat-banner.waiting {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+}
+
+.combat-round-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+}
+
+.player-conditions-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.conditions-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.player-conditions-list {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+

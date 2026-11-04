@@ -49,6 +49,24 @@
                     cluesBtn.textContent = `Улики (${(clues || []).length})`;
                 }
             });
+
+            const reRenderCombat = () => {
+                if (window.TBState?.get('role') === 'player' && this.activeSubTab === 'character') {
+                    const curData = window.TBState?.get('playerData');
+                    if (curData) {
+                        const charPane = this.container?.querySelector('#playerSubpane-character');
+                        if (charPane) {
+                            charPane.innerHTML = this.renderCharacterSheet(curData);
+                            this.bindInteractiveElements(curData);
+                        }
+                    }
+                }
+            };
+            window.TBState?.on('combatState', reRenderCombat);
+            window.TBState?.on('combatActive', reRenderCombat);
+            window.TBState?.on('combatRound', reRenderCombat);
+            window.TBState?.on('combatTurnIndex', reRenderCombat);
+            window.TBState?.on('combatants', reRenderCombat);
         }
 
         applyCurrentRole() {
@@ -344,8 +362,62 @@
                 </div>
             ` : '';
 
+            // Combat Tracker banner & Conditions for active Player
+            const combatActive = window.TBState?.get('combatActive') || false;
+            const round = window.TBState?.get('combatRound') || 1;
+            const turnIndex = window.TBState?.get('combatTurnIndex') || 0;
+            const combatants = window.TBState?.get('combatants') || [];
+            const activeCombatant = combatants[turnIndex] || null;
+            const isMyTurn = combatActive && activeCombatant && (activeCombatant.name.toLowerCase() === data.name.toLowerCase());
+
+            const myCombatant = combatants.find(c => c.name.toLowerCase() === data.name.toLowerCase());
+            const myConditions = myCombatant?.conditions || [];
+
+            let combatBannerHtml = '';
+            if (combatActive) {
+                if (isMyTurn) {
+                    combatBannerHtml = `
+                        <div class="player-combat-banner your-turn">
+                            <div class="turn-title-box">
+                                <span class="combat-pulse-dot"></span>
+                                <span class="turn-label">РАУНД ${round} • <b>ВАШ ХОД!</b></span>
+                            </div>
+                            <button id="btnPlayerEndTurn" class="btn-player-end-turn" title="Завершить ход и передать инициативу следующему">Завершить ход ▸</button>
+                        </div>
+                    `;
+                } else {
+                    combatBannerHtml = `
+                        <div class="player-combat-banner waiting">
+                            <span class="combat-round-badge">Раунд ${round}</span>
+                            <span class="turn-label">Ход: <b>${escape(activeCombatant?.name || '...')}</b></span>
+                        </div>
+                    `;
+                }
+            }
+
+            let conditionsStripHtml = '';
+            if (myConditions.length > 0) {
+                conditionsStripHtml = `
+                    <div class="player-conditions-bar">
+                        <span class="conditions-title">Состояния:</span>
+                        <div class="player-conditions-list">
+                            ${myConditions.map(condId => {
+                                const meta = window.TBFeatureManageCombat?.getConditionMeta(condId) || { name: condId, color: '#64748b', desc: '' };
+                                return `
+                                    <span class="condition-chip" style="background: ${meta.color}22; border-color: ${meta.color}; color: ${meta.color};" title="${escape(meta.desc || meta.name)}">
+                                        ${escape(meta.name)}
+                                    </span>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             return `
                 <div class="player-sheet-container">
+                    ${combatBannerHtml}
+
                     <!-- Identity & Meta -->
                     <div class="sheet-hero-card">
                         <div class="sheet-hero-info">
@@ -357,6 +429,8 @@
                             </div>
                         </div>
                     </div>
+
+                    ${conditionsStripHtml}
 
                     <!-- Interactive Health Bar -->
                     <div class="sheet-stat-card hp-card">
@@ -1152,6 +1226,14 @@
                     window.TBFeatureRollDice?.rollAttack(dmg, name, 'dmg', false);
                 });
             });
+
+            // Player combat banner end turn button
+            const btnEndTurn = this.container.querySelector('#btnPlayerEndTurn');
+            if (btnEndTurn) {
+                btnEndTurn.addEventListener('click', () => {
+                    window.TBFeatureManageCombat?.nextTurn();
+                });
+            }
         }
 
         updateHpDisplay(hp, maxHp) {

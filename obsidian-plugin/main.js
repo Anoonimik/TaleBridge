@@ -1366,6 +1366,23 @@ class TaleBridgePlugin extends obsidian.Plugin {
                 }
                 break;
 
+            case 'SYNC_COMBAT_STATE':
+                this.combatState = payload || null;
+                this.wss.broadcast({
+                    type: 'COMBAT_STATE_UPDATE',
+                    payload: this.combatState
+                });
+                break;
+
+            case 'GET_COMBAT_STATE':
+                if (this.combatState) {
+                    this.wss.send(client, {
+                        type: 'COMBAT_STATE_UPDATE',
+                        payload: this.combatState
+                    });
+                }
+                break;
+
             case 'GET_VAULT_IMAGES': {
                 const images = this.scanVaultImages();
                 this.wss.send(client, {
