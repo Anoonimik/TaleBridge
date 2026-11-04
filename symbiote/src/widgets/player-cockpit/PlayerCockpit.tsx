@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Attack, useRosterStore, wsBridge } from '../../shared';
+import {
+  Attack,
+  useRosterStore,
+  wsBridge,
+  parseModifier,
+  taleSpireDriver,
+} from '../../shared';
 import { AbilityCell, AttackCard, ActionModal } from '../../entities';
 import {
   ApplyDamageControl,
   InventoryManager,
   CluesArchive,
   PlayerNotesEditor,
+  DeathSavesControl,
+  SavingThrowsBar,
+  ClassResourcesManager,
+  SpellcastingManager,
 } from '../../features';
+
+type CockpitSubTab = 'sheet' | 'spells' | 'inventory' | 'clues' | 'notes';
 
 export const PlayerCockpit = () => {
   const {
@@ -17,10 +29,28 @@ export const PlayerCockpit = () => {
     deletePlayerAttack,
     savePlayerAttack,
     updatePlayerHp,
+    updateDeathSaves,
+    rollDeathSave,
+    resetDeathSaves,
+    toggleInspiration,
+    updateSpellSlots,
+    useSpellSlot,
+    regainSpellSlot,
+    resetAllSpellSlots,
+    saveSpell,
+    deleteSpell,
+    updateResources,
+    updateHitDice,
+    spendHitDice,
+    toggleSavingThrowProficiency,
+    setSpellcastingAbility,
+    performRest,
   } = useRosterStore();
 
-  const [activeSubTab, setActiveSubTab] = useState<'sheet' | 'inventory' | 'clues' | 'notes'>('sheet');
-  const [modalAttack, setModalAttack] = useState<{ attack: Attack | null; index?: number } | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState<CockpitSubTab>('sheet');
+  const [modalAttack, setModalAttack] = useState<{ attack: Attack | null; index?: number } | null>(
+    null
+  );
 
   const pcList = roster.filter((r) => r.playable || r.category === 'Игроки');
 
@@ -35,6 +65,13 @@ export const PlayerCockpit = () => {
   const curHp = playerData?.hp ?? 20;
   const maxHp = playerData?.hp_max ?? curHp;
 
+  const dexMod = parseModifier(playerData?.stats?.dex || '10');
+  const wisMod = parseModifier(playerData?.stats?.wis || '10');
+  const level = playerData?.level || 1;
+  const profBonus = Math.floor((level - 1) / 4) + 2;
+  const isWisProf = playerData?.savingThrowsProficient?.includes('wis') || false;
+  const passivePerception = 10 + wisMod + (isWisProf ? profBonus : 0);
+
   const handleEditAttack = (atk: Attack, idx: number) => {
     setModalAttack({ attack: atk, index: idx });
   };
@@ -48,16 +85,16 @@ export const PlayerCockpit = () => {
     setModalAttack(null);
   };
 
-  const handleLongRest = () => {
-    if (playerData) {
-      updatePlayerHp(maxHp - curHp);
-    }
+  const handleRollInitiative = () => {
+    if (!playerData) return;
+    const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
+    taleSpireDriver.rollDice(`1d20${modStr}`, `Инициатива (${playerData.name})`);
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14]">
       {/* Cockpit Top Bar: Character Select & Tabs */}
-      <div className="bg-[#141622] border-b border-[#262a3d] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
+      <div className="bg-[#141622] border-b border-[#262a3d] px-3 py-2 flex items-center justify-between gap-2 shrink-0 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs uppercase font-bold text-slate-400 shrink-0">Герой:</span>
           <select
@@ -76,32 +113,41 @@ export const PlayerCockpit = () => {
           {playerData && (
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 truncate">
               {playerData.race && <span>{playerData.race}</span>}
-              {playerData.class && <span className="text-slate-200 font-semibold">{playerData.class}</span>}
+              {playerData.class && (
+                <span className="text-slate-200 font-semibold">{playerData.class}</span>
+              )}
               {playerData.level && <span>Ур. {playerData.level}</span>}
             </div>
           )}
         </div>
 
         {/* Sub-tabs */}
-        <div className="flex items-center gap-1 bg-[#10111a] p-0.5 rounded border border-[#262a3d] shrink-0">
-          {(['sheet', 'inventory', 'clues', 'notes'] as const).map((t) => (
+        <div className="flex items-center gap-1 bg-[#10111a] p-0.5 rounded border border-[#262a3d] shrink-0 overflow-x-auto">
+          {(
+            [
+              { id: 'sheet', label: 'Лист' },
+              {
+                id: 'spells',
+                label: `Заклинания${
+                  playerData?.spells?.length ? ` (${playerData.spells.length})` : ''
+                }`,
+              },
+              { id: 'inventory', label: 'Инвентарь' },
+              { id: 'clues', label: 'Улики' },
+              { id: 'notes', label: 'Журнал' },
+            ] as const
+          ).map((tab) => (
             <button
-              key={t}
+              key={tab.id}
               type="button"
-              className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
-                activeSubTab === t
+              className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                activeSubTab === tab.id
                   ? 'bg-[#1a1d2d] text-amber-300 font-bold shadow-xs'
                   : 'text-slate-400 hover:text-white'
               }`}
-              onClick={() => setActiveSubTab(t)}
+              onClick={() => setActiveSubTab(tab.id)}
             >
-              {t === 'sheet'
-                ? 'Лист'
-                : t === 'inventory'
-                ? 'Инвентарь'
-                : t === 'clues'
-                ? 'Улики'
-                : 'Журнал'}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -117,27 +163,72 @@ export const PlayerCockpit = () => {
           <>
             {activeSubTab === 'sheet' && (
               <div className="h-full overflow-y-auto p-3 flex flex-col gap-3 scrollbar-thin">
-                {/* Health & Rest Controls */}
-                <div className="flex flex-col gap-2">
-                  <ApplyDamageControl
-                    currentHp={curHp}
-                    maxHp={maxHp}
-                    onApplyHpDelta={updatePlayerHp}
-                  />
+                {/* 1. Death Saves (appears prominently when dying or if manually toggled) */}
+                <DeathSavesControl
+                  hp={curHp}
+                  deathSaves={playerData?.deathSaves || { successes: 0, failures: 0 }}
+                  onRollDeathSave={rollDeathSave}
+                  onUpdateDeathSaves={updateDeathSaves}
+                  onResetDeathSaves={resetDeathSaves}
+                />
 
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-indigo-300 border border-indigo-500/30 rounded text-xs font-medium cursor-pointer transition-colors"
-                      onClick={handleLongRest}
-                      title="Восстановить здоровье до максимума"
-                    >
-                      Полный отдых (ХП макс)
-                    </button>
+                {/* 2. Vitals Grid (AC, Initiative, Speed, Proficiency Bonus, Passive Perception) */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 bg-[#141622] p-2 rounded-lg border border-[#262a3d] text-center">
+                  <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">КД</span>
+                    <span className="text-sm font-bold text-indigo-300 font-mono">
+                      {playerData?.ac ?? 10}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleRollInitiative}
+                    className="flex flex-col items-center justify-center p-1 bg-[#10111a] hover:bg-amber-500/20 rounded border border-[#262a3d] hover:border-amber-500/40 cursor-pointer transition-colors group"
+                    title="Бросить инициативу в TaleSpire"
+                  >
+                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-amber-300">
+                      🎲 Инициатива
+                    </span>
+                    <span className="text-sm font-bold text-amber-300 font-mono">
+                      {dexMod >= 0 ? `+${dexMod}` : dexMod}
+                    </span>
+                  </button>
+
+                  <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Скорость</span>
+                    <span className="text-xs font-bold text-slate-200">
+                      {playerData?.speed || '9 м'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">
+                      Мастерство
+                    </span>
+                    <span className="text-sm font-bold text-slate-200 font-mono">
+                      +{profBonus}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d] col-span-2 sm:col-span-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">
+                      Пасс. внимат.
+                    </span>
+                    <span className="text-sm font-bold text-emerald-300 font-mono">
+                      {passivePerception}
+                    </span>
                   </div>
                 </div>
 
-                {/* Ability Scores Grid (6 cells) */}
+                {/* 3. Health & Damage Controls */}
+                <ApplyDamageControl
+                  currentHp={curHp}
+                  maxHp={maxHp}
+                  onApplyHpDelta={updatePlayerHp}
+                />
+
+                {/* 4. Ability Scores Grid (6 cells) */}
                 <div className="grid grid-cols-6 gap-1.5">
                   <AbilityCell
                     label="СИЛ"
@@ -177,7 +268,23 @@ export const PlayerCockpit = () => {
                   />
                 </div>
 
-                {/* Actions & Attacks Section */}
+                {/* 5. 5e Saving Throws Bar */}
+                <SavingThrowsBar
+                  playerData={playerData}
+                  onToggleProficiency={toggleSavingThrowProficiency}
+                />
+
+                {/* 6. Class & Expendable Resources (Inspiration, Hit Dice, Short/Long Rest) */}
+                <ClassResourcesManager
+                  playerData={playerData}
+                  onToggleInspiration={toggleInspiration}
+                  onUpdateResources={updateResources}
+                  onUpdateHitDice={updateHitDice}
+                  onSpendHitDice={spendHitDice}
+                  onPerformRest={performRest}
+                />
+
+                {/* 7. Actions & Attacks Section */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between pb-1 border-b border-[#262a3d]">
                     <h4 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
@@ -193,7 +300,7 @@ export const PlayerCockpit = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    {(!playerData?.attacks || playerData.attacks.length === 0) ? (
+                    {!playerData?.attacks || playerData.attacks.length === 0 ? (
                       <div className="text-center py-6 text-slate-500 text-xs">
                         Нет добавленных атак. Нажмите «+ Действие» чтобы добавить оружие или заклинание.
                       </div>
@@ -211,6 +318,22 @@ export const PlayerCockpit = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Spells Sub-tab */}
+            {activeSubTab === 'spells' && (
+              <div className="h-full overflow-y-auto p-3 scrollbar-thin">
+                <SpellcastingManager
+                  playerData={playerData}
+                  onUpdateSpellSlots={updateSpellSlots}
+                  onUseSpellSlot={useSpellSlot}
+                  onRegainSpellSlot={regainSpellSlot}
+                  onResetAllSpellSlots={resetAllSpellSlots}
+                  onSaveSpell={saveSpell}
+                  onDeleteSpell={deleteSpell}
+                  onSetSpellcastingAbility={setSpellcastingAbility}
+                />
               </div>
             )}
 

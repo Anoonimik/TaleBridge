@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export interface LogEntry {
   id: string;
   time: string;
-  type: 'roll' | 'combat' | 'sync' | 'note';
+  type: 'roll' | 'combat' | 'sync' | 'note' | 'action';
   message: string;
 }
 

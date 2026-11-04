@@ -7,3 +7,7 @@ export * from './gm-auth';
 export * from './roll-dice';
 export * from './save-notes';
 export * from './camera-bookmarks';
+export * from './death-saves';
+export * from './manage-saves-skills';
+export * from './manage-resources';
+export * from './manage-spells';

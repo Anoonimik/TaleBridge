@@ -102,6 +102,7 @@ export const ToolsPanel = () => {
               if (log.type === 'roll') tagColor = 'text-amber-400';
               else if (log.type === 'combat') tagColor = 'text-rose-400';
               else if (log.type === 'sync') tagColor = 'text-emerald-400';
+              else if (log.type === 'action') tagColor = 'text-indigo-400';
 
               return (
                 <div

@@ -41,6 +41,55 @@ export interface Clue {
   date?: string;
 }
 
+export interface DeathSaves {
+  successes: number; // 0..3
+  failures: number;  // 0..3
+}
+
+export interface SpellSlot {
+  level: number; // 1..9
+  max: number;
+  current: number;
+}
+
+export interface Spell {
+  id: string;
+  name: string;
+  level: number; // 0 for cantrip, 1..9
+  school?: string;
+  time?: string;
+  range?: string;
+  components?: string;
+  duration?: string;
+  concentration?: boolean;
+  ritual?: boolean;
+  desc?: string;
+  dmg?: string;
+  prepared?: boolean;
+}
+
+export interface ExpendableResource {
+  id: string;
+  name: string;
+  current: number;
+  max: number;
+  resetOn?: 'short' | 'long' | 'none';
+}
+
+export interface HitDice {
+  current: number;
+  total: number;
+  dieType: string; // 'd6', 'd8', 'd10', 'd12'
+}
+
+export interface Currency {
+  cp: number;
+  sp: number;
+  ep: number;
+  gp: number;
+  pp: number;
+}
+
 export interface Character {
   name: string;
   path?: string;
@@ -49,12 +98,22 @@ export interface Character {
   tags?: string[];
   hp?: number;
   hp_max?: number;
+  temp_hp?: number;
   ac?: number;
   speed?: string;
   race?: string;
   class?: string;
   status?: string;
   level?: number;
+  inspiration?: boolean;
+  deathSaves?: DeathSaves;
+  hitDice?: HitDice;
+  spellcastingAbility?: 'int' | 'wis' | 'cha';
+  spellSlots?: SpellSlot[];
+  spells?: Spell[];
+  resources?: ExpendableResource[];
+  currency?: Currency;
+  savingThrowsProficient?: string[];
   talespire_id?: string;
   talespire_name?: string;
   attacks?: Attack[];
