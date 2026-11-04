@@ -547,6 +547,381 @@
     color: #fff;
 }
 
+/* Action Management & Add Button */
+.sheet-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    margin-bottom: 6px;
+}
+
+.btn-add-action {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #c7d2fe;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-add-action:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.atk-title-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.atk-card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-atk-manage {
+    background: transparent;
+    border: 1px solid #2d3345;
+    color: #94a3b8;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.btn-atk-manage:hover {
+    color: #fff;
+    border-color: #4f5875;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-atk-manage.delete:hover {
+    color: #f87171;
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+/* Modal for Adding / Editing Actions */
+.action-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 12px;
+}
+
+.action-modal {
+    background: #181a24;
+    border: 1px solid #31374a;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.action-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #1e2230;
+    border-bottom: 1px solid #2d3345;
+}
+
+.action-modal-header h3 {
+    margin: 0;
+    font-size: 13.5px;
+    color: #fff;
+}
+
+.btn-close-modal {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.btn-close-modal:hover {
+    color: #fff;
+}
+
+.action-modal-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modal-form-group label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.modal-form-group input, .modal-form-group textarea {
+    background: #12141c;
+    border: 1px solid #282d3e;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #fff;
+    font-size: 12px;
+    font-family: inherit;
+}
+
+.modal-form-group input:focus, .modal-form-group textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.modal-form-row {
+    display: flex;
+    gap: 8px;
+}
+
+.modal-form-row .modal-form-group {
+    flex: 1;
+}
+
+.action-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #14161f;
+    border-top: 1px solid #252936;
+}
+
+/* Death Saves Card */
+.death-saves-card {
+    background: #251217;
+    border: 1px solid #7f1d1d;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    animation: pulseDeath 2s infinite ease-in-out;
+}
+
+@keyframes pulseDeath {
+    0%, 100% { border-color: #7f1d1d; }
+    50% { border-color: #ef4444; }
+}
+
+.death-saves-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #f87171;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.death-saves-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.death-save-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.death-save-row.success { color: #34d399; }
+.death-save-row.failure { color: #f87171; }
+
+.death-save-bubbles {
+    display: flex;
+    gap: 8px;
+}
+
+.death-bubble {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #4b5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    color: transparent;
+    transition: all 0.15s ease;
+}
+
+.death-save-row.success .death-bubble.filled {
+    background: #10b981;
+    border-color: #34d399;
+    color: #fff;
+}
+
+.death-save-row.failure .death-bubble.filled {
+    background: #ef4444;
+    border-color: #f87171;
+    color: #fff;
+}
+
+.death-save-buttons {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.btn-death-save {
+    flex: 1;
+    background: #b91c1c;
+    border: 1px solid #ef4444;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-death-save:hover {
+    background: #dc2626;
+}
+
+.btn-death-reset {
+    background: #252836;
+    border: 1px solid #374151;
+    color: #94a3b8;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.btn-death-reset:hover {
+    color: #fff;
+    background: #374151;
+}
+
+.death-save-status {
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.death-save-status.stabilized {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.death-save-status.dead {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+/* Resource Strip */
+.sheet-resource-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 4px 0;
+}
+
+.resource-chip {
+    background: #191c26;
+    border: 1px solid #282f44;
+    border-radius: 4px;
+    padding: 3px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.resource-chip-name {
+    color: #a5b4fc;
+    font-weight: 700;
+}
+
+.resource-bubbles {
+    display: flex;
+    gap: 4px;
+}
+
+.resource-bubble {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 1.5px solid #6366f1;
+    background: #6366f1;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.resource-bubble.empty {
+    background: transparent;
+    border-color: #4b5563;
+}
+
+.resource-bubble.square {
+    border-radius: 2px;
+}
+
+/* Editable Parameters in Defense Grid */
+.defense-badge.editable {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+.defense-badge.editable:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.def-edit-icon {
+    font-size: 9px;
+    color: #6366f1;
+    margin-left: 2px;
+    opacity: 0.8;
+}
+
+.editable-max-hp {
+    cursor: pointer;
+    border-bottom: 1px dashed #64748b;
+    transition: color 0.12s;
+}
+
+.editable-max-hp:hover {
+    color: #93c5fd;
+    border-color: #93c5fd;
+}
+
 /* --- TAB 2: INVENTORY --- */
 .inventory-header-panel {
     background: #161820;

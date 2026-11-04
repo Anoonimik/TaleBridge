@@ -358,6 +358,65 @@ async function updateCharacterSection(vault, file, sectionHeaderName, newSection
     return updatedContent;
 }
 
+function serializeActions(attacks) {
+    if (!attacks || attacks.length === 0) return '';
+    return attacks.map(atk => {
+        let block = '```dnd-action\n';
+        block += `name: ${atk.name || 'Атака'}\n`;
+        if (atk.hit) block += `hit: ${atk.hit}\n`;
+        if (atk.dmg) block += `dmg: ${atk.dmg}\n`;
+        if (atk.type) block += `type: ${atk.type}\n`;
+        if (atk.desc) block += `desc: ${atk.desc}\n`;
+        block += '```';
+        return block;
+    }).join('\n\n');
+}
+
+async function updateCharacterActions(vault, file, attacks) {
+    const content = await vault.read(file);
+    const serialized = serializeActions(attacks);
+
+    const firstActionIdx = content.indexOf('```dnd-action');
+    if (firstActionIdx !== -1) {
+        const regex = /```dnd-action[\s\S]*?```/g;
+        let lastEnd = -1;
+        let m;
+        while ((m = regex.exec(content)) !== null) {
+            lastEnd = m.index + m[0].length;
+        }
+        if (lastEnd !== -1) {
+            const before = content.slice(0, firstActionIdx).trimEnd();
+            const after = content.slice(lastEnd).trimStart();
+            const newContent = serialized 
+                ? `${before}\n\n${serialized}\n\n${after}`.replace(/\n{3,}/g, '\n\n').trim() + '\n'
+                : `${before}\n\n${after}`.replace(/\n{3,}/g, '\n\n').trim() + '\n';
+            await vault.modify(file, newContent);
+            return;
+        }
+    }
+
+    if (!serialized) return;
+
+    const sectionHeaders = ['## Заметки игрока', '## Инвентарь', '## Предыстория'];
+    let insertIdx = -1;
+    for (const h of sectionHeaders) {
+        const idx = content.indexOf(h);
+        if (idx !== -1 && (insertIdx === -1 || idx < insertIdx)) {
+            insertIdx = idx;
+        }
+    }
+
+    let newContent;
+    if (insertIdx !== -1) {
+        const before = content.slice(0, insertIdx).trimEnd();
+        const after = content.slice(insertIdx).trimStart();
+        newContent = `${before}\n\n## Действия и атаки\n\n${serialized}\n\n${after}`.trim() + '\n';
+    } else {
+        newContent = `${content.trimEnd()}\n\n## Действия и атаки\n\n${serialized}\n`;
+    }
+    await vault.modify(file, newContent);
+}
+
 function hasTag(tags, targetTags) {
     if (!tags) return false;
     const tagArray = (Array.isArray(tags) ? tags : [tags]).flatMap(t => 
@@ -1172,6 +1231,44 @@ class TaleBridgePlugin extends obsidian.Plugin {
                             type: 'CHARACTER_HP_UPDATED',
                             payload: { characterName: payload.characterName, hp: payload.hp, maxHp: payload.maxHp }
                         });
+                    }
+                }
+                break;
+
+            case 'UPDATE_CHARACTER_ACTIONS':
+                if (payload && payload.characterName && Array.isArray(payload.attacks)) {
+                    const file = this.findCharacterFile(payload.characterName);
+                    if (file) {
+                        await updateCharacterActions(this.app.vault, file, payload.attacks);
+                        const updatedData = await this.getCharacterPlayerData(payload.characterName);
+                        this.wss.broadcast({
+                            type: 'PLAYER_DATA',
+                            payload: updatedData
+                        });
+                        await this.scanAndSendCharacters();
+                        new obsidian.Notice(`Действия обновлены: ${payload.characterName}`);
+                    }
+                }
+                break;
+
+            case 'UPDATE_CHARACTER_PARAM':
+                if (payload && payload.characterName && payload.param) {
+                    const file = this.findCharacterFile(payload.characterName);
+                    if (file) {
+                        await this.app.fileManager.processFrontMatter(file, (fm) => {
+                            if (payload.param === 'ac') fm.ac = payload.value;
+                            else if (payload.param === 'hp_max') fm.hp_max = payload.value;
+                            else if (payload.param === 'speed') fm.speed = payload.value;
+                            else if (payload.param === 'level') fm.level = payload.value;
+                            else if (payload.param === 'status') fm.status = payload.value;
+                        });
+                        const updatedData = await this.getCharacterPlayerData(payload.characterName);
+                        this.wss.broadcast({
+                            type: 'PLAYER_DATA',
+                            payload: updatedData
+                        });
+                        await this.scanAndSendCharacters();
+                        new obsidian.Notice(`Параметр ${payload.param} обновлен: ${payload.characterName}`);
                     }
                 }
                 break;

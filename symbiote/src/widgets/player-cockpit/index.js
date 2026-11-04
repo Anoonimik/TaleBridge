@@ -259,8 +259,8 @@
         }
 
         renderCharacterSheet(data) {
-            const hp = parseInt(data.hp, 10) || 20;
-            const maxHp = parseInt(data.hp_max, 10) || hp;
+            const hp = parseInt(data.hp, 10) || 0;
+            const maxHp = parseInt(data.hp_max, 10) || hp || 20;
             const hpPercent = Math.min(100, Math.max(0, Math.round((hp / (maxHp || 1)) * 100)));
             const hpClass = hpPercent <= 25 ? 'critical' : (hpPercent <= 50 ? 'warning' : 'healthy');
             const escape = window.TBTextUtils?.escapeHtml || (s => s);
@@ -276,6 +276,53 @@
 
             const ability = window.TBAbilityCell;
             const attack = window.TBAttackCard;
+            const resources = this.getResources(data);
+
+            const deathSavesHtml = `
+                <div class="death-saves-card">
+                    <div class="death-saves-title">БЕЗ СОЗНАНИЯ: СПАСБРОСКИ ОТ СМЕРТИ</div>
+                    <div class="death-saves-rows">
+                        <div class="death-save-row success">
+                            <span class="death-save-label">Успехи:</span>
+                            <div class="death-save-bubbles">
+                                <span class="death-bubble ${this.deathSaves.successes >= 1 ? 'filled' : ''}" data-type="success" data-idx="1">●</span>
+                                <span class="death-bubble ${this.deathSaves.successes >= 2 ? 'filled' : ''}" data-type="success" data-idx="2">●</span>
+                                <span class="death-bubble ${this.deathSaves.successes >= 3 ? 'filled' : ''}" data-type="success" data-idx="3">●</span>
+                            </div>
+                        </div>
+                        <div class="death-save-row failure">
+                            <span class="death-save-label">Провалы:</span>
+                            <div class="death-save-bubbles">
+                                <span class="death-bubble ${this.deathSaves.failures >= 1 ? 'filled' : ''}" data-type="failure" data-idx="1">●</span>
+                                <span class="death-bubble ${this.deathSaves.failures >= 2 ? 'filled' : ''}" data-type="failure" data-idx="2">●</span>
+                                <span class="death-bubble ${this.deathSaves.failures >= 3 ? 'filled' : ''}" data-type="failure" data-idx="3">●</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="death-save-buttons">
+                        <button id="btnRollDeathSave" class="btn-death-save">🎲 Бросить спасбросок (d20)</button>
+                        <button id="btnResetDeathSaves" class="btn-death-reset" title="Сбросить спасброски">Сброс</button>
+                    </div>
+                    ${this.deathSaves.status ? `<div class="death-save-status ${this.deathSaves.statusClass}">${this.deathSaves.status}</div>` : ''}
+                </div>
+            `;
+
+            const resourceStripHtml = resources.length > 0 ? `
+                <div class="sheet-resource-strip">
+                    ${resources.map((res, rIdx) => `
+                        <div class="resource-chip" data-r-idx="${rIdx}">
+                            <span class="resource-chip-name">${escape(res.name)}</span>
+                            <div class="resource-bubbles">
+                                ${Array.from({ length: res.total }).map((_, bIdx) => `
+                                    <span class="resource-bubble ${res.shape || 'circle'} ${bIdx < (res.total - res.used) ? '' : 'empty'}" 
+                                          data-r-idx="${rIdx}" data-b-idx="${bIdx}" title="${escape(res.name)} (${res.rest === 'short' ? 'КО' : 'ДО'}): нажмите, чтобы потратить/восстановить">
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
 
             return `
                 <div class="player-sheet-container">
@@ -296,7 +343,10 @@
                         <div class="hp-row">
                             <div class="hp-text-group">
                                 <span class="stat-label">Здоровье (ХП)</span>
-                                <span class="hp-digits"><strong id="playerHpCur">${hp}</strong> / ${maxHp}</span>
+                                <span class="hp-digits">
+                                    <strong id="playerHpCur">${hp}</strong> / 
+                                    <span id="btnEditMaxHp" class="editable-max-hp" title="Нажмите, чтобы изменить Макс. ХП">${maxHp} ✎</span>
+                                </span>
                             </div>
                             <div class="hp-quick-buttons">
                                 <button class="btn-hp-mod minus" data-mod="-5">-5</button>
@@ -308,16 +358,22 @@
                         <div class="hp-bar-bg">
                             <div id="playerHpBarFill" class="hp-bar-fill ${hpClass}" style="width: ${hpPercent}%;"></div>
                         </div>
-                        <div class="hp-custom-input-row">
-                            <input type="number" id="hpCustomVal" placeholder="Кол-во" min="1" value="5" class="hp-num-input" />
-                            <button id="btnHpDamage" class="btn-hp-action dmg">Урон</button>
-                            <button id="btnHpHeal" class="btn-hp-action heal">Лечение</button>
-                        </div>
+
+                        ${hp === 0 ? deathSavesHtml : `
+                            <div class="hp-custom-input-row">
+                                <input type="number" id="hpCustomVal" placeholder="Кол-во" min="1" value="5" class="hp-num-input" />
+                                <button id="btnHpDamage" class="btn-hp-action dmg">Урон</button>
+                                <button id="btnHpHeal" class="btn-hp-action heal">Лечение</button>
+                            </div>
+                        `}
+
+                        ${resourceStripHtml}
+
                         <div class="hp-rest-row">
-                            <button id="btnShortRest" class="btn-rest short" title="Короткий отдых: бросить кость хитов в лоток TaleSpire">
+                            <button id="btnShortRest" class="btn-rest short" title="Короткий отдых: бросить кость хитов в лоток TaleSpire и восстановить КО-ресурсы">
                                 Короткий отдых
                             </button>
-                            <button id="btnLongRest" class="btn-rest long" title="Долгий отдых: полностью восстановить ХП">
+                            <button id="btnLongRest" class="btn-rest long" title="Долгий отдых: полностью восстановить ХП, ячейки магии и заряды">
                                 Долгий отдых
                             </button>
                         </div>
@@ -325,13 +381,13 @@
 
                     <!-- Core Defenses & Vitals (AC, Speed, Initiative) -->
                     <div class="sheet-defense-grid">
-                        <div class="defense-badge ac">
-                            <span class="def-num">${data.ac || 10}</span>
-                            <span class="def-label">Класс Доспеха (КД)</span>
+                        <div class="defense-badge ac editable" id="btnEditAc" title="Нажмите для изменения КД в Obsidian">
+                            <span class="def-num" id="defAcVal">${data.ac || 10}</span>
+                            <span class="def-label">КД <span class="def-edit-icon">✎</span></span>
                         </div>
-                        <div class="defense-badge speed">
-                            <span class="def-num">${data.speed || '9 м'}</span>
-                            <span class="def-label">Скорость</span>
+                        <div class="defense-badge speed editable" id="btnEditSpeed" title="Нажмите для изменения Скорости в Obsidian">
+                            <span class="def-num" id="defSpeedVal">${data.speed || '9 м'}</span>
+                            <span class="def-label">Скорость <span class="def-edit-icon">✎</span></span>
                         </div>
                         <div class="defense-badge init" id="btnRollInit" title="Нажмите для броска инициативы в TaleSpire">
                             <span class="def-num">1d20</span>
@@ -350,16 +406,271 @@
                         ${ability ? ability.render('ХАР', stats.cha, 'Харизма') : ''}
                     </div>
 
-                    <!-- Actions and Attacks -->
-                    <div class="sheet-section-title" style="margin-top: 14px;">Действия и атаки</div>
+                    <!-- Actions and Attacks with Add / Edit / Delete -->
+                    <div class="sheet-section-header">
+                        <div class="sheet-section-title" style="margin: 0;">Действия и атаки</div>
+                        <button id="btnAddAction" class="btn-add-action" title="Добавить новое действие или оружие">+ Добавить</button>
+                    </div>
                     <div class="sheet-attacks-list">
                         ${(!data.attacks || data.attacks.length === 0)
-                            ? `<div class="empty-hint">Действия в блоках dnd-action не указаны в заметке</div>`
-                            : data.attacks.map(atk => attack ? attack.render(atk) : '').join('')
+                            ? `<div class="empty-hint">Нет добавленных действий. Нажмите «+ Добавить», чтобы создать атаку или оружие.</div>`
+                            : data.attacks.map((atk, idx) => attack ? attack.render(atk, { canManage: true, index: idx }) : '').join('')
                         }
                     </div>
                 </div>
             `;
+        }
+
+        getResources(data) {
+            const charName = data.name || 'Hero';
+            const storageKey = `tb_res_${charName}`;
+            let saved = null;
+            try {
+                saved = JSON.parse(localStorage.getItem(storageKey));
+            } catch (e) {}
+
+            if (saved && Array.isArray(saved) && saved.length > 0) {
+                return saved;
+            }
+
+            const cls = (data.class || '').toLowerCase();
+            const defaultRes = [];
+
+            if (cls.includes('варвар')) {
+                defaultRes.push({ id: 'rage', name: 'Ярость', total: 2, used: 0, rest: 'long', shape: 'square' });
+            }
+            if (cls.includes('воин')) {
+                defaultRes.push({ id: 'second_wind', name: 'Второе дыхание', total: 1, used: 0, rest: 'short', shape: 'square' });
+                defaultRes.push({ id: 'action_surge', name: 'Всплеск действий', total: 1, used: 0, rest: 'short', shape: 'square' });
+            }
+            if (cls.includes('чародей') || cls.includes('волшебниц') || cls.includes('маг')) {
+                defaultRes.push({ id: 'spell_1', name: 'Ячейки I', total: 4, used: 0, rest: 'long', shape: 'circle' });
+                defaultRes.push({ id: 'spell_2', name: 'Ячейки II', total: 2, used: 0, rest: 'long', shape: 'circle' });
+            } else if (cls.includes('паладин') || cls.includes('следопыт')) {
+                defaultRes.push({ id: 'spell_1', name: 'Ячейки I', total: 2, used: 0, rest: 'long', shape: 'circle' });
+            }
+
+            return defaultRes;
+        }
+
+        saveResources(charName, resList) {
+            try {
+                localStorage.setItem(`tb_res_${charName}`, JSON.stringify(resList));
+            } catch (e) {}
+        }
+
+        toggleResource(data, rIdx, bIdx) {
+            const list = this.getResources(data);
+            if (!list[rIdx]) return;
+            const res = list[rIdx];
+            const available = res.total - res.used;
+            if (bIdx < available) {
+                res.used = Math.min(res.total, res.used + 1);
+            } else {
+                res.used = Math.max(0, res.used - 1);
+            }
+            this.saveResources(data.name, list);
+            const charPane = this.container?.querySelector('#pTabCharacter');
+            if (charPane) {
+                charPane.innerHTML = this.renderCharacterSheet(data);
+                this.bindSheetEvents(data);
+            }
+        }
+
+        resetResources(data, restType) {
+            const list = this.getResources(data);
+            let changed = false;
+            list.forEach(r => {
+                if (restType === 'long' || r.rest === restType) {
+                    r.used = 0;
+                    changed = true;
+                }
+            });
+            if (changed) {
+                this.saveResources(data.name, list);
+            }
+        }
+
+        handleDeathSaveRoll(data) {
+            if (this.deathSaves.status === 'Стабилизирован' || this.deathSaves.status === 'Мёртв') {
+                return;
+            }
+
+            window.TBFeatureRollDice?.roll('1d20', `${data.name}: Спасбросок от смерти`, false);
+
+            const d20 = Math.floor(Math.random() * 20) + 1;
+            let msg = '';
+
+            if (d20 === 20) {
+                this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
+                if (window.TBFeatureApplyDamage) {
+                    window.TBFeatureApplyDamage.modifyHp(data, 1, this.container);
+                }
+                msg = `🌟 ${data.name} выбрасывает [20] на спасброске от смерти и поднимается с 1 ХП!`;
+            } else if (d20 === 1) {
+                this.deathSaves.failures = Math.min(3, this.deathSaves.failures + 2);
+                msg = `💀 ${data.name} выбрасывает [1] на спасброске от смерти: сразу 2 ПРОВАЛА!`;
+            } else if (d20 >= 10) {
+                this.deathSaves.successes = Math.min(3, this.deathSaves.successes + 1);
+                msg = `🛡️ ${data.name} спасбросок от смерти [${d20}]: УСПЕХ (${this.deathSaves.successes}/3)`;
+            } else {
+                this.deathSaves.failures = Math.min(3, this.deathSaves.failures + 1);
+                msg = `⚠️ ${data.name} спасбросок от смерти [${d20}]: ПРОВАЛ (${this.deathSaves.failures}/3)`;
+            }
+
+            if (this.deathSaves.successes >= 3) {
+                this.deathSaves.status = 'Стабилизирован';
+                this.deathSaves.statusClass = 'stabilized';
+                msg += ` — ${data.name} стабилизирован!`;
+            } else if (this.deathSaves.failures >= 3) {
+                this.deathSaves.status = 'Мёртв';
+                this.deathSaves.statusClass = 'dead';
+                msg += ` — ${data.name} погибает (3 провала)...`;
+            }
+
+            if (window.TBApi?.sendChatMessage && msg) {
+                window.TBApi.sendChatMessage(msg);
+            }
+
+            const charPane = this.container?.querySelector('#pTabCharacter');
+            if (charPane) {
+                charPane.innerHTML = this.renderCharacterSheet(data);
+                this.bindSheetEvents(data);
+            }
+        }
+
+        openActionModal(data, existingAction = null, editIndex = -1) {
+            const oldModal = document.querySelector('.action-modal-overlay');
+            if (oldModal) oldModal.remove();
+
+            const isEdit = existingAction !== null && editIndex >= 0;
+            const escape = window.TBTextUtils?.escapeHtml || (s => s);
+
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'action-modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="action-modal">
+                    <div class="action-modal-header">
+                        <h3>${isEdit ? 'Редактировать действие' : 'Новое действие / Оружие'}</h3>
+                        <button class="btn-close-modal" id="btnModalClose">✕</button>
+                    </div>
+                    <div class="action-modal-body">
+                        <div class="modal-form-group">
+                            <label>Название оружия или действия *</label>
+                            <input type="text" id="modalActionName" placeholder="например, Зазубренный меч +1" value="${escape(existingAction?.name || '')}" />
+                        </div>
+                        <div class="modal-form-row">
+                            <div class="modal-form-group">
+                                <label>Бонус атаки</label>
+                                <input type="text" id="modalActionHit" placeholder="+5" value="${escape(existingAction?.hit || '')}" />
+                            </div>
+                            <div class="modal-form-group">
+                                <label>Урон</label>
+                                <input type="text" id="modalActionDmg" placeholder="1d8+3" value="${escape(existingAction?.dmg || '')}" />
+                            </div>
+                        </div>
+                        <div class="modal-form-group">
+                            <label>Тип урона</label>
+                            <input type="text" id="modalActionType" placeholder="рубящий, колющий, огонь..." value="${escape(existingAction?.type || '')}" />
+                        </div>
+                        <div class="modal-form-group">
+                            <label>Описание / Свойства</label>
+                            <textarea id="modalActionDesc" rows="3" placeholder="Дистанция, свойства оружия, заговор...">${escape(existingAction?.desc || '')}</textarea>
+                        </div>
+                    </div>
+                    <div class="action-modal-footer">
+                        <button class="btn-rest" id="btnModalCancel" style="border: 1px solid #374151;">Отмена</button>
+                        <button class="btn-primary" id="btnModalSave">Сохранить</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modalOverlay);
+
+            const close = () => modalOverlay.remove();
+            modalOverlay.querySelector('#btnModalClose').onclick = close;
+            modalOverlay.querySelector('#btnModalCancel').onclick = close;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) close();
+            };
+
+            const inputName = modalOverlay.querySelector('#modalActionName');
+            inputName.focus();
+
+            modalOverlay.querySelector('#btnModalSave').onclick = () => {
+                const name = inputName.value.trim();
+                if (!name) {
+                    inputName.style.borderColor = '#ef4444';
+                    return;
+                }
+
+                const hit = modalOverlay.querySelector('#modalActionHit').value.trim();
+                const dmg = modalOverlay.querySelector('#modalActionDmg').value.trim();
+                const type = modalOverlay.querySelector('#modalActionType').value.trim();
+                const desc = modalOverlay.querySelector('#modalActionDesc').value.trim();
+
+                const newAction = { name, hit, dmg, type, desc };
+                data.attacks = data.attacks || [];
+
+                if (isEdit) {
+                    data.attacks[editIndex] = newAction;
+                } else {
+                    data.attacks.push(newAction);
+                }
+
+                close();
+
+                if (window.TBNetwork) {
+                    window.TBNetwork.send('UPDATE_CHARACTER_ACTIONS', {
+                        characterName: data.name,
+                        attacks: data.attacks
+                    });
+                }
+
+                const charPane = this.container?.querySelector('#pTabCharacter');
+                if (charPane) {
+                    charPane.innerHTML = this.renderCharacterSheet(data);
+                    this.bindSheetEvents(data);
+                }
+            };
+        }
+
+        deleteAction(data, index) {
+            if (!data.attacks || index < 0 || index >= data.attacks.length) return;
+            data.attacks.splice(index, 1);
+            if (window.TBNetwork) {
+                window.TBNetwork.send('UPDATE_CHARACTER_ACTIONS', {
+                    characterName: data.name,
+                    attacks: data.attacks
+                });
+            }
+            const charPane = this.container?.querySelector('#pTabCharacter');
+            if (charPane) {
+                charPane.innerHTML = this.renderCharacterSheet(data);
+                this.bindSheetEvents(data);
+            }
+        }
+
+        editParam(data, paramName, paramLabel, currentVal) {
+            const promptVal = prompt(`Введите новое значение для ${paramLabel}:`, currentVal);
+            if (promptVal === null) return;
+            const cleanVal = promptVal.trim();
+            if (!cleanVal) return;
+
+            data[paramName] = cleanVal;
+            if (window.TBNetwork) {
+                window.TBNetwork.send('UPDATE_CHARACTER_PARAM', {
+                    characterName: data.name,
+                    param: paramName,
+                    value: cleanVal
+                });
+            }
+
+            const charPane = this.container?.querySelector('#pTabCharacter');
+            if (charPane) {
+                charPane.innerHTML = this.renderCharacterSheet(data);
+                this.bindSheetEvents(data);
+            }
         }
 
         bindEvents(data) {
@@ -374,7 +685,6 @@
                     const pane = this.container.querySelector(`#pTab${this.capitalize(this.activeSubTab)}`);
                     if (pane) pane.style.display = 'block';
 
-                    // Re-render clues if switching to clues tab
                     if (this.activeSubTab === 'clues' && window.TBFeatureArchiveClues) {
                         window.TBFeatureArchiveClues.renderArchive('playerCluesBox');
                     }
@@ -402,10 +712,92 @@
                 });
             }
 
+            this.bindSheetEvents(data);
+        }
+
+        bindSheetEvents(data) {
             // Delegate HP modification to feature
             if (window.TBFeatureApplyDamage) {
                 window.TBFeatureApplyDamage.bindEvents(this.container, data);
             }
+
+            // Death saves buttons
+            const btnDeath = this.container.querySelector('#btnRollDeathSave');
+            if (btnDeath) {
+                btnDeath.addEventListener('click', () => this.handleDeathSaveRoll(data));
+            }
+
+            const btnResetDeath = this.container.querySelector('#btnResetDeathSaves');
+            if (btnResetDeath) {
+                btnResetDeath.addEventListener('click', () => {
+                    this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
+                    const charPane = this.container?.querySelector('#pTabCharacter');
+                    if (charPane) {
+                        charPane.innerHTML = this.renderCharacterSheet(data);
+                        this.bindSheetEvents(data);
+                    }
+                });
+            }
+
+            // Resource bubble clicks
+            this.container.querySelectorAll('.resource-bubble').forEach(bubble => {
+                bubble.addEventListener('click', () => {
+                    const rIdx = parseInt(bubble.dataset.rIdx, 10);
+                    const bIdx = parseInt(bubble.dataset.bIdx, 10);
+                    this.toggleResource(data, rIdx, bIdx);
+                });
+            });
+
+            // Editable parameters: AC, Speed, Max HP
+            const btnEditAc = this.container.querySelector('#btnEditAc');
+            if (btnEditAc) {
+                btnEditAc.addEventListener('click', () => {
+                    this.editParam(data, 'ac', 'Класса Доспеха (КД)', data.ac || '10');
+                });
+            }
+
+            const btnEditSpeed = this.container.querySelector('#btnEditSpeed');
+            if (btnEditSpeed) {
+                btnEditSpeed.addEventListener('click', () => {
+                    this.editParam(data, 'speed', 'Скорости', data.speed || '9 м');
+                });
+            }
+
+            const btnEditMaxHp = this.container.querySelector('#btnEditMaxHp');
+            if (btnEditMaxHp) {
+                btnEditMaxHp.addEventListener('click', () => {
+                    this.editParam(data, 'hp_max', 'Максимального здоровья (ХП)', data.hp_max || data.hp || '20');
+                });
+            }
+
+            // Add action button
+            const btnAddAction = this.container.querySelector('#btnAddAction');
+            if (btnAddAction) {
+                btnAddAction.addEventListener('click', () => {
+                    this.openActionModal(data);
+                });
+            }
+
+            // Edit / delete action buttons
+            this.container.querySelectorAll('.btn-atk-manage.edit').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = parseInt(btn.dataset.index, 10);
+                    if (data.attacks && data.attacks[idx]) {
+                        this.openActionModal(data, data.attacks[idx], idx);
+                    }
+                });
+            });
+
+            this.container.querySelectorAll('.btn-atk-manage.delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = parseInt(btn.dataset.index, 10);
+                    if (confirm(`Удалить действие "${data.attacks[idx]?.name || 'Атака'}"?`)) {
+                        this.deleteAction(data, idx);
+                    }
+                });
+            });
 
             // Long Rest button
             const btnLong = this.container.querySelector('#btnLongRest');
@@ -417,6 +809,9 @@
                     if (window.TBFeatureApplyDamage && delta > 0) {
                         window.TBFeatureApplyDamage.modifyHp(data, delta, this.container);
                     }
+                    this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
+                    this.resetResources(data, 'long');
+
                     const orig = btnLong.textContent;
                     btnLong.textContent = 'Отдых завершён!';
                     btnLong.classList.add('rested');
@@ -426,7 +821,13 @@
                     }, 2000);
 
                     if (window.TBApi?.sendChatMessage) {
-                        window.TBApi.sendChatMessage(`${data.name} завершает Долгий отдых (ХП: ${max}/${max})`);
+                        window.TBApi.sendChatMessage(`${data.name} завершает Долгий отдых (ХП: ${max}/${max}, ячейки и ресурсы восстановлены)`);
+                    }
+
+                    const charPane = this.container?.querySelector('#pTabCharacter');
+                    if (charPane) {
+                        charPane.innerHTML = this.renderCharacterSheet(data);
+                        this.bindSheetEvents(data);
                     }
                 });
             }
@@ -448,8 +849,16 @@
                     if (window.TBFeatureRollDice) {
                         await window.TBFeatureRollDice.roll(formula, `${data.name}: Кость Хитов (Короткий отдых)`, false);
                     }
+                    this.resetResources(data, 'short');
+
                     if (window.TBApi?.sendChatMessage) {
                         window.TBApi.sendChatMessage(`${data.name} совершает Короткий отдых и бросает Кость Хитов (${formula})`);
+                    }
+
+                    const charPane = this.container?.querySelector('#pTabCharacter');
+                    if (charPane) {
+                        charPane.innerHTML = this.renderCharacterSheet(data);
+                        this.bindSheetEvents(data);
                     }
                 });
             }
@@ -493,6 +902,24 @@
             if (window.TBFeatureApplyDamage) {
                 window.TBFeatureApplyDamage.updateHpDisplay(hp, maxHp, this.container);
             }
+            const data = window.TBState?.get('playerData');
+            if (data) {
+                const isZero = hp === 0;
+                const deathCard = this.container?.querySelector('.death-saves-card');
+                if ((isZero && !deathCard) || (!isZero && deathCard)) {
+                    if (!isZero) {
+                        this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
+                    }
+                    data.hp = hp;
+                    data.hp_max = maxHp;
+                    const charPane = this.container?.querySelector('#pTabCharacter');
+                    if (charPane) {
+                        charPane.innerHTML = this.renderCharacterSheet(data);
+                        this.bindSheetEvents(data);
+                    }
+                }
+            }
+        }
         }
 
         capitalize(str) {
