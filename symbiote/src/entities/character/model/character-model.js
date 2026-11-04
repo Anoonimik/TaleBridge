@@ -53,6 +53,17 @@
                 return false;
             });
 
+            // If the active character is known, ensure they are retained in the playable list
+            const activePlayer = window.TBState?.get('playerCharacter');
+            if (activePlayer && !playable.some(p => p.name === activePlayer)) {
+                const foundInRoster = list.find(c => c.name === activePlayer && c.playable !== false);
+                if (foundInRoster) {
+                    playable.unshift(foundInRoster);
+                } else if (activePlayer === 'Артём' || activePlayer.includes('Глицин')) {
+                    playable.unshift({ name: activePlayer, class: 'Игрок', category: 'Игроки', playable: true });
+                }
+            }
+
             // If the vault has playable characters, return them directly
             if (playable.length > 0) {
                 return playable;

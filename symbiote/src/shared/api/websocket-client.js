@@ -105,16 +105,16 @@
 
                     const playable = window.TBCharacterModel?.getPlayableCharacters(list) || [];
                     let curChar = window.TBState?.get('playerCharacter');
-                    if (!curChar || (playable.length > 0 && !playable.some(p => p.name === curChar))) {
-                        if (playable.length > 0) {
-                            curChar = playable[0].name;
-                            window.TBState?.setPlayerCharacter(curChar);
-                        }
+
+                    // ONLY select first character if no character has been selected yet
+                    if (!curChar && playable.length > 0) {
+                        curChar = playable[0].name;
+                        window.TBState?.setPlayerCharacter(curChar);
                     }
 
-                    // Request initial player data only if not loaded yet or if character changed
+                    // Request initial player data only if no data has been loaded yet
                     const curData = window.TBState?.get('playerData');
-                    if (!curData || !curData.name || curData.name !== curChar) {
+                    if (!curData || !curData.name) {
                         if (curChar) {
                             this.send('GET_PLAYER_DATA', { characterName: curChar });
                         }
@@ -130,11 +130,6 @@
                 case 'PLAYER_DATA':
                     if (payload && !payload.error) {
                         window.TBState?.set('playerData', payload);
-                        if (window.TBPlayerView) {
-                            window.TBPlayerView.render(payload);
-                        } else if (window.TBWidgets?.playerCockpit) {
-                            window.TBWidgets.playerCockpit.render(payload);
-                        }
                     }
                     break;
 

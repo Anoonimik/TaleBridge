@@ -431,10 +431,21 @@ async function scanCharacters(vault, metadataCache) {
     const roster = [];
 
     for (const file of files) {
-        const cache = metadataCache.getFileCache(file);
-        if (!cache || !cache.frontmatter) continue;
+        let fm = metadataCache.getFileCache(file)?.frontmatter;
+        if (!fm) {
+            try {
+                const raw = await vault.read(file);
+                if (raw.startsWith('---')) {
+                    const endIdx = raw.indexOf('\n---', 3);
+                    if (endIdx !== -1) {
+                        const yamlText = raw.substring(3, endIdx);
+                        fm = obsidian.parseYaml(yamlText) || {};
+                    }
+                }
+            } catch (e) {}
+        }
+        if (!fm) continue;
 
-        const fm = cache.frontmatter;
         const tags = fm.tags ? (Array.isArray(fm.tags) ? fm.tags : [fm.tags]) : [];
 
         const isNpc = hasTag(tags, [
@@ -1061,6 +1072,13 @@ class TaleBridgePlugin extends obsidian.Plugin {
         return roster;
     }
 
+    debouncedScanCharacters(delayMs = 400) {
+        if (this._scanTimeout) clearTimeout(this._scanTimeout);
+        this._scanTimeout = setTimeout(() => {
+            this.scanAndSendCharacters();
+        }, delayMs);
+    }
+
     // --- Scan Vault for Story Scenes & Read-Aloud Blocks ---
     async scanAndSendScenes() {
         const scenes = await scanScenes(this.app.vault, this.app.metadataCache);
@@ -1245,7 +1263,7 @@ class TaleBridgePlugin extends obsidian.Plugin {
                             type: 'PLAYER_DATA',
                             payload: updatedData
                         });
-                        await this.scanAndSendCharacters();
+                        this.debouncedScanCharacters();
                         new obsidian.Notice(`Действия обновлены: ${payload.characterName}`);
                     }
                 }
@@ -1267,7 +1285,7 @@ class TaleBridgePlugin extends obsidian.Plugin {
                             type: 'PLAYER_DATA',
                             payload: updatedData
                         });
-                        await this.scanAndSendCharacters();
+                        this.debouncedScanCharacters();
                         new obsidian.Notice(`Параметр ${payload.param} обновлен: ${payload.characterName}`);
                     }
                 }

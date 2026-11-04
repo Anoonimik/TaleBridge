@@ -167,6 +167,10 @@
         render(data) {
             if (!this.container) return;
             if (!data || data.error) {
+                const curChar = window.TBState?.get('playerCharacter');
+                if (curChar && this.container.querySelector('.player-cockpit')) {
+                    return;
+                }
                 this.renderEmpty();
                 return;
             }
@@ -248,7 +252,12 @@
             const currentChar = window.TBState?.get('playerCharacter');
             const escape = window.TBTextUtils?.escapeHtml || (s => s);
 
-            charSelect.innerHTML = playable.map(c => `
+            let list = [...playable];
+            if (currentChar && !list.some(c => c.name === currentChar)) {
+                list.unshift({ name: currentChar, class: 'Игрок', category: 'Игроки', playable: true });
+            }
+
+            charSelect.innerHTML = list.map(c => `
                 <option value="${escape(c.name)}" ${c.name === currentChar ? 'selected' : ''}>
                     ${escape(c.name)} (${c.class || 'Игрок'})
                 </option>
