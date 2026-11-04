@@ -67,8 +67,8 @@ export const CombatantCard = ({
       }`}
     >
       {/* Top row: Side badge, Name, Initiative, Note & Delete */}
-      <div className="flex items-center justify-between gap-1.5">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             type="button"
             className={`text-xs px-2 py-0.5 rounded font-bold border cursor-pointer uppercase transition-colors shrink-0 ${sideMeta.bg} ${sideMeta.text} ${sideMeta.border}`}
@@ -79,7 +79,7 @@ export const CombatantCard = ({
           </button>
 
           <span
-            className="font-semibold text-slate-100 text-sm truncate max-w-[150px]"
+            className="font-semibold text-slate-100 text-sm truncate"
             title={combatant.name}
           >
             {combatant.name}
@@ -139,7 +139,7 @@ export const CombatantCard = ({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-1.5 pt-1">
+        <div className="flex items-center justify-between gap-1.5 pt-1 flex-wrap">
           <div className="flex items-center gap-1">
             {[-5, -1].map((val) => (
               <button

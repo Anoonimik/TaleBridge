@@ -52,7 +52,7 @@ export const AppHeader = () => {
 
   return (
     <>
-      <header className="h-11 bg-[#141622] border-b border-[#262a3d] px-2 flex items-center justify-between select-none shrink-0 z-30 gap-1.5 overflow-x-hidden">
+      <header className="min-h-11 py-1 bg-[#141622] border-b border-[#262a3d] px-2 flex items-center justify-between select-none shrink-0 z-30 gap-1.5 flex-wrap sm:flex-nowrap">
         {/* Left: Logo, Role Toggle, GM Dice Mode */}
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="flex items-center gap-1 font-bold tracking-wider text-xs shrink-0">
@@ -149,12 +149,15 @@ export const AppHeader = () => {
             value={scale}
             onChange={(e) => setScale(e.target.value)}
             className="bg-[#10111a] border border-[#262a3d] text-slate-300 text-xs rounded px-1.5 py-0.5 focus:outline-none cursor-pointer shrink-0"
-            title="Масштаб интерфейса"
+            title="Масштаб интерфейса и шрифта"
           >
             <option value="100%">100%</option>
             <option value="115%">115%</option>
             <option value="125%">125%</option>
-            <option value="150%">150%</option>
+            <option value="140%">140%</option>
+            <option value="150%">150% (2K)</option>
+            <option value="175%">175% (2K+)</option>
+            <option value="200%">200% (4K)</option>
             <option value="85%">85%</option>
           </select>
 

@@ -45,7 +45,7 @@ export const ApplyDamageControl = ({
         />
       </div>
 
-      <div className="flex items-center justify-between gap-1 pt-1">
+      <div className="flex items-center justify-between gap-1 pt-1 flex-wrap gap-y-1.5">
         <div className="flex items-center gap-1">
           {[-5, -1].map((val) => (
             <button

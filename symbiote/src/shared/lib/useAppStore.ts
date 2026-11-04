@@ -49,10 +49,19 @@ const getInitialRole = (): UserRole => {
   return 'player';
 };
 
+const getInitialScale = (): string => {
+  const stored = localStorage.getItem('tb_scale');
+  if (stored) return stored;
+  if (typeof window !== 'undefined' && (window.screen?.width >= 2560 || window.screen?.height >= 1440)) {
+    return '150%';
+  }
+  return '100%';
+};
+
 export const useAppStore = create<AppStore>((set) => ({
   role: getInitialRole(),
   activeTab: 'story',
-  scale: localStorage.getItem('tb_scale') || '100%',
+  scale: getInitialScale(),
   diceSecret: false,
   connected: false,
   vaultName: 'Obsidian Vault',

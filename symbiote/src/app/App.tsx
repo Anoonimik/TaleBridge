@@ -19,12 +19,20 @@ export const App = () => {
         px = '20px';
         break;
       case '140%':
-      case '150%':
         px = '22.4px';
+        break;
+      case '150%':
+        px = '24px';
+        break;
+      case '175%':
+        px = '28px';
+        break;
+      case '200%':
+        px = '32px';
         break;
       case '85%':
       case '90%':
-        px = '13.6px';
+        px = '14px';
         break;
       case '100%':
       default:

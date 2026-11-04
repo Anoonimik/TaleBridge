@@ -63,7 +63,7 @@ export const TokenHud = () => {
           onClick={handleOpenNote}
           title={matchInRoster ? 'Нажмите, чтобы открыть карточку существа' : selectedToken.name}
         >
-          <strong className="text-slate-100 text-sm truncate max-w-[170px]">
+          <strong className="text-slate-100 text-sm truncate max-w-[240px]">
             {matchInRoster ? matchInRoster.name : selectedToken.name}
           </strong>
           {matchInRoster?.category && (

@@ -60,7 +60,7 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
 
   return (
     <div className="bg-[#141622] border border-[#262a3d] hover:border-[#383d57] rounded-lg p-2.5 flex flex-col gap-2 transition-all shadow-sm relative">
-      <div className="flex items-center justify-between gap-1.5 min-w-0">
+      <div className="flex items-center justify-between gap-1.5 min-w-0 flex-wrap sm:flex-nowrap">
         <div
           className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer hover:opacity-85 transition-opacity"
           onClick={() => onOpenNote(character)}
@@ -166,19 +166,19 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
         </div>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-slate-300 bg-[#10111a] px-2.5 py-1.5 rounded border border-[#1f2233]">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1 text-xs text-slate-300 bg-[#10111a] px-2.5 py-1.5 rounded border border-[#1f2233]">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-slate-400 text-xs uppercase font-bold">КД</span>
           <strong className="text-slate-100 font-mono text-sm">{character.ac || 10}</strong>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-slate-400 text-xs uppercase font-bold">ХП</span>
           <strong className="text-emerald-400 font-mono text-sm">
             {hp}/{maxHp}
           </strong>
         </div>
         {character.speed && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-slate-400 text-xs uppercase font-bold">Скор</span>
             <span className="text-slate-200 text-xs">{character.speed}</span>
           </div>

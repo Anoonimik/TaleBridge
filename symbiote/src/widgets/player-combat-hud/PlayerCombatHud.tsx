@@ -77,7 +77,7 @@ export const PlayerCombatHud = () => {
             ) : (
               <div className="flex items-center gap-1.5 truncate">
                 <span className="text-slate-400">Ходит:</span>
-                <strong className="text-slate-100 font-semibold truncate max-w-[140px]">
+                <strong className="text-slate-100 font-semibold truncate max-w-[220px]">
                   {currentCombatant?.name ?? '—'}
                 </strong>
                 {turnsUntilMine && (
