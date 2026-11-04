@@ -98,12 +98,10 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
   profBonus,
   characterName,
   onToggleSkill,
-  onSetSkillProficiency,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [filterQuery, setFilterQuery] = useState('');
   const [abilityFilter, setAbilityFilter] = useState<'all' | 'str' | 'dex' | 'int' | 'wis' | 'cha' | 'proficient'>('all');
-  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const skillsData = playerData?.skills;
 
@@ -118,54 +116,6 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
     });
     return { proficientCount: prof, expertCount: exp };
   }, [skillsData]);
-
-  // Non-proficient skills for the quick-add dropdown
-  const unproficientSkills = useMemo(() => {
-    return DND_SKILLS.filter((s) => getSkillProficiency(s.id, s.label, skillsData) === 'none');
-  }, [skillsData]);
-
-  // Matcher for searching/adding
-  const findMatchingSkill = (query: string): SkillDefinition | undefined => {
-    const qClean = cleanSearchString(query);
-    const qNorm = normalizeToRu(query);
-    if (!qClean) return undefined;
-
-    return DND_SKILLS.find((skill) => {
-      const candidates = [
-        skill.label.toLowerCase(),
-        skill.englishLabel.toLowerCase(),
-        skill.id.toLowerCase(),
-        normalizeToRu(skill.label),
-      ];
-      return candidates.some((c) => c === qClean || c === qNorm || c.includes(qClean) || c.includes(qNorm));
-    });
-  };
-
-  // Quick add / toggle skill by typing name
-  const handleAddSkillFromInput = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const query = filterQuery.trim();
-    if (!query) return;
-
-    const matched = findMatchingSkill(query);
-    if (matched) {
-      if (onSetSkillProficiency) {
-        onSetSkillProficiency(matched.id, 'proficient');
-      } else {
-        onToggleSkill(matched.id);
-      }
-      setFilterQuery('');
-    }
-  };
-
-  const handleQuickAdd = (skillId: string) => {
-    if (onSetSkillProficiency) {
-      onSetSkillProficiency(skillId, 'proficient');
-    } else {
-      onToggleSkill(skillId);
-    }
-    setShowAddMenu(false);
-  };
 
   // Robust search and ability filtering
   const filteredSkills = useMemo(() => {
@@ -207,9 +157,9 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
   };
 
   return (
-    <div className="bg-[#141622] rounded-lg border border-[#262a3d] overflow-hidden transition-all shadow-xs">
+    <div className="bg-[#141622] rounded-lg border border-[#262a3d] transition-all shadow-xs">
       {/* Accordion Header */}
-      <div className="w-full px-3 py-2 flex items-center justify-between text-left bg-[#141622] hover:bg-[#181d2d] transition-colors select-none flex-wrap gap-2 border-b border-transparent">
+      <div className="w-full px-3 py-2 flex items-center justify-between text-left bg-[#141622] hover:bg-[#181d2d] transition-colors select-none flex-wrap gap-2 rounded-t-lg">
         <div
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => setIsOpen((prev) => !prev)}
@@ -238,49 +188,39 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
           )}
         </div>
 
-        {/* Right side controls: + Владение & Свернуть */}
+        {/* Right side controls: Mode Switcher & Collapse */}
         <div className="flex items-center gap-2">
-          {/* Quick-add button */}
-          <div className="relative">
+          {/* Quick toggle: All 18 vs Only Proficient */}
+          <div className="inline-flex rounded bg-[#10111a] border border-[#262a3d] p-0.5 text-[11px]">
             <button
               type="button"
               onClick={() => {
                 setIsOpen(true);
-                setShowAddMenu((prev) => !prev);
+                setAbilityFilter('all');
               }}
-              className="px-2 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-medium cursor-pointer flex items-center gap-1 transition-colors"
-              title="Добавить владение навыком"
+              className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                abilityFilter !== 'proficient'
+                  ? 'bg-[#1e2235] text-amber-300 font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
             >
-              <span>+ Владение</span>
-              <span className="text-[10px]">▾</span>
+              Все 18
             </button>
-
-            {showAddMenu && (
-              <div className="absolute right-0 top-full mt-1 w-56 max-h-64 overflow-y-auto bg-[#181d2d] border border-[#2d324a] rounded-lg shadow-xl z-30 p-1 flex flex-col gap-0.5 scrollbar-thin">
-                <div className="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 border-b border-[#262a3d]">
-                  Выберите навык для владения:
-                </div>
-                {unproficientSkills.length === 0 ? (
-                  <div className="px-2 py-3 text-center text-xs text-slate-400">
-                    Все 18 навыков уже добавлены
-                  </div>
-                ) : (
-                  unproficientSkills.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => handleQuickAdd(s.id)}
-                      className="px-2 py-1 text-left rounded hover:bg-indigo-600/20 text-slate-200 hover:text-white text-xs flex items-center justify-between cursor-pointer transition-colors"
-                    >
-                      <span className="font-medium">{s.label}</span>
-                      <span className="text-[10px] text-slate-400 uppercase font-mono px-1 rounded bg-[#10111a]">
-                        {s.abilityLabel}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(true);
+                setAbilityFilter('proficient');
+              }}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1 ${
+                abilityFilter === 'proficient'
+                  ? 'bg-indigo-600/40 text-indigo-200 font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>★ Владения</span>
+              <span className="text-[10px] opacity-80">({proficientCount + expertCount})</span>
+            </button>
           </div>
 
           <button
@@ -295,16 +235,17 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
 
       {/* Accordion Content */}
       {isOpen && (
-        <div className="p-2.5 pt-1.5 border-t border-[#262a3d] flex flex-col gap-2.5 bg-[#10111a]/60">
-          {/* Quick Input Bar: Search or Add on Enter */}
-          <form onSubmit={handleAddSkillFromInput} className="flex items-center gap-1.5">
+        <div className="p-2.5 pt-2 border-t border-[#262a3d] flex flex-col gap-2 bg-[#10111a]/60 rounded-b-lg">
+          {/* Search bar & Ability filter chips */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 justify-between">
+            {/* Search Input */}
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Поиск навыка или ввод названия для добавления..."
+                placeholder="Поиск по названию или характеристике (Выживание, wis, dex...)"
                 value={filterQuery}
                 onChange={(e) => setFilterQuery(e.target.value)}
-                className="bg-[#141622] border border-[#262a3d] text-slate-200 text-xs rounded px-2.5 py-1.5 w-full focus:outline-none focus:border-indigo-500 placeholder-slate-500 pr-7"
+                className="bg-[#141622] border border-[#262a3d] text-slate-200 text-xs rounded px-2.5 py-1 w-full focus:outline-none focus:border-indigo-500 placeholder-slate-500 pr-7"
               />
               {filterQuery && (
                 <button
@@ -318,46 +259,35 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
               )}
             </div>
 
-            {filterQuery && (
-              <button
-                type="submit"
-                className="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 rounded text-xs font-semibold cursor-pointer shrink-0 transition-colors"
-                title="Добавить владение этим навыком"
-              >
-                + Добавить
-              </button>
-            )}
-          </form>
-
-          {/* Ability Filter Chips */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 text-[11px]">
-            {(
-              [
-                { id: 'all', label: 'Все (18)' },
-                { id: 'proficient', label: `★ Владения (${proficientCount + expertCount})` },
-                { id: 'str', label: 'СИЛ' },
-                { id: 'dex', label: 'ЛОВ' },
-                { id: 'int', label: 'ИНТ' },
-                { id: 'wis', label: 'МУД' },
-                { id: 'cha', label: 'ХАР' },
-              ] as const
-            ).map((chip) => (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => setAbilityFilter(chip.id)}
-                className={`px-2 py-0.5 rounded border whitespace-nowrap cursor-pointer transition-colors ${
-                  abilityFilter === chip.id
-                    ? 'bg-indigo-600/30 text-indigo-200 border-indigo-500/50 font-bold'
-                    : 'bg-[#141622] text-slate-400 border-[#262a3d] hover:text-slate-200'
-                }`}
-              >
-                {chip.label}
-              </button>
-            ))}
+            {/* Ability Filter Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 text-[11px] shrink-0">
+              {(
+                [
+                  { id: 'all', label: 'Все' },
+                  { id: 'str', label: 'СИЛ' },
+                  { id: 'dex', label: 'ЛОВ' },
+                  { id: 'int', label: 'ИНТ' },
+                  { id: 'wis', label: 'МУД' },
+                  { id: 'cha', label: 'ХАР' },
+                ] as const
+              ).map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setAbilityFilter(chip.id)}
+                  className={`px-2 py-0.5 rounded border whitespace-nowrap cursor-pointer transition-colors ${
+                    abilityFilter === chip.id
+                      ? 'bg-indigo-600/30 text-indigo-200 border-indigo-500/50 font-bold'
+                      : 'bg-[#141622] text-slate-400 border-[#262a3d] hover:text-slate-200'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Empty state with helpful actions */}
+          {/* Empty state with clear actionable instructions */}
           {filteredSkills.length === 0 ? (
             <div className="py-6 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-[#141622] rounded-lg border border-dashed border-[#262a3d] p-3">
               {abilityFilter === 'proficient' ? (
@@ -365,22 +295,16 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                   <span className="font-medium text-slate-300">
                     У персонажа пока нет добавленных владений навыками
                   </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <button
-                      type="button"
-                      onClick={() => setAbilityFilter('all')}
-                      className="px-2.5 py-1 text-xs rounded bg-[#1a1d2d] hover:bg-[#25293d] text-slate-200 border border-[#262a3d] cursor-pointer"
-                    >
-                      Показать все 18 навыков
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddMenu(true)}
-                      className="px-2.5 py-1 text-xs rounded bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 cursor-pointer font-bold"
-                    >
-                      + Выбрать владение
-                    </button>
-                  </div>
+                  <span className="text-[11px] text-slate-500 max-w-sm">
+                    Нажмите «Показать все 18 навыков» и кликните по кружку ○ рядом с нужным навыком, чтобы отметить владение.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAbilityFilter('all')}
+                    className="mt-1 px-3 py-1 text-xs rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-bold transition-colors"
+                  >
+                    Показать все 18 навыков
+                  </button>
                 </>
               ) : (
                 <>
@@ -401,8 +325,8 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
               )}
             </div>
           ) : (
-            /* Skills List Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+            /* Skills List Grid: Clean 2 columns, perfectly spaced with zero clipping */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
               {filteredSkills.map((skill) => {
                 const profLevel = getSkillProficiency(skill.id, skill.label, skillsData);
                 const abilityScoreStr = playerData?.stats?.[skill.ability] || '10';
@@ -419,7 +343,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                 return (
                   <div
                     key={skill.id}
-                    className={`flex items-center justify-between gap-1.5 px-2 py-1.5 rounded border transition-colors ${
+                    className={`flex items-center justify-between gap-1.5 px-2 py-1 rounded border transition-colors ${
                       profLevel === 'expert'
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
                         : profLevel === 'proficient'
@@ -427,7 +351,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                         : 'bg-[#141622] border-[#262a3d] text-slate-300 hover:border-slate-600'
                     }`}
                   >
-                    {/* Proficiency Cycle Button */}
+                    {/* Proficiency Cycle Button (○ None -> ● Proficient -> ★ Expert) */}
                     <button
                       type="button"
                       onClick={() => onToggleSkill(skill.id)}
@@ -437,7 +361,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                           ? 'Экспертиза (+2x мастерство). Нажмите, чтобы снять'
                           : profLevel === 'proficient'
                           ? 'Владение (+мастерство). Нажмите для Экспертизы'
-                          : 'Нет владения. Нажмите, чтобы добавить владение'
+                          : 'Нет владения. Нажмите, чтобы отметить владение'
                       }`}
                     >
                       {profLevel === 'expert' ? (
@@ -453,7 +377,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                     <div
                       className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer select-none"
                       onClick={() => handleRollSkill(skill, totalMod)}
-                      title={`Бросить проверку: ${skill.label} (${formattedMod})`}
+                      title={`Бросить проверку: ${skill.label} (${formattedMod}) в TaleSpire`}
                     >
                       <span className="text-xs truncate font-medium">
                         {skill.label}
