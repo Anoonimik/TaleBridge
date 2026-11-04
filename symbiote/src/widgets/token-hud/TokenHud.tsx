@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useRosterStore, useAppStore, wsBridge, taleSpireDriver, getHpColorClass } from '../../shared';
 import { CombatTokenDropdown } from '../../features';
+import { TokenLinkDropdown } from './TokenLinkDropdown';
 
 export const TokenHud = () => {
   const { selectedToken, setSelectedToken, setSelectedCharacter, roster } = useRosterStore();
   const { role } = useAppStore();
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showLinkMenu, setShowLinkMenu] = useState(false);
 
   // Token HUD is exclusively for GM
   if (!selectedToken || role === 'player') return null;
@@ -28,7 +30,8 @@ export const TokenHud = () => {
 
   const handleOpenObsidian = () => {
     if (matchInRoster?.path) {
-      wsBridge.send('OPEN_NOTE', { path: matchInRoster.path });
+      wsBridge.send('OPEN_IN_OBSIDIAN', { path: matchInRoster.path, name: matchInRoster.name });
+      wsBridge.send('OPEN_NOTE', { path: matchInRoster.path, name: matchInRoster.name });
     }
   };
 
@@ -66,9 +69,13 @@ export const TokenHud = () => {
           <strong className="text-slate-100 text-sm truncate max-w-[240px]">
             {matchInRoster ? matchInRoster.name : selectedToken.name}
           </strong>
-          {matchInRoster?.category && (
+          {matchInRoster?.category ? (
             <span className="text-[10px] uppercase font-bold text-slate-400 bg-[#1a1d2d] px-1.5 py-0.5 rounded border border-[#262a3d]">
               {matchInRoster.category}
+            </span>
+          ) : (
+            <span className="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 font-medium">
+              Не привязан
             </span>
           )}
         </div>
@@ -145,7 +152,7 @@ export const TokenHud = () => {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5 shrink-0 relative">
-        {matchInRoster && (
+        {matchInRoster ? (
           <>
             <button
               type="button"
@@ -163,7 +170,35 @@ export const TokenHud = () => {
             >
               Obsidian
             </button>
+            <button
+              type="button"
+              className="px-2 py-1 rounded bg-[#141622] hover:bg-[#1a1d2d] text-slate-400 hover:text-amber-300 border border-[#262a3d] text-xs cursor-pointer transition-colors"
+              onClick={() => setShowLinkMenu(!showLinkMenu)}
+              title="Сменить привязанную заметку в Obsidian"
+            >
+              🔗
+            </button>
           </>
+        ) : (
+          <div className="relative">
+            <button
+              type="button"
+              className="px-2.5 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-semibold cursor-pointer flex items-center gap-1 transition-colors"
+              onClick={() => setShowLinkMenu(!showLinkMenu)}
+              title="Привязать этот токен к заметке персонажа в Obsidian"
+            >
+              <span>🔗 Привязать</span>
+              <span className="text-[10px]">▾</span>
+            </button>
+          </div>
+        )}
+
+        {showLinkMenu && (
+          <TokenLinkDropdown
+            token={selectedToken}
+            roster={roster}
+            onClose={() => setShowLinkMenu(false)}
+          />
         )}
 
         <div className="relative">

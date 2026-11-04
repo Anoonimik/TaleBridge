@@ -45,7 +45,8 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
 
   const handleOpenObsidian = () => {
     if (character.path) {
-      wsBridge.send('OPEN_NOTE', { path: character.path });
+      wsBridge.send('OPEN_IN_OBSIDIAN', { path: character.path, name: character.name });
+      wsBridge.send('OPEN_NOTE', { path: character.path, name: character.name });
     }
   };
 

@@ -26,6 +26,7 @@ export const PlayerCockpit = () => {
     playerCharacterName,
     playerData,
     roster,
+    selectedToken,
     setPlayerCharacterName,
     deletePlayerAttack,
     savePlayerAttack,
@@ -126,6 +127,35 @@ export const PlayerCockpit = () => {
               )}
               {playerData.level && <span>Ур. {playerData.level}</span>}
             </div>
+          )}
+
+          {/* Quick link TaleSpire token if selected */}
+          {selectedToken && playerData && (
+            selectedToken.id === playerData.talespire_id ||
+            (selectedToken.name && playerData.name && selectedToken.name.toLowerCase() === playerData.name.toLowerCase()) ? (
+              <span
+                className="hidden md:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-medium"
+                title={`Токен TaleSpire "${selectedToken.name}" привязан к персонажу`}
+              >
+                🎯 TS ✓
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (playerData.path) {
+                    wsBridge.send('OPEN_IN_OBSIDIAN', { path: playerData.path, name: playerData.name });
+                    wsBridge.send('OPEN_NOTE', { path: playerData.path, name: playerData.name });
+                  }
+                  wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken });
+                }}
+                className="hidden sm:inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-medium transition-colors"
+                title={`Привязать выбранный токен "${selectedToken.name}" к ${playerData.name} в Obsidian`}
+              >
+                <span>🔗</span>
+                <span>Привязать токен «{selectedToken.name}»</span>
+              </button>
+            )
           )}
         </div>
 

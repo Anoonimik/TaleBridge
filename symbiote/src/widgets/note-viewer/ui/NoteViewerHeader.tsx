@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Character, COMBAT_SIDES, CombatSide } from '../../../shared';
+import { Character, COMBAT_SIDES, CombatSide, useRosterStore, wsBridge } from '../../../shared';
 
 interface NoteViewerHeaderProps {
   character: Character;
@@ -18,7 +18,28 @@ export const NoteViewerHeader: React.FC<NoteViewerHeaderProps> = ({
   onAddToCombat,
   onOpenObsidian,
 }) => {
+  const { selectedToken } = useRosterStore();
   const [showSideSelector, setShowSideSelector] = useState(false);
+  const [justLinked, setJustLinked] = useState(false);
+
+  const isLinkedToSelected = Boolean(
+    selectedToken &&
+      ((character.talespire_id && character.talespire_id === selectedToken.id) ||
+        (character.name &&
+          selectedToken.name &&
+          character.name.toLowerCase() === selectedToken.name.toLowerCase()))
+  );
+
+  const handleLinkToken = () => {
+    if (!selectedToken) return;
+    if (character.path) {
+      wsBridge.send('OPEN_IN_OBSIDIAN', { path: character.path, name: character.name });
+      wsBridge.send('OPEN_NOTE', { path: character.path, name: character.name });
+    }
+    wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken });
+    setJustLinked(true);
+    setTimeout(() => setJustLinked(false), 2500);
+  };
 
   return (
     <div className="p-3 bg-[#10111a] border-b border-[#262a3d] flex items-center justify-between gap-2 shrink-0">
@@ -50,6 +71,32 @@ export const NoteViewerHeader: React.FC<NoteViewerHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0 relative">
+        {/* Link TaleSpire token button (when miniature is selected) */}
+        {selectedToken && (
+          isLinkedToSelected ? (
+            <span
+              className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-medium"
+              title={`Токен TaleSpire "${selectedToken.name}" привязан к этой заметке`}
+            >
+              <span>🎯 TS ✓</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLinkToken}
+              className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition-colors border flex items-center gap-1 ${
+                justLinked
+                  ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50'
+                  : 'bg-indigo-600/25 hover:bg-indigo-600/40 text-indigo-200 border-indigo-500/40'
+              }`}
+              title={`Привязать выбранный токен "${selectedToken.name}" к этой заметке в Obsidian`}
+            >
+              <span>🔗</span>
+              <span>{justLinked ? 'Привязано ✓' : `Привязать «${selectedToken.name}»`}</span>
+            </button>
+          )
+        )}
+
         {/* Add to combat button */}
         <div className="relative">
           <button
