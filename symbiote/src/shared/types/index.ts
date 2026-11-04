@@ -98,18 +98,6 @@ export interface SceneMechanic {
   content: string;
 }
 
-export interface SceneCheck {
-  skill: string;
-  dc: number | string;
-  success: string;
-  fail: string;
-}
-
-export interface SceneBranch {
-  choice: string;
-  targetScene: string;
-}
-
 export interface Scene {
   id: string;
   scene_id?: string;
@@ -121,11 +109,10 @@ export interface Scene {
   sensory?: string;
   location?: string;
   target?: string;
-  readAloud?: string[];
-  roleplay?: string[];
+  readAloud?: string | string[];
   personas?: ScenePersona[];
-  checks?: SceneCheck[];
-  branches?: SceneBranch[];
+  clues?: string[];
+  branches?: string[];
   nudge?: string;
   dialogues?: string[];
   cast?: string[];

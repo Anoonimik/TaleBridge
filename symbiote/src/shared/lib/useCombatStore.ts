@@ -216,11 +216,12 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   },
 
   setFromSync: (data) => {
+    if (!data) return;
     set({
-      active: data.active,
-      round: data.round,
-      turnIndex: data.turnIndex,
-      combatants: data.combatants,
+      active: Boolean(data.active),
+      round: typeof data.round === 'number' ? data.round : 1,
+      turnIndex: typeof data.turnIndex === 'number' ? data.turnIndex : 0,
+      combatants: Array.isArray(data.combatants) ? data.combatants : [],
     });
   },
 }));

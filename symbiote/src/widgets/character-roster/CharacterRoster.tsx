@@ -8,7 +8,8 @@ export const CharacterRoster = () => {
   const [search, setSearch] = useState<string>('');
 
   const filtered = roster.filter((c) => {
-    if (filter === 'pinned' && !pinnedNames.includes(c.name)) return false;
+    if (!c) return false;
+    if (filter === 'pinned' && (!c.name || !pinnedNames.includes(c.name))) return false;
     if (filter !== 'all' && filter !== 'pinned' && c.category !== filter) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -18,7 +19,7 @@ export const CharacterRoster = () => {
     );
   });
 
-  const pinnedList = roster.filter((r) => pinnedNames.includes(r.name));
+  const pinnedList = roster.filter((r) => r?.name && pinnedNames.includes(r.name));
 
   const handleOpenNote = (char: Character) => {
     setSelectedCharacter(char);

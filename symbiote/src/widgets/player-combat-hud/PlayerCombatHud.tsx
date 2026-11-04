@@ -9,7 +9,7 @@ export const PlayerCombatHud = () => {
 
   const currentCombatant = combatants[turnIndex];
   const isMyTurn =
-    Boolean(currentCombatant && playerCharacterName) &&
+    Boolean(currentCombatant?.name && playerCharacterName) &&
     currentCombatant.name.toLowerCase() === playerCharacterName.toLowerCase();
 
   return (

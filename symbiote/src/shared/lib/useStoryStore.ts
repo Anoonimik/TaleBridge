@@ -17,9 +17,11 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
   sceneHistory: [],
 
   setScenes: (scenes) => {
-    set({ scenes });
-    if (!get().activeScene && scenes.length > 0) {
-      set({ activeScene: scenes[0] });
+    const safeScenes = Array.isArray(scenes) ? scenes : [];
+    set({ scenes: safeScenes });
+    const current = get().activeScene;
+    if ((!current || !safeScenes.some((s) => s.id === current.id)) && safeScenes.length > 0) {
+      set({ activeScene: safeScenes[0] });
     }
   },
 

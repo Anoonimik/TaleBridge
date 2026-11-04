@@ -18,6 +18,7 @@ export const CombatantCard = ({
   const { updateCombatantHp, setInitiative, removeCombatant } = useCombatStore();
   const { setSelectedCharacter, roster } = useRosterStore();
   const [customHpVal, setCustomHpVal] = useState('');
+  const conditions = Array.isArray(combatant.conditions) ? combatant.conditions : [];
 
   const sideMeta =
     COMBAT_SIDES.find((s) => s.id === combatant.side) ||
@@ -197,14 +198,14 @@ export const CombatantCard = ({
           title="Добавить или снять состояния (5e)"
         >
           <span>+ Состояние</span>
-          {combatant.conditions.length > 0 && (
+          {conditions.length > 0 && (
             <span className="w-3.5 h-3.5 rounded-full bg-amber-500 text-black text-[9px] font-bold flex items-center justify-center">
-              {combatant.conditions.length}
+              {conditions.length}
             </span>
           )}
         </button>
 
-        {combatant.conditions.map((condName) => {
+        {conditions.map((condName) => {
           const meta = CONDITIONS.find((c) => c.name === condName);
           return (
             <span

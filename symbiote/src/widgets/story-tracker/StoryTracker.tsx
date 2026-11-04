@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useStoryStore, wsBridge } from '../../shared';
+import { useStoryStore, useRosterStore, wsBridge } from '../../shared';
 
 export const StoryTracker = () => {
   const { scenes, activeScene, sceneHistory, goToScene, goBack } = useStoryStore();
+  const { setSelectedCharacter, roster } = useRosterStore();
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [mode, setMode] = useState<'all' | 'readAloud' | 'roleplay' | 'mechanics' | 'branches'>('all');
   const [isRotating, setIsRotating] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -25,9 +27,9 @@ export const StoryTracker = () => {
     if (!catalogSearch.trim()) return true;
     const q = catalogSearch.toLowerCase();
     return (
-      s.title.toLowerCase().includes(q) ||
+      (s.title && s.title.toLowerCase().includes(q)) ||
       (s.location && s.location.toLowerCase().includes(q)) ||
-      (s.target && s.target.toLowerCase().includes(q))
+      (s.goal && s.goal.toLowerCase().includes(q))
     );
   });
 
@@ -36,6 +38,29 @@ export const StoryTracker = () => {
     wsBridge.send('GET_SCENES', {});
     setTimeout(() => setIsRotating(false), 700);
   };
+
+  const handleFocusCharacter = (name: string) => {
+    const found = roster.find((r) => r.name.toLowerCase() === name.toLowerCase());
+    if (found) {
+      setSelectedCharacter(found);
+      if (found.path) {
+        wsBridge.send('GET_NOTE', { path: found.path, name: found.name });
+      }
+    }
+  };
+
+  // Safe read aloud array extraction
+  const getReadAloudList = (): string[] => {
+    if (!activeScene?.readAloud) return [];
+    if (Array.isArray(activeScene.readAloud)) return activeScene.readAloud.filter(Boolean);
+    if (typeof activeScene.readAloud === 'string') {
+      const clean = activeScene.readAloud.trim();
+      return clean ? [clean] : [];
+    }
+    return [];
+  };
+
+  const readAloudItems = getReadAloudList();
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden bg-[#0c0d14]">
@@ -96,7 +121,7 @@ export const StoryTracker = () => {
           <div className="p-2 border-b border-[#1f2233]">
             <input
               type="text"
-              placeholder="Поиск сцены по названию, локации или NPC..."
+              placeholder="Поиск сцены по названию, локации или цели..."
               value={catalogSearch}
               onChange={(e) => setCatalogSearch(e.target.value)}
               className="w-full px-3 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
@@ -121,7 +146,7 @@ export const StoryTracker = () => {
                     setShowCatalog(false);
                   }}
                 >
-                  <div className="truncate">{s.title}</div>
+                  <div className="truncate font-medium">{s.title}</div>
                   {s.location && (
                     <div className="text-[10px] text-slate-400 mt-0.5 truncate">{s.location}</div>
                   )}
@@ -165,72 +190,166 @@ export const StoryTracker = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {/* Read Aloud Section */}
-            {(mode === 'all' || mode === 'readAloud') &&
-              activeScene.readAloud &&
-              activeScene.readAloud.length > 0 && (
-                <div className="bg-[#141622] border-l-4 border-amber-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                    Текст для зачитки игрокам:
-                  </div>
-                  {activeScene.readAloud.map((text, idx) => (
-                    <blockquote
-                      key={idx}
-                      className="m-0 pl-2 text-slate-200 italic leading-relaxed border-l-2 border-amber-400/30"
+            {/* Context Header: Location, Goal, Cast, Nudge Button */}
+            <div className="bg-[#141622] border border-[#262a3d] rounded-lg p-3 flex flex-col gap-2 shadow-xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {activeScene.session && (
+                    <span className="text-[10px] uppercase font-bold text-slate-400 bg-[#10111a] px-2 py-0.5 rounded border border-[#1f2233] shrink-0">
+                      {activeScene.session}
+                    </span>
+                  )}
+                  {activeScene.location && (
+                    <span className="text-xs text-amber-400 font-medium truncate">
+                      {activeScene.location}
+                    </span>
+                  )}
+                </div>
+
+                {activeScene.nudge && (
+                  <button
+                    type="button"
+                    className={`px-2 py-0.5 rounded text-[11px] font-medium border cursor-pointer transition-colors ${
+                      showNudge
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-[#1a1d2d] text-slate-400 border-[#262a3d] hover:text-white'
+                    }`}
+                    onClick={() => setShowNudge(!showNudge)}
+                    title="Подсказка: что делать, если игроки молчат или застряли"
+                  >
+                    Пинок Мастера
+                  </button>
+                )}
+              </div>
+
+              {activeScene.goal && (
+                <div className="text-xs text-slate-300 bg-[#10111a] p-2 rounded border border-[#1f2233] leading-relaxed">
+                  <strong className="text-slate-100 font-semibold">Цель:</strong> {activeScene.goal}
+                </div>
+              )}
+
+              {activeScene.sensory && (
+                <div className="text-[11px] text-slate-400 italic bg-[#10111a] px-2 py-1.5 rounded border border-[#1f2233]">
+                  <strong>Сенсорика:</strong> {activeScene.sensory}
+                </div>
+              )}
+
+              {activeScene.cast && activeScene.cast.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-500">Участники:</span>
+                  {activeScene.cast.map((charName) => (
+                    <button
+                      key={charName}
+                      type="button"
+                      className="px-2 py-0.5 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/30 text-[10px] cursor-pointer transition-colors"
+                      onClick={() => handleFocusCharacter(charName)}
+                      title={`Открыть карточку ${charName}`}
                     >
-                      «{text}»
-                    </blockquote>
+                      {charName}
+                    </button>
                   ))}
                 </div>
               )}
 
-            {/* Roleplay Tips Section */}
-            {(mode === 'all' || mode === 'roleplay') &&
-              activeScene.roleplay &&
-              activeScene.roleplay.length > 0 && (
-                <div className="bg-[#141622] border-l-4 border-purple-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-purple-400">
-                    Подсказки для отыгрыша:
-                  </div>
-                  <ul className="m-0 pl-4 list-disc space-y-1 text-slate-300 leading-relaxed">
-                    {activeScene.roleplay.map((tip, idx) => (
-                      <li key={idx}>{tip}</li>
-                    ))}
-                  </ul>
+              {showNudge && activeScene.nudge && (
+                <div className="bg-amber-950/20 border border-amber-500/40 p-2.5 rounded text-xs text-amber-200 flex flex-col gap-1 animate-in fade-in duration-100">
+                  <strong className="text-amber-400 uppercase text-[10px] tracking-wider">
+                    Пинок Мастера:
+                  </strong>
+                  <p className="m-0 leading-relaxed">{activeScene.nudge}</p>
                 </div>
               )}
+            </div>
 
-            {/* Mechanics / Skill Checks Section */}
-            {(mode === 'all' || mode === 'mechanics') &&
-              activeScene.checks &&
-              activeScene.checks.length > 0 && (
-                <div className="bg-[#141622] border-l-4 border-blue-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
-                    Проверки характеристик:
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {activeScene.checks.map((c, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-[#10111a] p-2.5 rounded border border-[#1f2233] flex flex-col gap-1"
-                      >
-                        <div className="font-semibold text-slate-100 flex items-center justify-between">
-                          <span>{c.skill}</span>
-                          <span className="text-amber-400 font-mono text-[11px]">СЛ {c.dc}</span>
-                        </div>
-                        <div className="text-[11px] text-emerald-400 flex items-start gap-1">
-                          <span className="font-bold">✓</span>
-                          <span>{c.success}</span>
-                        </div>
-                        <div className="text-[11px] text-rose-400 flex items-start gap-1">
-                          <span className="font-bold">✕</span>
-                          <span>{c.fail}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            {/* Read Aloud Section */}
+            {(mode === 'all' || mode === 'readAloud') && readAloudItems.length > 0 && (
+              <div className="bg-[#141622] border-l-4 border-amber-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                  Текст для зачитки игрокам:
                 </div>
-              )}
+                {readAloudItems.map((text, idx) => (
+                  <blockquote
+                    key={idx}
+                    className="m-0 pl-2 text-slate-200 italic leading-relaxed border-l-2 border-amber-400/30"
+                  >
+                    «{text}»
+                  </blockquote>
+                ))}
+              </div>
+            )}
+
+            {/* Roleplay Tips / Personas / Dialogues Section */}
+            {(mode === 'all' || mode === 'roleplay') && (
+              <>
+                {activeScene.personas && activeScene.personas.length > 0 && (
+                  <div className="bg-[#141622] border-l-4 border-purple-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-purple-400">
+                      Отыгрыш персонажей:
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {activeScene.personas.map((p, idx) => (
+                        <div key={idx} className="bg-[#10111a] p-2 rounded border border-[#1f2233]">
+                          <strong className="text-purple-300 block mb-1">{p.title}</strong>
+                          <p className="text-slate-300 leading-relaxed m-0">{p.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeScene.dialogues && activeScene.dialogues.length > 0 && (
+                  <div className="bg-[#141622] border-l-4 border-indigo-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
+                      Реплики и диалоги:
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {activeScene.dialogues.map((d, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-[#10111a] p-1.5 rounded border border-[#1f2233] italic text-slate-200"
+                        >
+                          {d}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Mechanics, Checks & Clues Section */}
+            {(mode === 'all' || mode === 'mechanics') && (
+              <>
+                {activeScene.clues && activeScene.clues.length > 0 && (
+                  <div className="bg-[#141622] border-l-4 border-blue-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
+                      Улики и проверки:
+                    </div>
+                    <ul className="m-0 pl-4 list-disc space-y-1 text-slate-300 leading-relaxed">
+                      {activeScene.clues.map((c, idx) => (
+                        <li key={idx}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {activeScene.mechanics && activeScene.mechanics.length > 0 && (
+                  <div className="bg-[#141622] border-l-4 border-rose-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-rose-400">
+                      Тактика и опасности:
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {activeScene.mechanics.map((m, idx) => (
+                        <div key={idx} className="bg-[#10111a] p-2 rounded border border-[#1f2233]">
+                          <strong className="text-rose-300 block mb-1">{m.title}</strong>
+                          <p className="text-slate-300 leading-relaxed m-0">{m.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Plot Branches Section */}
             {(mode === 'all' || mode === 'branches') &&
@@ -238,27 +357,45 @@ export const StoryTracker = () => {
               activeScene.branches.length > 0 && (
                 <div className="bg-[#141622] border-l-4 border-emerald-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                    Сюжетные развилки:
+                    Куда вести сюжет дальше (Развилки):
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    {activeScene.branches.map((b, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="w-full text-left p-2 rounded bg-[#10111a] hover:bg-[#1a1d2d] border border-[#1f2233] hover:border-emerald-500/40 text-slate-200 transition-colors flex items-center justify-between cursor-pointer"
-                        onClick={() => {
-                          const target = scenes.find(
-                            (s) => s.title.toLowerCase() === b.targetScene.toLowerCase()
-                          );
-                          if (target) goToScene(target.id);
-                        }}
-                      >
-                        <span className="font-medium">▸ {b.choice}</span>
-                        <span className="text-[11px] text-emerald-400 font-mono shrink-0 ml-2">
-                          → {b.targetScene}
-                        </span>
-                      </button>
-                    ))}
+                    {activeScene.branches.map((bText, idx) => {
+                      // Extract wiki link target if present: [[SceneName|Label]]
+                      const linkMatch = bText.match(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/);
+                      const targetTitle = linkMatch ? linkMatch[1].trim() : null;
+                      const targetScene = targetTitle
+                        ? scenes.find(
+                            (s) =>
+                              s.title.toLowerCase() === targetTitle.toLowerCase() ||
+                              (s.scene_id && s.scene_id.toLowerCase() === targetTitle.toLowerCase())
+                          )
+                        : null;
+
+                      // Clean display text
+                      const cleanText = bText
+                        .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => (label ? label.trim() : target.trim()))
+                        .replace(/^[-*]\s*/, '');
+
+                      return (
+                        <div
+                          key={idx}
+                          className="p-2 rounded bg-[#10111a] hover:bg-[#1a1d2d] border border-[#1f2233] hover:border-emerald-500/40 text-slate-200 transition-colors flex items-center justify-between gap-2"
+                        >
+                          <span className="font-medium text-xs leading-relaxed">▸ {cleanText}</span>
+
+                          {targetScene && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded text-[10px] font-mono shrink-0 cursor-pointer transition-colors"
+                              onClick={() => goToScene(targetScene.id)}
+                            >
+                              → {targetScene.title}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

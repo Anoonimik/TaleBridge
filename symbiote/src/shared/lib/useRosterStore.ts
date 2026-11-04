@@ -24,16 +24,27 @@ interface RosterStore {
   updatePlayerHp: (delta: number) => void;
 }
 
+const getStoredArray = <T,>(key: string): T[] => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export const useRosterStore = create<RosterStore>((set, get) => ({
   roster: [],
   selectedToken: null,
   selectedCharacter: null,
   playerCharacterName: localStorage.getItem('tb_player_character') || '',
   playerData: null,
-  cluesArchive: JSON.parse(localStorage.getItem('tb_clues_archive') || '[]'),
-  pinnedNames: JSON.parse(localStorage.getItem('tb_pinned_roster') || '[]'),
+  cluesArchive: getStoredArray<Clue>('tb_clues_archive'),
+  pinnedNames: getStoredArray<string>('tb_pinned_roster'),
 
-  setRoster: (roster) => set({ roster }),
+  setRoster: (roster) => set({ roster: Array.isArray(roster) ? roster : [] }),
   setSelectedToken: (selectedToken) => set({ selectedToken }),
   setSelectedCharacter: (selectedCharacter) => set({ selectedCharacter }),
 

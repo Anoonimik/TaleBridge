@@ -13,6 +13,8 @@ export const ConditionsPickerModal = ({
 }: ConditionsPickerModalProps) => {
   const { toggleCondition } = useCombatStore();
 
+  const conditions = Array.isArray(combatant.conditions) ? combatant.conditions : [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="bg-[#141622] border border-[#262a3d] rounded-xl w-full max-w-md p-4 shadow-2xl flex flex-col gap-3 max-h-[85vh] overflow-hidden">
@@ -31,7 +33,8 @@ export const ConditionsPickerModal = ({
 
         <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-1.5 scrollbar-thin pr-1">
           {CONDITIONS.map((cond) => {
-            const isApplied = combatant.conditions.includes(cond.name);
+            const isApplied = conditions.includes(cond.name);
+
             return (
               <button
                 key={cond.name}

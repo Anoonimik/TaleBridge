@@ -62,8 +62,8 @@ export const AppHeader = () => {
           <nav className="flex items-center gap-1 bg-[#10111a] p-0.5 rounded border border-[#262a3d]">
             {[
               { id: 'story' as const, label: 'Сюжет', badge: null },
-              { id: 'characters' as const, label: 'Ростер', badge: roster.length },
-              { id: 'combat' as const, label: 'Бой', badge: combatants.length > 0 ? combatants.length : null },
+              { id: 'characters' as const, label: 'Ростер', badge: (roster && roster.length > 0) ? roster.length : null },
+              { id: 'combat' as const, label: 'Бой', badge: (combatants && combatants.length > 0) ? combatants.length : null },
               { id: 'tools' as const, label: 'Утилиты', badge: null },
             ].map((tab) => {
               const isActive = activeTab === tab.id;
