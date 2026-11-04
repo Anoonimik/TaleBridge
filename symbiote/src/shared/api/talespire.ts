@@ -63,7 +63,6 @@ export type RollResultListener = (total: number, raw?: any) => void;
 
 class TaleSpireDriver {
   private lastTokenId: string | null = null;
-  private pollInterval: any = null;
   private rollListeners: Set<RollResultListener> = new Set();
 
   constructor() {
@@ -151,13 +150,8 @@ class TaleSpireDriver {
       });
     }
 
-    // 3. Start polling selected creatures every 400ms
-    if (this.pollInterval) clearInterval(this.pollInterval);
-    this.pollInterval = setInterval(() => {
-      this.pollActiveToken();
-    }, 400);
-
-    // Initial check
+    // 3. Creature selection is handled by handleCreatureStateChange callback above.
+    // We do an initial check on first init only.
     this.pollActiveToken();
   }
 
@@ -202,8 +196,8 @@ class TaleSpireDriver {
         useRosterStore.getState().setSelectedToken(token);
         wsBridge.send('CREATURE_SELECTED', token);
       }
-    } catch {
-      // ignore transient board loading errors
+    } catch (e) {
+      console.warn('[TaleSpire] pollActiveToken error:', e);
     }
   }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore, taleSpireDriver, wsBridge } from '../../shared';
+import { useAppStore, taleSpireDriver, wsBridge, useEscKey } from '../../shared';
 
 interface CameraBookmarksModalProps {
   isOpen: boolean;
@@ -12,6 +12,8 @@ export const CameraBookmarksModal = ({ isOpen, onClose }: CameraBookmarksModalPr
   const [activeBookmarkId, setActiveBookmarkId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  useEscKey(isOpen, onClose);
+
   // Load / refresh bookmarks when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -19,17 +21,6 @@ export const CameraBookmarksModal = ({ isOpen, onClose }: CameraBookmarksModalPr
       wsBridge.send('GET_BOOKMARKS', {});
     }
   }, [isOpen]);
-
-  // Handle ESC key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

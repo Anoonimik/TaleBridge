@@ -10,5 +10,8 @@ export * from './lib/text-utils';
 export * from './lib/format-text';
 export * from './lib/note-parser';
 export * from './lib/media';
+export * from './lib/character-storage';
+export * from './lib/dnd-rules';
+export * from './lib/hooks';
 export * from './api/websocket';
 export * from './api/talespire';

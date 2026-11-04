@@ -16,7 +16,7 @@ export const AppHeader = () => {
     diceSecret,
     setDiceSecret,
     cinemaMedia,
-    setCinemaMedia,
+    stopBroadcast,
   } = useAppStore();
   const { combatants, active: combatActive } = useCombatStore();
   const { roster } = useRosterStore();
@@ -50,11 +50,6 @@ export const AppHeader = () => {
     wsBridge.send('GET_SCENES', {});
     wsBridge.send('GET_COMBAT_STATE', {});
     setTimeout(() => setIsRefreshing(false), 700);
-  };
-
-  const handleStopBroadcast = () => {
-    setCinemaMedia(null);
-    wsBridge.send('DISMISS_HANDOUT', {});
   };
 
   return (
@@ -124,7 +119,7 @@ export const AppHeader = () => {
               </span>
               <button
                 type="button"
-                onClick={handleStopBroadcast}
+                onClick={stopBroadcast}
                 className="px-1.5 py-0.2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] cursor-pointer ml-0.5 transition-colors"
                 title="Снять материал с трансляции для всех игроков"
               >

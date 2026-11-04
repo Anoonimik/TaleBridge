@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   useAppStore,
   wsBridge,
@@ -7,7 +7,9 @@ import {
   getYouTubeEmbedUrl,
   detectMediaType,
   cleanFileNameToTitle,
+  useEscKey,
 } from '../../shared';
+import { BroadcastPreviewBox, BroadcastImageForm } from './ui';
 
 interface BroadcastMediaModalProps {
   isOpen: boolean;
@@ -15,12 +17,14 @@ interface BroadcastMediaModalProps {
 }
 
 export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProps) => {
-  const { cinemaMedia, setCinemaMedia, vaultImages } = useAppStore();
+  const { cinemaMedia, setCinemaMedia, stopBroadcast, vaultImages } = useAppStore();
   const [type, setType] = useState<'image' | 'video' | 'text' | 'audio'>('image');
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedVaultImage, setSelectedVaultImage] = useState('');
+
+  useEscKey(isOpen, onClose);
 
   // Request latest vault images when modal opens
   useEffect(() => {
@@ -28,17 +32,6 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
       wsBridge.send('GET_VAULT_IMAGES', {});
     }
   }, [isOpen]);
-
-  // Handle ESC key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -86,13 +79,8 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
     onClose();
   };
 
-  const handleDismiss = () => {
-    setCinemaMedia(null);
-    wsBridge.send('DISMISS_HANDOUT', {});
-  };
-
-  const ytId = getYouTubeVideoId(url);
-  const ytEmbedPreview = getYouTubeEmbedUrl(url, false);
+  const ytId = useMemo(() => getYouTubeVideoId(url), [url]);
+  const ytEmbedPreview = useMemo(() => (ytId ? getYouTubeEmbedUrl(url, false) : null), [ytId, url]);
 
   return (
     <div
@@ -138,7 +126,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
               <button
                 type="button"
                 className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs shrink-0 font-bold cursor-pointer transition-all shadow-xs active:scale-95"
-                onClick={handleDismiss}
+                onClick={stopBroadcast}
               >
                 Снять с трансляции ✕
               </button>
@@ -196,98 +184,16 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
 
             {/* --- IMAGE VIEW --- */}
             {type === 'image' && (
-              <div className="flex flex-col gap-2.5 bg-[#10111a]/70 border border-[#262a3d] p-3 rounded-lg">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] uppercase font-bold text-slate-300">
-                      Выбор из хранилища Obsidian ({vaultImages.length} найдено)
-                    </label>
-                    <button
-                      type="button"
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
-                      onClick={() => wsBridge.send('GET_VAULT_IMAGES', {})}
-                      title="Пересканировать папку public/ и файлы хранилища"
-                    >
-                      ↻ Обновить список
-                    </button>
-                  </div>
-
-                  <select
-                    value={selectedVaultImage}
-                    onChange={(e) => handleSelectVaultImage(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="">
-                      {vaultImages.length > 0
-                        ? '-- Выберите подготовленную картинку --'
-                        : '-- Нет картинок в хранилище (добавьте в public/) --'}
-                    </option>
-                    {vaultImages.map((img) => (
-                      <option key={img.path} value={img.path}>
-                        {img.isPublic ? '[public] ' : ''}
-                        {img.name} ({img.path})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Quick Public Pills */}
-                {vaultImages.filter((img) => img.isPublic).length > 0 && (
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-1">
-                      Быстрый выбор из public/:
-                    </span>
-                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-thin">
-                      {vaultImages
-                        .filter((img) => img.isPublic)
-                        .slice(0, 10)
-                        .map((img) => (
-                          <button
-                            key={img.path}
-                            type="button"
-                            onClick={() => handleSelectVaultImage(img.path)}
-                            className={`px-2 py-0.5 rounded text-[11px] border cursor-pointer transition-colors ${
-                              selectedVaultImage === img.path
-                                ? 'bg-indigo-600/40 text-indigo-200 border-indigo-400'
-                                : 'bg-[#141622] text-slate-400 hover:text-slate-200 border-[#262a3d]'
-                            }`}
-                          >
-                            {img.name}
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Manual URL / Path Input */}
-                <div>
-                  <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
-                    Или прямая веб-ссылка / путь к файлу
-                  </label>
-                  <input
-                    type="text"
-                    required={type === 'image' && !url}
-                    placeholder="public/art.png или https://.../image.webp"
-                    value={url}
-                    onChange={(e) => handleUrlChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
-                  />
-                </div>
-
-                {/* Caption */}
-                <div>
-                  <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
-                    Подпись к изображению (опционально)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Например: Схема защитного барьера лаборатории"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
-                  />
-                </div>
-              </div>
+              <BroadcastImageForm
+                vaultImages={vaultImages}
+                selectedVaultImage={selectedVaultImage}
+                url={url}
+                description={description}
+                onRefreshVault={() => wsBridge.send('GET_VAULT_IMAGES', {})}
+                onSelectVaultImage={handleSelectVaultImage}
+                onUrlChange={handleUrlChange}
+                onDescriptionChange={setDescription}
+              />
             )}
 
             {/* --- VIDEO VIEW --- */}
@@ -394,91 +300,14 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
             )}
 
             {/* --- LIVE PREVIEW BOX --- */}
-            <div>
-              <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1.5">
-                Предпросмотр перед отправкой
-              </label>
-              <div className="bg-[#0c0d14] border border-[#262a3d] rounded-lg p-2.5 flex items-center justify-center min-h-[120px] overflow-hidden">
-                {type === 'image' && url && (
-                  <div className="flex flex-col items-center gap-1 max-w-full">
-                    <img
-                      src={resolveMediaUrl(url)}
-                      alt="Предпросмотр"
-                      className="max-h-48 max-w-full object-contain rounded border border-[#1f2233]"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                    {title && <span className="text-[11px] text-slate-300 font-semibold">{title}</span>}
-                    {description && <span className="text-[10px] text-slate-400 italic">{description}</span>}
-                  </div>
-                )}
-
-                {type === 'image' && !url && (
-                  <span className="text-slate-500 text-xs text-center">
-                    Выберите файл из списка выше или введите URL для предпросмотра
-                  </span>
-                )}
-
-                {type === 'video' && ytEmbedPreview && (
-                  <div className="w-full max-w-sm aspect-video rounded overflow-hidden border border-[#262a3d] bg-black">
-                    <iframe
-                      src={ytEmbedPreview}
-                      title="Предпросмотр YouTube"
-                      className="w-full h-full"
-                      allowFullScreen
-                    />
-                  </div>
-                )}
-
-                {type === 'video' && !ytId && url && (
-                  <div className="flex flex-col items-center gap-1 w-full max-w-sm">
-                    <video
-                      src={resolveMediaUrl(url)}
-                      controls
-                      className="max-h-44 max-w-full rounded bg-black"
-                    />
-                    {title && <span className="text-[11px] text-slate-300 font-semibold">{title}</span>}
-                  </div>
-                )}
-
-                {type === 'video' && !url && (
-                  <span className="text-slate-500 text-xs text-center">
-                    Вставьте ссылку на YouTube или видеофайл для предпросмотра
-                  </span>
-                )}
-
-                {type === 'text' && description && (
-                  <div className="bg-[#f5ebd7] text-[#2c1d11] p-3.5 rounded-lg border-2 border-[#8c6f48] w-full max-w-md font-serif text-xs leading-relaxed shadow-sm">
-                    <div className="text-center pb-1 mb-2 border-b border-[#8c6f48]/40">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-[#8c6f48]">
-                        {title || '~ Манускрипт ~'}
-                      </span>
-                    </div>
-                    <div className="whitespace-pre-wrap">{description}</div>
-                  </div>
-                )}
-
-                {type === 'text' && !description && (
-                  <span className="text-slate-500 text-xs text-center">
-                    Введите текст послания для предпросмотра свитка
-                  </span>
-                )}
-
-                {type === 'audio' && url && (
-                  <div className="w-full max-w-sm flex flex-col items-center gap-2 p-2">
-                    <span className="text-xs text-slate-200 font-semibold">{title || 'Аудио'}</span>
-                    <audio src={resolveMediaUrl(url)} controls className="w-full" />
-                  </div>
-                )}
-
-                {type === 'audio' && !url && (
-                  <span className="text-slate-500 text-xs text-center">
-                    Введите ссылку на аудиодорожку для предпросмотра
-                  </span>
-                )}
-              </div>
-            </div>
+            <BroadcastPreviewBox
+              type={type}
+              url={url}
+              title={title}
+              description={description}
+              ytEmbedPreview={ytEmbedPreview}
+              ytId={ytId}
+            />
           </form>
         </div>
 
@@ -497,7 +326,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
               <button
                 type="button"
                 className="px-3 py-1.5 rounded bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/50 text-xs font-semibold cursor-pointer transition-colors"
-                onClick={handleDismiss}
+                onClick={stopBroadcast}
                 title="Прекратить трансляцию и закрыть экран у игроков"
               >
                 Снять трансляцию ✕

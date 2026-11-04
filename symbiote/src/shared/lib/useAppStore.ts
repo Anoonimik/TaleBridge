@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { Bookmark } from '../types';
+import { STORAGE_KEYS } from '../config/constants';
+import { wsBridge } from '../api/websocket';
 
 export type UserRole = 'gm' | 'player';
 export type AppTab = 'story' | 'characters' | 'combat' | 'tools' | 'player-cockpit';
@@ -39,23 +41,40 @@ interface AppStore {
   setGmPin: (pin: string) => void;
   setVaultImages: (images: VaultImage[]) => void;
   setCinemaMedia: (media: CinemaMediaPayload | null) => void;
+  stopBroadcast: () => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
 }
 
 const getInitialRole = (): UserRole => {
-  const storedRole = localStorage.getItem('tb_role') as UserRole;
-  const isAuth = sessionStorage.getItem('tb_gm_auth') === 'true';
-  if (storedRole === 'gm' && isAuth) return 'gm';
+  try {
+    const storedRole = localStorage.getItem(STORAGE_KEYS.ROLE);
+    const isAuth = sessionStorage.getItem(STORAGE_KEYS.GM_AUTH) === 'true';
+    if (storedRole === 'gm' && isAuth) return 'gm';
+  } catch {
+    // storage unavailable
+  }
   return 'player';
 };
 
 const getInitialScale = (): string => {
-  const stored = localStorage.getItem('tb_scale');
-  if (stored) return stored;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.SCALE);
+    if (stored) return stored;
+  } catch {
+    // storage unavailable
+  }
   if (typeof window !== 'undefined' && (window.screen?.width >= 2560 || window.screen?.height >= 1440)) {
     return '150%';
   }
   return '100%';
+};
+
+const getInitialPin = (): string => {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.GM_PIN) || '5';
+  } catch {
+    return '5';
+  }
 };
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -65,28 +84,44 @@ export const useAppStore = create<AppStore>((set) => ({
   diceSecret: false,
   connected: false,
   vaultName: 'Obsidian Vault',
-  gmPin: localStorage.getItem('tb_gm_pin') || '5',
+  gmPin: getInitialPin(),
   vaultImages: [],
   cinemaMedia: null,
   bookmarks: [],
 
   setRole: (role) => {
-    localStorage.setItem('tb_role', role);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ROLE, role);
+    } catch {
+      // storage unavailable
+    }
     set({ role });
   },
   setActiveTab: (tab) => set({ activeTab: tab }),
   setScale: (scale) => {
-    localStorage.setItem('tb_scale', scale);
+    try {
+      localStorage.setItem(STORAGE_KEYS.SCALE, scale);
+    } catch {
+      // storage unavailable
+    }
     set({ scale });
   },
   setDiceSecret: (diceSecret) => set({ diceSecret }),
   setConnected: (connected) => set({ connected }),
   setVaultName: (vaultName) => set({ vaultName }),
   setGmPin: (gmPin) => {
-    localStorage.setItem('tb_gm_pin', gmPin);
+    try {
+      localStorage.setItem(STORAGE_KEYS.GM_PIN, gmPin);
+    } catch {
+      // storage unavailable
+    }
     set({ gmPin });
   },
   setVaultImages: (vaultImages) => set({ vaultImages: Array.isArray(vaultImages) ? vaultImages : [] }),
   setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
+  stopBroadcast: () => {
+    set({ cinemaMedia: null });
+    wsBridge.send('DISMISS_HANDOUT', {});
+  },
   setBookmarks: (bookmarks) => set({ bookmarks: Array.isArray(bookmarks) ? bookmarks : [] }),
 }));

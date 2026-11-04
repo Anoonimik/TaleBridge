@@ -4,6 +4,7 @@ import {
   ExpendableResource,
   HitDice,
   parseModifier,
+  formatModifier,
   taleSpireDriver,
 } from '../../shared';
 import { ResourceModal } from './ResourceModal';
@@ -38,7 +39,7 @@ export const ClassResourcesManager = ({
   };
 
   const conMod = parseModifier(playerData.stats?.con || '10');
-  const conModStr = conMod >= 0 ? `+${conMod}` : `${conMod}`;
+  const conModStr = formatModifier(conMod);
 
   const handleDeltaResource = (resId: string, delta: number) => {
     const updated = resources.map((r) => {

@@ -107,4 +107,10 @@ export const STORAGE_KEYS = {
   CLUES_ARCHIVE: 'tb_clues_archive',
   ACTIVE_CHARACTER: 'tb_active_character',
   GM_AUTH: 'tb_gm_auth',
+  PLAYER_DATA: 'tb_player_data',
+  PLAYER_CHARACTER: 'tb_player_character',
+  GM_PIN: 'tb_gm_pin',
 };
+
+/** Default port for TaleBridge Obsidian plugin WebSocket/HTTP server. */
+export const DEFAULT_WS_PORT = 30123;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Character, parseModifier, taleSpireDriver } from '../../shared';
+import { Character, parseModifier, formatModifier, computeProfBonus, taleSpireDriver } from '../../shared';
 
 interface SavingThrowsBarProps {
   playerData: Character | null;
@@ -10,7 +10,7 @@ export const SavingThrowsBar = ({ playerData, onToggleProficiency }: SavingThrow
   if (!playerData) return null;
 
   const level = playerData.level || 1;
-  const profBonus = Math.floor((level - 1) / 4) + 2;
+  const profBonus = computeProfBonus(level);
 
   const savesList = [
     { key: 'str', label: 'СИЛ', name: 'Сила', scoreStr: playerData.stats?.str || '10' },
@@ -24,7 +24,7 @@ export const SavingThrowsBar = ({ playerData, onToggleProficiency }: SavingThrow
   const proficientList = playerData.savingThrowsProficient || [];
 
   const handleRollSave = (s: typeof savesList[0], totalMod: number) => {
-    const modFormatted = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
+    const modFormatted = formatModifier(totalMod);
     taleSpireDriver.rollDice(`1d20${modFormatted}`, `Спасбросок: ${s.name} (${playerData.name})`);
   };
 
@@ -44,7 +44,7 @@ export const SavingThrowsBar = ({ playerData, onToggleProficiency }: SavingThrow
           const isProf = proficientList.includes(s.key);
           const baseMod = parseModifier(s.scoreStr);
           const totalMod = baseMod + (isProf ? profBonus : 0);
-          const formatted = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
+          const formatted = formatModifier(totalMod);
 
           return (
             <div

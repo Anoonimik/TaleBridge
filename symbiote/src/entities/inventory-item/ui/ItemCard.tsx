@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { InventoryItem } from '../../../shared';
+import React from 'react';
+import { InventoryItem, useConfirmDelete } from '../../../shared';
 
 interface ItemCardProps {
   item: InventoryItem;
@@ -14,29 +14,9 @@ export const ItemCard = ({
   onUpdateQuantity,
   onDelete,
 }: ItemCardProps) => {
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-    };
-  }, []);
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (e.shiftKey || isConfirmingDelete) {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-      setIsConfirmingDelete(false);
-      onDelete(item.id);
-      return;
-    }
-
-    setIsConfirmingDelete(true);
-    resetTimerRef.current = setTimeout(() => {
-      setIsConfirmingDelete(false);
-    }, 3500);
-  };
+  const { isConfirming: isConfirmingDelete, handleDelete } = useConfirmDelete({
+    onDelete: () => onDelete(item.id),
+  });
 
   return (
     <div

@@ -8,7 +8,7 @@ import {
 } from '../../shared';
 
 export const CinemaOverlay = () => {
-  const { cinemaMedia, setCinemaMedia, role } = useAppStore();
+  const { cinemaMedia, setCinemaMedia, stopBroadcast, role } = useAppStore();
   const { addClue } = useRosterStore();
   const [isSaved, setIsSaved] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -18,24 +18,23 @@ export const CinemaOverlay = () => {
     setImgError(false);
   }, [cinemaMedia?.url]);
 
-  const handleStopBroadcast = () => {
-    setCinemaMedia(null);
-    wsBridge.send('DISMISS_HANDOUT', {});
+  const handleClose = () => {
+    if (role === 'gm') {
+      stopBroadcast();
+    } else {
+      setCinemaMedia(null);
+    }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && cinemaMedia?.active) {
-        if (role === 'gm') {
-          handleStopBroadcast();
-        } else {
-          setCinemaMedia(null);
-        }
+        handleClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cinemaMedia?.active, role, setCinemaMedia]);
+  }, [cinemaMedia?.active, role, setCinemaMedia, stopBroadcast]);
 
   if (!cinemaMedia?.active) return null;
 
@@ -71,11 +70,7 @@ export const CinemaOverlay = () => {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
-          if (role === 'gm') {
-            handleStopBroadcast();
-          } else {
-            setCinemaMedia(null);
-          }
+          handleClose();
         }
       }}
     >
@@ -98,7 +93,7 @@ export const CinemaOverlay = () => {
             {role === 'gm' && (
               <button
                 type="button"
-                onClick={handleStopBroadcast}
+                onClick={stopBroadcast}
                 className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer transition-all shadow-md active:scale-95 flex items-center gap-1.5"
                 title="Прекратить трансляцию и закрыть экран у всех игроков"
               >
@@ -122,13 +117,7 @@ export const CinemaOverlay = () => {
 
             <button
               type="button"
-              onClick={() => {
-                if (role === 'gm') {
-                  handleStopBroadcast();
-                } else {
-                  setCinemaMedia(null);
-                }
-              }}
+              onClick={handleClose}
               className="text-white/70 hover:text-white text-lg font-bold cursor-pointer w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               title={role === 'gm' ? 'Снять с эфира и закрыть' : 'Закрыть (Esc)'}
             >
@@ -219,7 +208,7 @@ export const CinemaOverlay = () => {
             <>
               <button
                 type="button"
-                onClick={handleStopBroadcast}
+                onClick={stopBroadcast}
                 className="px-4 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer transition-all shadow-md active:scale-95 flex items-center gap-1.5"
                 title="Снять материал с трансляции для всех участников"
               >

@@ -1,84 +1,28 @@
 import { create } from 'zustand';
 import {
   Character,
-  Attack,
   Clue,
   TaleSpireCreature,
+  Attack,
   DeathSaves,
   SpellSlot,
   Spell,
   ExpendableResource,
   HitDice,
 } from '../types';
+import { STORAGE_KEYS } from '../config/constants';
 import { wsBridge } from '../api/websocket';
 import { taleSpireDriver } from '../api/talespire';
 import { useLogStore } from './useLogStore';
 import { parseModifier } from './text-utils';
-
-export interface StoredCharMeta {
-  deathSaves?: DeathSaves;
-  inspiration?: boolean;
-  spellcastingAbility?: 'int' | 'wis' | 'cha';
-  spellSlots?: SpellSlot[];
-  spells?: Spell[];
-  resources?: ExpendableResource[];
-  hitDice?: HitDice;
-  savingThrowsProficient?: string[];
-}
-
-const DEFAULT_SLOTS: SpellSlot[] = [
-  { level: 1, max: 4, current: 4 },
-  { level: 2, max: 3, current: 3 },
-  { level: 3, max: 2, current: 2 },
-  { level: 4, max: 0, current: 0 },
-  { level: 5, max: 0, current: 0 },
-  { level: 6, max: 0, current: 0 },
-  { level: 7, max: 0, current: 0 },
-  { level: 8, max: 0, current: 0 },
-  { level: 9, max: 0, current: 0 },
-];
-
-const getStoredArray = <T,>(key: string): T[] => {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const getStoredJson = <T,>(key: string): T | null => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-export const getStoredCharMeta = (name?: string): StoredCharMeta | null => {
-  if (!name) return null;
-  try {
-    const raw = localStorage.getItem(`tb_char_meta_${name.toLowerCase().trim()}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-export const saveCharMeta = (name: string | undefined, meta: Partial<StoredCharMeta>): void => {
-  if (!name) return;
-  try {
-    const key = `tb_char_meta_${name.toLowerCase().trim()}`;
-    const prev = getStoredCharMeta(name) || {};
-    const merged = { ...prev, ...meta };
-    localStorage.setItem(key, JSON.stringify(merged));
-  } catch {
-    // ignore
-  }
-};
+import {
+  DEFAULT_SLOTS,
+  getStoredArray,
+  getStoredJson,
+  getStoredCharMeta,
+  mergeCharWithMeta,
+  persistPlayerData,
+} from './character-storage';
 
 interface RosterStore {
   roster: Character[];
@@ -128,29 +72,21 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   selectedToken: null,
   selectedCharacter: null,
   noteContent: null,
-  playerCharacterName: localStorage.getItem('tb_player_character') || '',
+  playerCharacterName: (() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.PLAYER_CHARACTER) || '';
+    } catch {
+      return '';
+    }
+  })(),
   playerData: (() => {
-    const raw = getStoredJson<Character>('tb_player_data');
+    const raw = getStoredJson<Character>(STORAGE_KEYS.PLAYER_DATA);
     if (!raw) return null;
     const meta = getStoredCharMeta(raw.name);
-    return {
-      ...raw,
-      deathSaves: raw.deathSaves ?? meta?.deathSaves ?? { successes: 0, failures: 0 },
-      inspiration: raw.inspiration ?? meta?.inspiration ?? false,
-      spellcastingAbility: raw.spellcastingAbility ?? meta?.spellcastingAbility ?? 'int',
-      spellSlots: raw.spellSlots ?? meta?.spellSlots ?? DEFAULT_SLOTS,
-      spells: raw.spells ?? meta?.spells ?? [],
-      resources: raw.resources ?? meta?.resources ?? [],
-      hitDice: raw.hitDice ?? meta?.hitDice ?? {
-        current: raw.level || 1,
-        total: raw.level || 1,
-        dieType: 'd8',
-      },
-      savingThrowsProficient: raw.savingThrowsProficient ?? meta?.savingThrowsProficient ?? [],
-    };
+    return mergeCharWithMeta(raw, meta);
   })(),
-  cluesArchive: getStoredArray<Clue>('tb_clues_archive'),
-  pinnedNames: getStoredArray<string>('tb_pinned_roster'),
+  cluesArchive: getStoredArray<Clue>(STORAGE_KEYS.CLUES_ARCHIVE),
+  pinnedNames: getStoredArray<string>(STORAGE_KEYS.PINNED_ROSTER),
 
   setRoster: (roster) => set({ roster: Array.isArray(roster) ? roster : [] }),
   setSelectedToken: (selectedToken) => set({ selectedToken }),
@@ -166,11 +102,15 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   setNoteContent: (noteContent) => set({ noteContent }),
 
   setPlayerCharacterName: (name) => {
-    localStorage.setItem('tb_player_character', name);
+    try {
+      localStorage.setItem(STORAGE_KEYS.PLAYER_CHARACTER, name);
+    } catch {
+      // storage unavailable
+    }
     const prev = get().playerData;
     if (prev && prev.name !== name) {
       set({ playerCharacterName: name, playerData: null });
-      localStorage.removeItem('tb_player_data');
+      persistPlayerData(null);
     } else {
       set({ playerCharacterName: name });
     }
@@ -182,135 +122,116 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   setPlayerData: (incoming) => {
     if (incoming) {
       const meta = getStoredCharMeta(incoming.name);
-      const merged: Character = {
-        ...incoming,
-        deathSaves: incoming.deathSaves ?? meta?.deathSaves ?? { successes: 0, failures: 0 },
-        inspiration: incoming.inspiration ?? meta?.inspiration ?? false,
-        spellcastingAbility: incoming.spellcastingAbility ?? meta?.spellcastingAbility ?? 'int',
-        spellSlots: incoming.spellSlots ?? meta?.spellSlots ?? DEFAULT_SLOTS,
-        spells: incoming.spells ?? meta?.spells ?? [],
-        resources: incoming.resources ?? meta?.resources ?? [],
-        hitDice: incoming.hitDice ?? meta?.hitDice ?? {
-          current: incoming.level || 1,
-          total: incoming.level || 1,
-          dieType: 'd8',
-        },
-        savingThrowsProficient:
-          incoming.savingThrowsProficient ?? meta?.savingThrowsProficient ?? [],
-      };
-      try {
-        localStorage.setItem('tb_player_data', JSON.stringify(merged));
-      } catch {
-        // ignore
-      }
+      const merged = mergeCharWithMeta(incoming, meta);
+      persistPlayerData(merged);
       set({ playerData: merged });
     } else {
-      localStorage.removeItem('tb_player_data');
+      persistPlayerData(null);
       set({ playerData: null });
     }
   },
 
   setCluesArchive: (cluesArchive) => {
-    localStorage.setItem('tb_clues_archive', JSON.stringify(cluesArchive));
+    try {
+      localStorage.setItem(STORAGE_KEYS.CLUES_ARCHIVE, JSON.stringify(cluesArchive));
+    } catch {
+      // ignore
+    }
     set({ cluesArchive });
   },
 
   addClue: (clue) => {
-    set((state) => {
-      const exists = state.cluesArchive.some((c) => c.id === clue.id || c.url === clue.url);
-      if (exists) return state;
-      const updated = [clue, ...state.cluesArchive];
-      localStorage.setItem('tb_clues_archive', JSON.stringify(updated));
-      return { cluesArchive: updated };
-    });
+    const current = get().cluesArchive;
+    const exists = current.some((c) => c.id === clue.id || (c.url && c.url === clue.url));
+    if (exists) return;
+
+    const updated = [clue, ...current];
+    try {
+      localStorage.setItem(STORAGE_KEYS.CLUES_ARCHIVE, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ cluesArchive: updated });
+    useLogStore.getState().addLog('sync', `Добавлена улика в архив: «${clue.title}»`);
   },
 
   removeClue: (id) => {
-    set((state) => {
-      const updated = state.cluesArchive.filter((c) => c.id !== id);
-      localStorage.setItem('tb_clues_archive', JSON.stringify(updated));
-      return { cluesArchive: updated };
-    });
+    const updated = get().cluesArchive.filter((c) => c.id !== id);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CLUES_ARCHIVE, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ cluesArchive: updated });
   },
 
   togglePinCharacter: (name) => {
-    set((state) => {
-      const isPinned = state.pinnedNames.includes(name);
-      const updated = isPinned
-        ? state.pinnedNames.filter((n) => n !== name)
-        : [...state.pinnedNames, name];
-      localStorage.setItem('tb_pinned_roster', JSON.stringify(updated));
-      return { pinnedNames: updated };
-    });
+    const current = get().pinnedNames;
+    const isPinned = current.includes(name);
+    const updated = isPinned ? current.filter((n) => n !== name) : [...current, name];
+    try {
+      localStorage.setItem(STORAGE_KEYS.PINNED_ROSTER, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ pinnedNames: updated });
   },
 
   deletePlayerAttack: (attackIndex) => {
-    const { playerData, playerCharacterName } = get();
+    const { playerData } = get();
     if (!playerData || !playerData.attacks) return;
 
     const updatedAttacks = playerData.attacks.filter((_, idx) => idx !== attackIndex);
-    const updatedPlayerData = { ...playerData, attacks: updatedAttacks };
-    set({ playerData: updatedPlayerData });
+    const updated = { ...playerData, attacks: updatedAttacks };
+    set({ playerData: updated });
+    persistPlayerData(updated);
 
-    if (playerCharacterName) {
-      wsBridge.send('UPDATE_CHARACTER_ACTIONS', {
-        characterName: playerCharacterName,
+    if (get().playerCharacterName) {
+      wsBridge.send('UPDATE_CHARACTER_ATTACKS', {
+        characterName: get().playerCharacterName,
         attacks: updatedAttacks,
       });
     }
   },
 
   savePlayerAttack: (attack, attackIndex) => {
-    const { playerData, playerCharacterName } = get();
+    const { playerData } = get();
     if (!playerData) return;
 
-    const currentAttacks = playerData.attacks || [];
-    let updatedAttacks: Attack[];
-
-    if (attackIndex !== undefined && attackIndex >= 0 && attackIndex < currentAttacks.length) {
-      updatedAttacks = currentAttacks.map((a, idx) => (idx === attackIndex ? attack : a));
+    const currentAttacks = playerData.attacks ? [...playerData.attacks] : [];
+    if (typeof attackIndex === 'number' && attackIndex >= 0 && attackIndex < currentAttacks.length) {
+      currentAttacks[attackIndex] = attack;
     } else {
-      updatedAttacks = [...currentAttacks, attack];
+      currentAttacks.push(attack);
     }
 
-    const updatedPlayerData = { ...playerData, attacks: updatedAttacks };
-    set({ playerData: updatedPlayerData });
+    const updated = { ...playerData, attacks: currentAttacks };
+    set({ playerData: updated });
+    persistPlayerData(updated);
 
-    if (playerCharacterName) {
-      wsBridge.send('UPDATE_CHARACTER_ACTIONS', {
-        characterName: playerCharacterName,
-        attacks: updatedAttacks,
+    if (get().playerCharacterName) {
+      wsBridge.send('UPDATE_CHARACTER_ATTACKS', {
+        characterName: get().playerCharacterName,
+        attacks: currentAttacks,
       });
     }
   },
 
   updatePlayerHp: (delta) => {
-    const { playerData, playerCharacterName } = get();
+    const { playerData } = get();
     if (!playerData) return;
 
-    const curHp = playerData.hp ?? 20;
-    const maxHp = playerData.hp_max ?? curHp;
-    const newHp = Math.max(0, Math.min(maxHp, curHp + delta));
+    const currentHp = playerData.hp ?? 20;
+    const maxHp = playerData.hp_max ?? currentHp;
+    const newHp = Math.max(0, Math.min(maxHp, currentHp + delta));
 
-    // D&D 5e rule: healing above 0 resets death saves
-    let nextDeathSaves = playerData.deathSaves;
-    if (newHp > 0 && nextDeathSaves && (nextDeathSaves.successes > 0 || nextDeathSaves.failures > 0)) {
-      nextDeathSaves = { successes: 0, failures: 0 };
-      saveCharMeta(playerData.name, { deathSaves: nextDeathSaves });
-    }
+    const updated = { ...playerData, hp: newHp };
+    set({ playerData: updated });
+    persistPlayerData(updated);
 
-    const updatedPlayerData = { ...playerData, hp: newHp, deathSaves: nextDeathSaves };
-    set({ playerData: updatedPlayerData });
-
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updatedPlayerData));
-    } catch {
-      // ignore
-    }
-
-    if (playerCharacterName) {
+    if (get().playerCharacterName) {
       wsBridge.send('UPDATE_CHARACTER_HP', {
-        characterName: playerCharacterName,
+        characterName: get().playerCharacterName,
         hp: newHp,
         maxHp: maxHp,
       });
@@ -326,12 +247,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     };
     const updated = { ...playerData, deathSaves: newDeathSaves };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { deathSaves: newDeathSaves });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   rollDeathSave: () => {
@@ -366,12 +282,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       };
       useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
       set({ playerData: updated });
-      saveCharMeta(charName, { deathSaves: { successes: 0, failures: 0 } });
-      try {
-        localStorage.setItem('tb_player_data', JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
+      persistPlayerData(updated);
       if (get().playerCharacterName) {
         wsBridge.send('UPDATE_CHARACTER_HP', {
           characterName: get().playerCharacterName,
@@ -402,12 +313,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const newDeathSaves: DeathSaves = { successes: nextSuccesses, failures: nextFailures };
     const updated = { ...playerData, deathSaves: newDeathSaves };
     set({ playerData: updated });
-    saveCharMeta(charName, { deathSaves: newDeathSaves });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   resetDeathSaves: () => {
@@ -416,12 +322,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const newDeathSaves: DeathSaves = { successes: 0, failures: 0 };
     const updated = { ...playerData, deathSaves: newDeathSaves };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { deathSaves: newDeathSaves });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   toggleInspiration: () => {
@@ -430,16 +331,11 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const nextInspiration = !playerData.inspiration;
     const updated = { ...playerData, inspiration: nextInspiration };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { inspiration: nextInspiration });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
     useLogStore.getState().addLog(
       'action',
       nextInspiration
-        ? `[Вдохновение]: ${playerData.name} получил Вдохновение (★)!`
+        ? `[Вдохновение]: ${playerData.name} получил Вдохновение!`
         : `[Вдохновение]: ${playerData.name} использовал/снял Вдохновение.`
     );
   },
@@ -449,12 +345,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (!playerData) return;
     const updated = { ...playerData, spellSlots: slots };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spellSlots: slots });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   useSpellSlot: (level) => {
@@ -469,12 +360,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     });
     const updated = { ...playerData, spellSlots: updatedSlots };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spellSlots: updatedSlots });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   regainSpellSlot: (level) => {
@@ -489,12 +375,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     });
     const updated = { ...playerData, spellSlots: updatedSlots };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spellSlots: updatedSlots });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   resetAllSpellSlots: () => {
@@ -504,12 +385,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const updatedSlots = currentSlots.map((s) => ({ ...s, current: s.max }));
     const updated = { ...playerData, spellSlots: updatedSlots };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spellSlots: updatedSlots });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
     useLogStore
       .getState()
       .addLog('action', `[Ячейки]: Все ячейки заклинаний восстановлены (${playerData.name}).`);
@@ -525,12 +401,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       : [...currentSpells, spell];
     const updated = { ...playerData, spells: updatedSpells };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spells: updatedSpells });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   deleteSpell: (spellId) => {
@@ -540,12 +411,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const updatedSpells = currentSpells.filter((s) => s.id !== spellId);
     const updated = { ...playerData, spells: updatedSpells };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spells: updatedSpells });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   updateResources: (resources) => {
@@ -553,12 +419,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (!playerData) return;
     const updated = { ...playerData, resources };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { resources });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   updateHitDice: (hitDice) => {
@@ -566,12 +427,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (!playerData) return;
     const updated = { ...playerData, hitDice };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { hitDice });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   spendHitDice: () => {
@@ -582,51 +438,29 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       total: playerData.level || 1,
       dieType: 'd8',
     };
+
     if (hitDice.current <= 0) {
       useLogStore
         .getState()
-        .addLog('action', `[Кости хитов]: У ${playerData.name} не осталось костей хитов!`);
+        .addLog('roll', `[Кость хитов]: Нет доступных костей хитов для траты (${playerData.name}).`);
       return;
     }
-    const dieSides = parseInt(hitDice.dieType.replace('d', ''), 10) || 8;
-    const roll = Math.floor(Math.random() * dieSides) + 1;
+
+    const nextCurrent = hitDice.current - 1;
+    const updatedHitDice: HitDice = { ...hitDice, current: nextCurrent };
+
     const conMod = parseModifier(playerData.stats?.con || '10');
-    const healed = Math.max(1, roll + conMod);
-    const nextHitDice = { ...hitDice, current: hitDice.current - 1 };
+    const dieType = hitDice.dieType || 'd8';
+    const rollFormula = conMod >= 0 ? `1${dieType}+${conMod}` : `1${dieType}${conMod}`;
 
     taleSpireDriver.rollDice(
-      `1${hitDice.dieType}${conMod >= 0 ? '+' + conMod : conMod}`,
-      `Кость хитов (${playerData.name})`
+      rollFormula,
+      `Кость хитов (${playerData.name}: осталось ${nextCurrent}/${hitDice.total})`
     );
-    useLogStore
-      .getState()
-      .addLog(
-        'roll',
-        `[Кость хитов]: 1${hitDice.dieType} (${roll}) + Тел (${
-          conMod >= 0 ? '+' + conMod : conMod
-        }) = +${healed} ХП (Осталось: ${nextHitDice.current}/${nextHitDice.total})`
-      );
 
-    const curHp = playerData.hp ?? 20;
-    const maxHp = playerData.hp_max ?? curHp;
-    const newHp = Math.min(maxHp, curHp + healed);
-
-    const updated = { ...playerData, hp: newHp, hitDice: nextHitDice };
+    const updated = { ...playerData, hitDice: updatedHitDice };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { hitDice: nextHitDice });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-
-    if (get().playerCharacterName) {
-      wsBridge.send('UPDATE_CHARACTER_HP', {
-        characterName: get().playerCharacterName,
-        hp: newHp,
-        maxHp: maxHp,
-      });
-    }
+    persistPlayerData(updated);
   },
 
   toggleSavingThrowProficiency: (ability) => {
@@ -638,12 +472,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       : [...currentProfs, ability];
     const updated = { ...playerData, savingThrowsProficient: updatedProfs };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { savingThrowsProficient: updatedProfs });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   setSpellcastingAbility: (ability) => {
@@ -651,12 +480,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (!playerData) return;
     const updated = { ...playerData, spellcastingAbility: ability };
     set({ playerData: updated });
-    saveCharMeta(playerData.name, { spellcastingAbility: ability });
-    try {
-      localStorage.setItem('tb_player_data', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    persistPlayerData(updated);
   },
 
   performRest: (type) => {
@@ -672,12 +496,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       );
       const updated = { ...playerData, resources: updatedRes };
       set({ playerData: updated });
-      saveCharMeta(charName, { resources: updatedRes });
-      try {
-        localStorage.setItem('tb_player_data', JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
+      persistPlayerData(updated);
       useLogStore
         .getState()
         .addLog(
@@ -716,17 +535,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       };
 
       set({ playerData: updated });
-      saveCharMeta(charName, {
-        deathSaves: resetDeathSaves,
-        hitDice: nextHitDice,
-        spellSlots: resetSlots,
-        resources: resetRes,
-      });
-      try {
-        localStorage.setItem('tb_player_data', JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
+      persistPlayerData(updated);
 
       if (get().playerCharacterName) {
         wsBridge.send('UPDATE_CHARACTER_HP', {

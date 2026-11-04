@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import {
   Clue,
   useAppStore,
+  useConfirmDelete,
   resolveMediaUrl,
   getYouTubeVideoId,
   getYouTubeThumbnailUrl,
@@ -14,29 +15,9 @@ interface ClueCardProps {
 
 export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
   const { setCinemaMedia } = useAppStore();
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-    };
-  }, []);
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (e.shiftKey || isConfirmingDelete) {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-      setIsConfirmingDelete(false);
-      onDelete(clue.id);
-      return;
-    }
-
-    setIsConfirmingDelete(true);
-    resetTimerRef.current = setTimeout(() => {
-      setIsConfirmingDelete(false);
-    }, 3500);
-  };
+  const { isConfirming: isConfirmingDelete, handleDelete } = useConfirmDelete({
+    onDelete: () => onDelete(clue.id),
+  });
 
   const handleOpenMedia = () => {
     setCinemaMedia({

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Attack,
   useRosterStore,
   wsBridge,
   parseModifier,
+  formatModifier,
+  computeProfBonus,
   taleSpireDriver,
 } from '../../shared';
 import { AbilityCell, AttackCard, ActionModal } from '../../entities';
@@ -52,7 +54,10 @@ export const PlayerCockpit = () => {
     null
   );
 
-  const pcList = roster.filter((r) => r.playable || r.category === 'Игроки');
+  const pcList = useMemo(
+    () => roster.filter((r) => r.playable || r.category === 'Игроки'),
+    [roster]
+  );
 
   useEffect(() => {
     if (playerCharacterName) {
@@ -60,44 +65,47 @@ export const PlayerCockpit = () => {
     } else if (pcList.length > 0) {
       setPlayerCharacterName(pcList[0].name);
     }
-  }, [playerCharacterName, pcList.length]);
+  }, [playerCharacterName, pcList, setPlayerCharacterName]);
 
   const curHp = playerData?.hp ?? 20;
   const maxHp = playerData?.hp_max ?? curHp;
 
-  const dexMod = parseModifier(playerData?.stats?.dex || '10');
-  const wisMod = parseModifier(playerData?.stats?.wis || '10');
+  const dexMod = useMemo(() => parseModifier(playerData?.stats?.dex || '10'), [playerData?.stats?.dex]);
+  const wisMod = useMemo(() => parseModifier(playerData?.stats?.wis || '10'), [playerData?.stats?.wis]);
   const level = playerData?.level || 1;
-  const profBonus = Math.floor((level - 1) / 4) + 2;
+  const profBonus = useMemo(() => computeProfBonus(level), [level]);
   const isWisProf = playerData?.savingThrowsProficient?.includes('wis') || false;
   const passivePerception = 10 + wisMod + (isWisProf ? profBonus : 0);
 
-  const handleEditAttack = (atk: Attack, idx: number) => {
+  const handleEditAttack = useCallback((atk: Attack, idx: number) => {
     setModalAttack({ attack: atk, index: idx });
-  };
+  }, []);
 
-  const handleAddAttack = () => {
+  const handleAddAttack = useCallback(() => {
     setModalAttack({ attack: null });
-  };
+  }, []);
 
-  const handleSaveAttack = (atk: Attack, idx?: number) => {
+  const handleSaveAttack = useCallback((atk: Attack, idx?: number) => {
     savePlayerAttack(atk, idx);
     setModalAttack(null);
-  };
+  }, [savePlayerAttack]);
 
-  const handleRollInitiative = () => {
+  const handleRollInitiative = useCallback(() => {
     if (!playerData) return;
-    const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
+    const modStr = formatModifier(dexMod);
     taleSpireDriver.rollDice(`1d20${modStr}`, `Инициатива (${playerData.name})`);
-  };
+  }, [playerData, dexMod]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14]">
       {/* Cockpit Top Bar: Character Select & Tabs */}
       <div className="bg-[#141622] border-b border-[#262a3d] px-3 py-2 flex items-center justify-between gap-2 shrink-0 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs uppercase font-bold text-slate-400 shrink-0">Герой:</span>
+          <label htmlFor="hero-select" className="text-xs uppercase font-bold text-slate-400 shrink-0">
+            Герой:
+          </label>
           <select
+            id="hero-select"
             value={playerCharacterName}
             onChange={(e) => setPlayerCharacterName(e.target.value)}
             className="bg-[#10111a] border border-[#262a3d] text-slate-100 text-sm rounded px-2.5 py-1 focus:outline-none focus:border-indigo-500 max-w-[170px] truncate cursor-pointer font-medium"
@@ -189,10 +197,10 @@ export const PlayerCockpit = () => {
                     title="Бросить инициативу в TaleSpire"
                   >
                     <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-amber-300">
-                      🎲 Инициатива
+                      Инициатива
                     </span>
                     <span className="text-sm font-bold text-amber-300 font-mono">
-                      {dexMod >= 0 ? `+${dexMod}` : dexMod}
+                      {formatModifier(dexMod)}
                     </span>
                   </button>
 

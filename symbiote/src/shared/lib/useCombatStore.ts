@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Combatant, CombatSide } from '../types';
 import { wsBridge } from '../api/websocket';
+import { sideToCategory, categoryToSide } from './dnd-rules';
 
 interface CombatStore {
   active: boolean;
@@ -72,10 +73,8 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       c.side ||
       (c.isPlayer
         ? 'player'
-        : c.category === 'Союзники' || c.category === 'Союзник'
-        ? 'ally'
-        : c.category === 'Нейтрал' || c.category === 'Нейтралы'
-        ? 'neutral'
+        : c.category
+        ? categoryToSide(c.category)
         : 'enemy');
 
     const newCombatant: Combatant = {
@@ -91,7 +90,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       conditions: c.conditions || [],
       notes: c.notes || '',
       isPlayer: c.isPlayer || defaultSide === 'player',
-      category: c.category || (defaultSide === 'player' ? 'Игроки' : defaultSide === 'ally' ? 'Союзники' : defaultSide === 'neutral' ? 'Нейтралы' : 'Враги'),
+      category: c.category || sideToCategory(defaultSide),
       path: c.path || null,
       talespireId: c.talespireId || null,
       stats: c.stats || null,
@@ -112,9 +111,14 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   },
 
   removeCombatant: (id) => {
-    set((state) => ({
-      combatants: state.combatants.filter((c) => c.id !== id),
-    }));
+    set((state) => {
+      const nextList = state.combatants.filter((c) => c.id !== id);
+      const safeTurn = nextList.length > 0 ? Math.min(state.turnIndex, nextList.length - 1) : 0;
+      return {
+        combatants: nextList,
+        turnIndex: safeTurn,
+      };
+    });
     get().syncWithObsidian();
   },
 
@@ -144,14 +148,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       combatants: state.combatants.map((c) => {
         if (c.id !== id) return c;
         const isPlayer = side === 'player';
-        const cat =
-          side === 'player'
-            ? 'Игроки'
-            : side === 'ally'
-            ? 'Союзники'
-            : side === 'neutral'
-            ? 'Нейтралы'
-            : 'Враги';
+        const cat = sideToCategory(side);
         return { ...c, side, isPlayer, category: cat };
       }),
     }));

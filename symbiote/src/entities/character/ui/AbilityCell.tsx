@@ -1,5 +1,5 @@
 import React from 'react';
-import { taleSpireDriver, parseModifier } from '../../../shared';
+import { taleSpireDriver, parseModifier, formatModifier } from '../../../shared';
 
 interface AbilityCellProps {
   label: string;
@@ -23,9 +23,9 @@ export const AbilityCell = ({
   profBonus = 2,
 }: AbilityCellProps) => {
   const modNum = parseModifier(scoreStr);
-  const checkModStr = modNum >= 0 ? `+${modNum}` : `${modNum}`;
+  const checkModStr = formatModifier(modNum);
   const saveModNum = modNum + (isProficient ? profBonus : 0);
-  const saveModStr = saveModNum >= 0 ? `+${saveModNum}` : `${saveModNum}`;
+  const saveModStr = formatModifier(saveModNum);
 
   const handleRollCheck = (e: React.MouseEvent) => {
     e.stopPropagation();

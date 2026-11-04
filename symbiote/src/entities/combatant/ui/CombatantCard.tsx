@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
-import { Combatant, CONDITIONS, COMBAT_SIDES, taleSpireDriver } from '../../../shared';
-import { useCombatStore, useRosterStore, wsBridge } from '../../../shared';
+import {
+  Combatant,
+  CONDITIONS,
+  COMBAT_SIDES,
+  taleSpireDriver,
+  useCombatStore,
+  useRosterStore,
+  wsBridge,
+  normalizeHitBonus,
+  getHpColorClass,
+} from '../../../shared';
 
 interface CombatantCardProps {
   combatant: Combatant;
@@ -34,9 +43,12 @@ export const CombatantCard = ({
     Math.max(0, Math.round((combatant.hp / (combatant.maxHp || 1)) * 100))
   );
 
-  let hpColor = 'bg-emerald-500';
-  if (hpPercent <= 25) hpColor = 'bg-rose-500';
-  else if (hpPercent <= 50) hpColor = 'bg-amber-500';
+  const hpColor =
+    hpPercent <= 25
+      ? 'bg-rose-500'
+      : hpPercent <= 50
+      ? 'bg-amber-500'
+      : 'bg-emerald-500';
 
   const handleApplyCustomHp = (isDamage: boolean) => {
     const val = parseInt(customHpVal, 10);
@@ -289,9 +301,7 @@ export const CombatantCard = ({
           <div className="flex flex-wrap items-center gap-1.5">
             {attacks.map((atk, atkIdx) => {
               const handleRollAttack = () => {
-                const bonus = (atk.hit || '').startsWith('+') || (atk.hit || '').startsWith('-')
-                  ? atk.hit
-                  : `+${atk.hit}`;
+                const bonus = normalizeHitBonus(atk.hit);
                 taleSpireDriver.rollDice(`1d20${bonus}`, `${combatant.name}: ${atk.name} (Атака)`);
               };
 

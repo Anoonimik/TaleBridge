@@ -1,32 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Character,
   CombatSide,
-  COMBAT_SIDES,
+  ParsedCreatureNote,
   useCombatStore,
   useRosterStore,
   wsBridge,
   taleSpireDriver,
-  formatInlineText,
   parseModifier,
+  formatModifier,
   parseCreatureNote,
+  normalizeHitBonus,
+  sideToCategory,
 } from '../../shared';
+import {
+  NoteViewerHeader,
+  NoteVitalsBar,
+  NoteAbilityGrid,
+  NoteActionsSection,
+  NoteCalloutsSection,
+  NoteMarkdownBody,
+} from './ui';
 
 interface NoteViewerProps {
   character: Character | null;
   onClose: () => void;
 }
 
-export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
+export const NoteViewer: React.FC<NoteViewerProps> = ({ character, onClose }) => {
   const { addCombatant } = useCombatStore();
   const { noteContent } = useRosterStore();
-  const [showSideSelector, setShowSideSelector] = useState(false);
   const [combatAdded, setCombatAdded] = useState(false);
 
-  if (!character) return null;
+  const rawMarkdown = useMemo(() => {
+    if (!character) return '';
+    return noteContent?.content || character.playerNotes || '';
+  }, [noteContent?.content, character]);
 
-  const rawMarkdown = noteContent?.content || character.playerNotes || '';
-  const parsed = parseCreatureNote(rawMarkdown, character.attacks || []);
+  const parsed: ParsedCreatureNote = useMemo(() => {
+    if (!character) return { vitals: {}, stats: undefined, actions: [], callouts: [], remainingMarkdown: '' };
+    return parseCreatureNote(rawMarkdown, character.attacks || []);
+  }, [rawMarkdown, character]);
+
+  if (!character) return null;
 
   const handleOpenObsidian = () => {
     if (character.path) {
@@ -45,14 +61,7 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
     addCombatant({
       name: character.name,
       side,
-      category:
-        side === 'player'
-          ? 'Игроки'
-          : side === 'ally'
-          ? 'Союзники'
-          : side === 'neutral'
-          ? 'Нейтралы'
-          : 'Враги',
+      category: sideToCategory(side),
       hp,
       maxHp,
       ac,
@@ -63,13 +72,12 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
       dexMod: character.dexMod,
       attacks,
     });
-    setShowSideSelector(false);
     setCombatAdded(true);
     setTimeout(() => setCombatAdded(false), 2200);
   };
 
   const handleRollAttack = (attName: string, hit: string) => {
-    const bonus = hit.startsWith('+') || hit.startsWith('-') ? hit : `+${hit}`;
+    const bonus = normalizeHitBonus(hit);
     taleSpireDriver.rollDice(`1d20${bonus}`, `${character.name}: ${attName} (Атака)`);
   };
 
@@ -79,12 +87,12 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
 
   const handleRollStat = (label: string, name: string, scoreStr: string) => {
     const mod = parseModifier(scoreStr);
-    const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+    const modStr = formatModifier(mod);
     taleSpireDriver.rollDice(`1d20${modStr}`, `${character.name}: Проверка ${name}`);
   };
 
   const handleRollInitiative = (bonus: string) => {
-    const b = bonus.startsWith('+') || bonus.startsWith('-') ? bonus : `+${bonus}`;
+    const b = normalizeHitBonus(bonus);
     taleSpireDriver.rollDice(`1d20${b}`, `${character.name}: Инициатива`);
   };
 
@@ -103,10 +111,13 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
   // Initiative calculation
   const initBonus =
     parsed.vitals.initiativeBonus ||
-    (activeStats?.dex ? `${parseModifier(activeStats.dex) >= 0 ? '+' : ''}${parseModifier(activeStats.dex)}` : null);
+    (activeStats?.dex ? formatModifier(parseModifier(activeStats.dex)) : null);
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Карточка: ${character.name}`}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={onClose}
     >
@@ -115,465 +126,53 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header Bar */}
-        <div className="p-3 bg-[#10111a] border-b border-[#262a3d] flex items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              type="button"
-              className="px-2.5 py-1 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] text-xs font-medium cursor-pointer transition-colors shrink-0"
-              onClick={onClose}
-              title="Закрыть карточку"
-            >
-              ◂ Назад
-            </button>
-
-            <span className="font-bold text-amber-400 text-sm truncate" title={character.name}>
-              {character.name}
-            </span>
-
-            <span
-              className={`text-xs px-2 py-0.5 rounded border uppercase tracking-wider shrink-0 font-medium ${categoryBadgeColor}`}
-            >
-              {character.category || 'Существо'}
-            </span>
-
-            {(character.race || character.class) && (
-              <span className="hidden sm:inline text-xs text-slate-400 truncate">
-                {[character.race, character.class].filter(Boolean).join(' • ')}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0 relative">
-            {/* Add to combat button */}
-            <div className="relative">
-              <button
-                type="button"
-                className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition-colors border flex items-center gap-1 ${
-                  combatAdded
-                    ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50'
-                    : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30'
-                }`}
-                onClick={() => setShowSideSelector(!showSideSelector)}
-                title="Добавить в трекер боя"
-              >
-                <span>{combatAdded ? 'В бою ✓' : '+ В бой'}</span>
-                <span className="text-[10px]">▾</span>
-              </button>
-
-              {showSideSelector && (
-                <div className="absolute top-full right-0 mt-1 z-30 bg-[#141622] border border-[#2d324a] rounded-lg shadow-xl py-1 flex flex-col w-36 animate-in fade-in duration-100">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1 block">
-                    Выбор стороны:
-                  </span>
-                  {COMBAT_SIDES.map((side) => (
-                    <button
-                      key={side.id}
-                      type="button"
-                      className="px-3 py-1.5 text-left text-xs text-slate-200 hover:bg-[#1a1d2d] cursor-pointer flex items-center gap-2 transition-colors"
-                      onClick={() => handleAddToCombat(side.id)}
-                    >
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: side.color }} />
-                      <span>{side.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {character.path && (
-              <button
-                type="button"
-                className="px-2.5 py-1 rounded text-xs bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600/30 cursor-pointer transition-colors font-medium shrink-0"
-                onClick={handleOpenObsidian}
-                title="Открыть оригинальную заметку в Obsidian"
-              >
-                В Obsidian
-              </button>
-            )}
-
-            <button
-              type="button"
-              className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-slate-800 text-sm cursor-pointer transition-colors shrink-0"
-              onClick={onClose}
-              title="Закрыть"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+        <NoteViewerHeader
+          character={character}
+          categoryBadgeColor={categoryBadgeColor}
+          combatAdded={combatAdded}
+          onClose={onClose}
+          onAddToCombat={handleAddToCombat}
+          onOpenObsidian={handleOpenObsidian}
+        />
 
         {/* Unified Single-Window Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5 scrollbar-thin text-sm">
           {/* 1. Primary Vital Stats Bar */}
-          <div className="grid grid-cols-4 gap-2 bg-[#10111a] p-3 rounded-lg border border-[#1f2233]">
-            <div>
-              <span className="text-slate-400 text-xs uppercase font-bold block">КД</span>
-              <strong className="text-slate-100 text-base font-mono">
-                {character.ac || parsed.vitals.ac || 10}
-              </strong>
-            </div>
+          <NoteVitalsBar
+            character={character}
+            parsedVitals={parsed.vitals}
+            initBonus={initBonus}
+            onRollInitiative={handleRollInitiative}
+          />
 
-            <div>
-              <span className="text-slate-400 text-xs uppercase font-bold block">ХП</span>
-              <strong className="text-emerald-400 text-base font-mono">
-                {character.hp || parsed.vitals.hp || 10}
-                {character.hp_max ? ` / ${character.hp_max}` : ''}
-              </strong>
-            </div>
-
-            <div>
-              <span className="text-slate-400 text-xs uppercase font-bold block">Скорость</span>
-              <span className="text-slate-200 text-sm">
-                {character.speed || parsed.vitals.speed || '9 м'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-slate-400 text-xs uppercase font-bold block">Инициатива</span>
-              {initBonus ? (
-                <button
-                  type="button"
-                  onClick={() => handleRollInitiative(initBonus)}
-                  className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                  title="Бросить инициативу в TaleSpire"
-                >
-                  <svg className="w-3 h-3 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                    <line x1="12" y1="22.08" x2="12" y2="12" />
-                  </svg>
-                  <span>{initBonus}</span>
-                </button>
-              ) : (
-                <span className="text-slate-400 text-xs font-mono">+0</span>
-              )}
-            </div>
-          </div>
-
-          {/* 2. Ability Scores Grid (if available) */}
+          {/* 2. Ability Scores Grid */}
           {activeStats && (
-            <div className="flex flex-col gap-1.5">
-              <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
-                Характеристики:
-              </h4>
-              <div className="grid grid-cols-6 gap-1.5">
-                {(
-                  [
-                    { key: 'str', label: 'СИЛ', name: 'Сила' },
-                    { key: 'dex', label: 'ЛОВ', name: 'Ловкость' },
-                    { key: 'con', label: 'ТЕЛ', name: 'Телосложение' },
-                    { key: 'int', label: 'ИНТ', name: 'Интеллект' },
-                    { key: 'wis', label: 'МУД', name: 'Мудрость' },
-                    { key: 'cha', label: 'ХАР', name: 'Харизма' },
-                  ] as const
-                ).map(({ key, label, name }) => {
-                  const val = activeStats[key] || '10';
-                  const mod = parseModifier(val);
-                  const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
-
-                  return (
-                    <div
-                      key={key}
-                      onClick={() => handleRollStat(label, name, val)}
-                      className="bg-[#10111a] hover:bg-[#181b29] border border-[#1f2233] hover:border-amber-500/40 p-2 rounded flex flex-col items-center justify-center cursor-pointer transition-all group"
-                      title={`Бросок проверки ${name} (1d20${modStr})`}
-                    >
-                      <span className="text-xs uppercase font-bold text-slate-400 group-hover:text-amber-300">
-                        {label}
-                      </span>
-                      <span className="text-base font-bold text-slate-100 my-0.5">{val.split(' ')[0]}</span>
-                      <span className="text-xs font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-1 rounded">
-                        {modStr}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <NoteAbilityGrid
+              stats={activeStats}
+              onRollStat={handleRollStat}
+            />
           )}
 
           {/* 3. Actions & Attacks Section */}
-          {parsed.actions.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
-                Действия и атаки ({parsed.actions.length}):
-              </h4>
+          <NoteActionsSection
+            actions={parsed.actions}
+            characterName={character.name}
+            onRollAttack={handleRollAttack}
+            onRollDamage={handleRollDamage}
+          />
 
-              <div className="flex flex-col gap-2">
-                {parsed.actions.map((att, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#10111a] p-3 rounded-lg border border-[#1f2233] flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <strong className="text-amber-300 text-sm font-semibold truncate">
-                          {att.name}
-                        </strong>
-                        {att.type && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
-                            {att.type}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Interactive roll buttons */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {att.hit && (
-                          <button
-                            type="button"
-                            className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
-                            onClick={() => handleRollAttack(att.name, att.hit!)}
-                            title="Бросок атаки"
-                          >
-                            <span>Атака</span>
-                            <span className="font-mono text-xs">({att.hit})</span>
-                          </button>
-                        )}
-
-                        {att.dmg && att.dmg !== '0' && (
-                          <button
-                            type="button"
-                            className="px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600/35 text-rose-300 border border-rose-500/40 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
-                            onClick={() => handleRollDamage(att.name, att.dmg!)}
-                            title="Бросок урона"
-                          >
-                            <span>Урон</span>
-                            <span className="font-mono text-xs">({att.dmg})</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {att.desc && (
-                      <div className="text-xs text-slate-300 leading-relaxed m-0 bg-[#141622] p-2.5 rounded border border-[#262a3d]">
-                        {formatInlineText(att.desc, (f, l) =>
-                          taleSpireDriver.rollDice(f, `${character.name}: ${l}`)
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 4. Obsidian Callouts (Сводка для Мастера, Тактика, Лут) */}
-          {parsed.callouts.length > 0 && (
-            <div className="flex flex-col gap-2.5">
-              {parsed.callouts.map((c, idx) => {
-                let borderStyle = 'border-amber-500/60 bg-amber-500/5';
-                let titleColor = 'text-amber-400';
-
-                if (c.type === 'info' || c.type === 'note') {
-                  borderStyle = 'border-indigo-500/60 bg-indigo-500/5';
-                  titleColor = 'text-indigo-400';
-                } else if (c.type === 'tip') {
-                  borderStyle = 'border-emerald-500/60 bg-emerald-500/5';
-                  titleColor = 'text-emerald-400';
-                } else if (c.type === 'warning' || c.type === 'danger') {
-                  borderStyle = 'border-rose-500/60 bg-rose-500/5';
-                  titleColor = 'text-rose-400';
-                }
-
-                return (
-                  <div
-                    key={idx}
-                    className={`border-l-4 border rounded-r-lg p-3 flex flex-col gap-2 ${borderStyle}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold uppercase tracking-wider ${titleColor}`}>
-                        {c.title}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1 text-xs text-slate-200 leading-relaxed">
-                      {c.lines.map((line, lIdx) => (
-                        <div key={lIdx} className="pl-1">
-                          {formatInlineText(line, (f, l) =>
-                            taleSpireDriver.rollDice(f, `${character.name}: ${l}`)
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* 4. Obsidian Callouts */}
+          <NoteCalloutsSection
+            callouts={parsed.callouts}
+            characterName={character.name}
+          />
 
           {/* 5. Additional Remaining Lore / Markdown */}
           {parsed.remainingMarkdown && (
-            <div className="bg-[#10111a] p-3.5 rounded-lg border border-[#1f2233] flex flex-col gap-2 text-xs leading-relaxed text-slate-300">
-              {(() => {
-                const rawLines = parsed.remainingMarkdown.split(/\r?\n/);
-                const elements: React.ReactNode[] = [];
-                let tableBuffer: string[] = [];
-                let paragraphBuffer: string[] = [];
-
-                const onRoll = (f: string, l: string) => {
-                  taleSpireDriver.rollDice(f, `${character.name}: ${l}`);
-                };
-
-                const flushParagraph = (key: string) => {
-                  if (paragraphBuffer.length === 0) return;
-                  const text = paragraphBuffer.join(' ').trim();
-                  paragraphBuffer = [];
-                  if (!text) return;
-
-                  elements.push(
-                    <p key={key} className="m-0 leading-relaxed text-slate-300">
-                      {formatInlineText(text, onRoll)}
-                    </p>
-                  );
-                };
-
-                const flushTable = (key: string) => {
-                  if (tableBuffer.length < 2) {
-                    tableBuffer.forEach((l, idx) => {
-                      elements.push(
-                        <p key={`${key}-fallback-${idx}`} className="m-0 leading-relaxed text-slate-300">
-                          {formatInlineText(l, onRoll)}
-                        </p>
-                      );
-                    });
-                    tableBuffer = [];
-                    return;
-                  }
-
-                  const rows = tableBuffer
-                    .filter((l) => !/^\|[\s\-:]+\|$/.test(l.replace(/\s/g, '')))
-                    .map((l) =>
-                      l
-                        .replace(/^\|/, '')
-                        .replace(/\|$/, '')
-                        .split('|')
-                        .map((c) => c.trim())
-                    );
-
-                  tableBuffer = [];
-                  if (rows.length === 0) return;
-
-                  const [headerRow, ...bodyRows] = rows;
-
-                  elements.push(
-                    <div key={key} className="overflow-x-auto my-1 rounded border border-[#262a3d]">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-[#141622] border-b border-[#262a3d]">
-                            {headerRow.map((cell, cIdx) => (
-                              <th key={cIdx} className="px-2 py-1.5 font-bold text-amber-300 uppercase text-[10px]">
-                                {formatInlineText(cell, onRoll)}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bodyRows.map((row, rIdx) => (
-                            <tr
-                              key={rIdx}
-                              className={`border-b border-[#1f2233] ${
-                                rIdx % 2 === 0 ? 'bg-[#10111a]' : 'bg-[#141622]'
-                              }`}
-                            >
-                              {row.map((cell, cIdx) => (
-                                <td key={cIdx} className="px-2 py-1 text-slate-200">
-                                  {formatInlineText(cell, onRoll)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                };
-
-                for (let i = 0; i < rawLines.length; i++) {
-                  const line = rawLines[i].trim();
-
-                  // Table lines
-                  if (line.startsWith('|') && line.endsWith('|')) {
-                    flushParagraph(`p-${i}`);
-                    tableBuffer.push(line);
-                    continue;
-                  } else if (tableBuffer.length > 0) {
-                    flushTable(`table-${i}`);
-                  }
-
-                  // Empty line
-                  if (!line) {
-                    flushParagraph(`p-${i}`);
-                    continue;
-                  }
-
-                  // Task item (- [ ] or - [x])
-                  const taskMatch = line.match(/^[-*]\s*\[([ xX])\]\s*(.*)$/);
-                  if (taskMatch) {
-                    flushParagraph(`p-${i}`);
-                    const isChecked = taskMatch[1].toLowerCase() === 'x';
-                    const itemText = taskMatch[2].trim();
-                    elements.push(
-                      <div key={`task-${i}`} className="flex items-start gap-2 py-0.5 pl-1 text-xs text-slate-200">
-                        <span
-                          className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 border ${
-                            isChecked
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                              : 'bg-[#141622] text-slate-500 border-[#262a3d]'
-                          }`}
-                        >
-                          {isChecked ? '✓' : ''}
-                        </span>
-                        <span className={`flex-1 ${isChecked ? 'text-slate-300' : 'text-slate-400'}`}>
-                          {formatInlineText(itemText, onRoll)}
-                        </span>
-                      </div>
-                    );
-                    continue;
-                  }
-
-                  // Bullet list item (- ... or * ... or • ...)
-                  const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
-                  if (bulletMatch) {
-                    flushParagraph(`p-${i}`);
-                    elements.push(
-                      <div key={`bullet-${i}`} className="flex items-start gap-2 py-0.5 pl-1 text-xs text-slate-200">
-                        <span className="text-amber-400 text-xs shrink-0 font-bold mt-0.5">•</span>
-                        <span className="flex-1 leading-relaxed">
-                          {formatInlineText(bulletMatch[1].trim(), onRoll)}
-                        </span>
-                      </div>
-                    );
-                    continue;
-                  }
-
-                  // Headings (#, ##, ###)
-                  const headingMatch = line.match(/^(#{1,4})\s+(.*)$/);
-                  if (headingMatch) {
-                    flushParagraph(`p-${i}`);
-                    const hText = headingMatch[2].trim();
-                    elements.push(
-                      <h4
-                        key={`h-${i}`}
-                        className="text-xs uppercase font-bold text-amber-300 tracking-wider pt-2 border-b border-[#262a3d] pb-1 flex items-center gap-1.5"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                        <span>{hText}</span>
-                      </h4>
-                    );
-                    continue;
-                  }
-
-                  // Regular line
-                  paragraphBuffer.push(line);
-                }
-
-                if (tableBuffer.length > 0) flushTable(`table-end`);
-                if (paragraphBuffer.length > 0) flushParagraph(`p-end`);
-
-                return elements;
-              })()}
-            </div>
+            <NoteMarkdownBody
+              markdown={parsed.remainingMarkdown}
+              characterName={character.name}
+            />
           )}
 
           {/* Fallback if note has no markdown text loaded yet */}

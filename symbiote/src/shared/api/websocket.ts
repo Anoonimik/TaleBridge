@@ -177,11 +177,6 @@ class WebSocketBridge {
         useAppStore.getState().setCinemaMedia(null);
         break;
 
-      case 'CONFIG_UPDATE':
-        if (payload?.gmPin !== undefined) {
-          useAppStore.getState().setGmPin(payload.gmPin);
-        }
-        break;
     }
 
     const custom = this.listeners.get(type);

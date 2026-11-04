@@ -4,14 +4,9 @@ import { QuickDiceBar, BroadcastMediaModal, CameraBookmarksModal } from '../../f
 
 export const ToolsPanel = () => {
   const { logs, clearLogs } = useLogStore();
-  const { bookmarks, cinemaMedia, setCinemaMedia } = useAppStore();
+  const { bookmarks, cinemaMedia, stopBroadcast } = useAppStore();
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [showBookmarksModal, setShowBookmarksModal] = useState(false);
-
-  const handleStopBroadcast = () => {
-    setCinemaMedia(null);
-    wsBridge.send('DISMISS_HANDOUT', {});
-  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-3">
@@ -75,7 +70,7 @@ export const ToolsPanel = () => {
             </button>
             <button
               type="button"
-              onClick={handleStopBroadcast}
+              onClick={stopBroadcast}
               className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer transition-all shadow-xs active:scale-95"
               title="Прекратить трансляцию и закрыть экран у всех игроков"
             >

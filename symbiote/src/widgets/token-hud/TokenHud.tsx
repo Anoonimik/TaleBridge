@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRosterStore, useAppStore, wsBridge, taleSpireDriver } from '../../shared';
+import { useRosterStore, useAppStore, wsBridge, taleSpireDriver, getHpColorClass } from '../../shared';
 import { CombatTokenDropdown } from '../../features';
 
 export const TokenHud = () => {
@@ -74,36 +74,33 @@ export const TokenHud = () => {
         </div>
 
         {curHp !== undefined && (
-          <div className="flex flex-col gap-0.5 bg-[#141622] px-2 py-0.5 rounded border border-[#262a3d] shrink-0 min-w-[90px]">
-            <div className="flex items-center justify-between gap-1 text-[11px] font-mono leading-none">
-              <span className="text-[10px] text-slate-400 font-bold uppercase">ХП</span>
-              <strong
-                className={
-                  curHp <= maxHp * 0.25
-                    ? 'text-rose-400'
-                    : curHp <= maxHp * 0.5
-                    ? 'text-amber-400'
-                    : 'text-emerald-400'
-                }
-              >
-                {curHp} / {maxHp}
-              </strong>
-            </div>
-            <div className="w-full h-1 bg-[#1a1d2d] rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${
-                  curHp <= maxHp * 0.25
-                    ? 'bg-rose-500'
-                    : curHp <= maxHp * 0.5
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-500'
-                }`}
-                style={{
-                  width: `${Math.min(100, Math.max(0, (curHp / (maxHp || 1)) * 100))}%`,
-                }}
-              />
-            </div>
-          </div>
+          (() => {
+            const hpStyle = getHpColorClass(curHp, maxHp);
+            return (
+              <div className="flex flex-col gap-0.5 bg-[#141622] px-2 py-0.5 rounded border border-[#262a3d] shrink-0 min-w-[90px]">
+                <div className="flex items-center justify-between gap-1 text-[11px] font-mono leading-none">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">ХП</span>
+                  <strong className={hpStyle.textClass}>
+                    {curHp} / {maxHp}
+                  </strong>
+                </div>
+                <div className="w-full h-1 bg-[#1a1d2d] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      curHp <= maxHp * 0.25
+                        ? 'bg-rose-500'
+                        : curHp <= maxHp * 0.5
+                        ? 'bg-amber-500'
+                        : 'bg-emerald-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, (curHp / (maxHp || 1)) * 100))}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })()
         )}
 
         {matchInRoster?.ac && (

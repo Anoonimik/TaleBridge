@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Attack } from '../../../shared';
-import { taleSpireDriver } from '../../../shared';
+import React from 'react';
+import { Attack, taleSpireDriver, useConfirmDelete, normalizeHitBonus } from '../../../shared';
 
 interface AttackCardProps {
   attack: Attack;
@@ -17,37 +16,14 @@ export const AttackCard = ({
   onEdit,
   onDelete,
 }: AttackCardProps) => {
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-    };
-  }, []);
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    // Instant delete on Shift+Click
-    if (e.shiftKey || isConfirmingDelete) {
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-      setIsConfirmingDelete(false);
-      onDelete?.(index);
-      return;
-    }
-
-    // 2-step inline confirmation
-    setIsConfirmingDelete(true);
-    resetTimerRef.current = setTimeout(() => {
-      setIsConfirmingDelete(false);
-    }, 3500);
-  };
+  const { isConfirming: isConfirmingDelete, handleDelete: handleDeleteClick } = useConfirmDelete({
+    onDelete: () => onDelete?.(index),
+  });
 
   const handleRollHit = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!attack.hit) return;
-    const bonus = attack.hit.startsWith('+') || attack.hit.startsWith('-') ? attack.hit : `+${attack.hit}`;
+    const bonus = normalizeHitBonus(attack.hit);
     taleSpireDriver.rollDice(`1d20${bonus}`, `${attack.name} - Атака`);
   };
 

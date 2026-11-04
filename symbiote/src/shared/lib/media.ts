@@ -1,7 +1,8 @@
 // TaleBridge Media Helper Utilities
+import { DEFAULT_WS_PORT } from '../config/constants';
 
 export function getWebSocketPort(): number {
-  return 30123;
+  return DEFAULT_WS_PORT;
 }
 
 /**
