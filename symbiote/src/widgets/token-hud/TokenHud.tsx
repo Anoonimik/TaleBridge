@@ -46,8 +46,11 @@ export const TokenHud = () => {
     taleSpireDriver.rollDice(dmg, `${matchInRoster?.name || selectedToken.name}: ${name} (Урон)`);
   };
 
-  const curHp = selectedToken.hp ?? matchInRoster?.hp;
-  const maxHp = selectedToken.hpMax ?? matchInRoster?.hp_max ?? curHp ?? 10;
+  const rosterHp = matchInRoster?.hp;
+  const rosterMax = matchInRoster?.hp_max ?? rosterHp;
+  const curHp = selectedToken.hp ?? rosterHp;
+  const baseMax = rosterMax ?? selectedToken.hpMax ?? curHp ?? 10;
+  const maxHp = curHp !== undefined ? Math.max(baseMax, curHp) : baseMax;
 
   return (
     <div className="bg-[#10111a] border-b border-[#262a3d] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs select-none shrink-0 relative z-20 shadow-md animate-in slide-in-from-top-1 duration-150">
@@ -71,9 +74,36 @@ export const TokenHud = () => {
         </div>
 
         {curHp !== undefined && (
-          <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
-            ХП: {curHp} / {maxHp}
-          </span>
+          <div className="flex flex-col gap-0.5 bg-[#141622] px-2 py-0.5 rounded border border-[#262a3d] shrink-0 min-w-[90px]">
+            <div className="flex items-center justify-between gap-1 text-[11px] font-mono leading-none">
+              <span className="text-[10px] text-slate-400 font-bold uppercase">ХП</span>
+              <strong
+                className={
+                  curHp <= maxHp * 0.25
+                    ? 'text-rose-400'
+                    : curHp <= maxHp * 0.5
+                    ? 'text-amber-400'
+                    : 'text-emerald-400'
+                }
+              >
+                {curHp} / {maxHp}
+              </strong>
+            </div>
+            <div className="w-full h-1 bg-[#1a1d2d] rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  curHp <= maxHp * 0.25
+                    ? 'bg-rose-500'
+                    : curHp <= maxHp * 0.5
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{
+                  width: `${Math.min(100, Math.max(0, (curHp / (maxHp || 1)) * 100))}%`,
+                }}
+              />
+            </div>
+          </div>
         )}
 
         {matchInRoster?.ac && (

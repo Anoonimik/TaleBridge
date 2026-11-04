@@ -105,7 +105,7 @@ export const parseCreatureNote = (
     }
   }
 
-  // Step 4: Extract Ability Scores from ## Характеристики if present
+  // Step 4: Extract Ability Scores from ## Характеристики or Markdown Table
   let stats: AbilityScores | undefined;
   const statsRegex = /[-*]\s*\*\*([^*:]+):?\*\*:?\s*([^\r\n]+)/g;
   let mStat: RegExpExecArray | null;
@@ -127,9 +127,30 @@ export const parseCreatureNote = (
       wis: foundStats.wis || '10',
       cha: foundStats.cha || '10',
     };
-    // Strip the ## Характеристики block from remaining text
-    text = text.replace(/##\s*Характеристики[\s\S]*?(?=(?:##|$))/i, '').trim();
   }
+
+  // Step 4b: Extract Ability Scores from markdown table if present
+  const statsTableRegex =
+    /\|\s*(?:Сила|СИЛ|Str|Strength)\s*\|\s*(?:Ловкость|ЛОВ|Dex|Dexterity)\s*\|\s*(?:Телосложение|ТЕЛ|Con|Constitution)\s*\|\s*(?:Интеллект|ИНТ|Int|Intelligence)\s*\|\s*(?:Мудрость|МУД|Wis|Wisdom)\s*\|\s*(?:Харизма|ХАР|Cha|Charisma)\s*\|[\r\n]+(?:\|[^\r\n]+\|[\r\n]+)?\|\s*([^|\r\n]+)\s*\|\s*([^|\r\n]+)\s*\|\s*([^|\r\n]+)\s*\|\s*([^|\r\n]+)\s*\|\s*([^|\r\n]+)\s*\|\s*([^|\r\n]+)\s*\|/i;
+
+  const mStatsTable = text.match(statsTableRegex);
+  if (mStatsTable) {
+    if (!stats) {
+      stats = {
+        str: mStatsTable[1].trim(),
+        dex: mStatsTable[2].trim(),
+        con: mStatsTable[3].trim(),
+        int: mStatsTable[4].trim(),
+        wis: mStatsTable[5].trim(),
+        cha: mStatsTable[6].trim(),
+      };
+    }
+    text = text.replace(statsTableRegex, '').trim();
+  }
+
+  // Strip duplicate stat and combat parameter blocks (already in top vitals block)
+  text = text.replace(/#{1,3}\s*Боевые параметры[\s\S]*?(?=(?:\r?\n#{1,3}\s+|$))/i, '').trim();
+  text = text.replace(/#{1,3}\s*Характеристики[\s\S]*?(?=(?:\r?\n#{1,3}\s+|$))/i, '').trim();
 
   // Step 5: Extract Callouts (> [!type] Title)
   const callouts: ParsedCallout[] = [];
@@ -180,24 +201,12 @@ export const parseCreatureNote = (
 
   // Step 6: Clean remaining lines:
   // - Strip top-level # Title (already in header)
-  // - Strip ## Боевые параметры if it only duplicates stats
+  // - Strip duplicate Боевые параметры & Характеристики
   let cleanRemaining = remainingLines.join('\n').trim();
   cleanRemaining = cleanRemaining.replace(/^#\s+[^\r\n]+\r?\n?/, '').trim();
-  cleanRemaining = cleanRemaining.replace(
-    /##\s*Боевые параметры[\s\S]*?(?=(?:##|$))/i,
-    (match) => {
-      // If it only has КД / Хиты / Скорость / Инициатива, omit it
-      const stripped = match.replace(/##\s*Боевые параметры/i, '').trim();
-      const onlyParams = stripped
-        .split('\n')
-        .every(
-          (l) =>
-            !l.trim() ||
-            /^[-*]\s*(?:КД|Хиты|Скорость|Инициатива|HP|AC)/i.test(l.trim())
-        );
-      return onlyParams ? '' : match;
-    }
-  );
+  cleanRemaining = cleanRemaining.replace(/#{1,3}\s*Боевые параметры[\s\S]*?(?=(?:\r?\n#{1,3}\s+|$))/i, '').trim();
+  cleanRemaining = cleanRemaining.replace(/#{1,3}\s*Характеристики[\s\S]*?(?=(?:\r?\n#{1,3}\s+|$))/i, '').trim();
+  cleanRemaining = cleanRemaining.replace(/^---+$/gm, '').trim();
 
   return {
     vitals: {
