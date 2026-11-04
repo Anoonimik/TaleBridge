@@ -23,7 +23,13 @@ export const CombatantCard = ({
   onOpenConditions,
   onOpenSideMenu,
 }: CombatantCardProps) => {
-  const { updateCombatantHp, setInitiative, removeCombatant, toggleCondition } = useCombatStore();
+  const {
+    updateCombatantHp,
+    setInitiative,
+    rollSingleInitiative,
+    removeCombatant,
+    toggleCondition,
+  } = useCombatStore();
   const { setSelectedCharacter, roster } = useRosterStore();
 
   const conditions = useMemo(
@@ -88,10 +94,18 @@ export const CombatantCard = ({
             <span className="text-xs text-slate-400 font-mono">Иниц</span>
             <input
               type="number"
-              className="w-10 bg-transparent text-right font-mono font-bold text-amber-400 focus:outline-none text-sm"
+              className="w-9 bg-transparent text-right font-mono font-bold text-amber-400 focus:outline-none text-sm"
               value={combatant.initiative ?? 0}
               onChange={(e) => setInitiative(combatant.id, parseInt(e.target.value, 10) || 0)}
             />
+            <button
+              type="button"
+              className="w-5 h-5 flex items-center justify-center rounded hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 text-xs cursor-pointer transition-colors"
+              onClick={() => rollSingleInitiative(combatant.id)}
+              title={`Бросить инициативу в TaleSpire (1d20${(combatant.dexMod ?? 0) >= 0 ? '+' : ''}${combatant.dexMod ?? 0})`}
+            >
+              🎲
+            </button>
           </div>
 
           <button

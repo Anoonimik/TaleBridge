@@ -63,6 +63,7 @@ interface RosterStore {
   updateHitDice: (hitDice: HitDice) => void;
   spendHitDice: () => void;
   toggleSavingThrowProficiency: (ability: string) => void;
+  toggleSkillProficiency: (skillId: string) => void;
   setSpellcastingAbility: (ability: 'int' | 'wis' | 'cha') => void;
   performRest: (type: 'short' | 'long') => void;
 }
@@ -471,6 +472,23 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       ? currentProfs.filter((a) => a !== ability)
       : [...currentProfs, ability];
     const updated = { ...playerData, savingThrowsProficient: updatedProfs };
+    set({ playerData: updated });
+    persistPlayerData(updated);
+  },
+
+  toggleSkillProficiency: (skillId) => {
+    const { playerData } = get();
+    if (!playerData) return;
+    const currentSkills = playerData.skills || {};
+    const currentLevel = currentSkills[skillId] || 'none';
+    const nextLevel: 'none' | 'proficient' | 'expert' =
+      currentLevel === 'none'
+        ? 'proficient'
+        : currentLevel === 'proficient'
+        ? 'expert'
+        : 'none';
+    const updatedSkills = { ...currentSkills, [skillId]: nextLevel };
+    const updated = { ...playerData, skills: updatedSkills };
     set({ playerData: updated });
     persistPlayerData(updated);
   },

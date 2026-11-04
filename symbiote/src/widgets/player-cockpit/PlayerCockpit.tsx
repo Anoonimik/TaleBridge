@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Attack,
   useRosterStore,
+  useCombatStore,
   wsBridge,
   parseModifier,
   formatModifier,
   computeProfBonus,
   taleSpireDriver,
 } from '../../shared';
-import { AbilityCell, AttackCard, ActionModal } from '../../entities';
+import { AbilityCell, AttackCard, ActionModal, PlayerConditionsBanner } from '../../entities';
 import {
   ApplyDamageControl,
   InventoryManager,
@@ -17,6 +18,7 @@ import {
   DeathSavesControl,
   ClassResourcesManager,
   SpellcastingManager,
+  SkillsListAccordion,
 } from '../../features';
 
 type CockpitSubTab = 'sheet' | 'spells' | 'inventory' | 'clues' | 'notes';
@@ -46,9 +48,12 @@ export const PlayerCockpit = () => {
     updateHitDice,
     spendHitDice,
     toggleSavingThrowProficiency,
+    toggleSkillProficiency,
     setSpellcastingAbility,
     performRest,
   } = useRosterStore();
+
+  const { combatants, active: inCombat } = useCombatStore();
 
   const [activeSubTab, setActiveSubTab] = useState<CockpitSubTab>('sheet');
   const [modalAttack, setModalAttack] = useState<{ attack: Attack | null; index?: number } | null>(
@@ -77,6 +82,24 @@ export const PlayerCockpit = () => {
   const profBonus = useMemo(() => computeProfBonus(level), [level]);
   const isWisProf = playerData?.savingThrowsProficient?.includes('wis') || false;
   const passivePerception = 10 + wisMod + (isWisProf ? profBonus : 0);
+
+  const activeConditions = useMemo(() => {
+    const list: string[] = [];
+    if (playerData?.conditions) {
+      list.push(...playerData.conditions);
+    }
+    const combatMatch = combatants.find(
+      (c) =>
+        (c.name && playerCharacterName && c.name.toLowerCase() === playerCharacterName.toLowerCase()) ||
+        (c.talespireId && playerData?.talespire_id && c.talespireId === playerData.talespire_id)
+    );
+    if (combatMatch?.conditions) {
+      combatMatch.conditions.forEach((c) => {
+        if (!list.includes(c)) list.push(c);
+      });
+    }
+    return list;
+  }, [playerData?.conditions, playerData?.talespire_id, combatants, playerCharacterName]);
 
   const handleEditAttack = useCallback((atk: Attack, idx: number) => {
     setModalAttack({ attack: atk, index: idx });
@@ -201,6 +224,12 @@ export const PlayerCockpit = () => {
           <>
             {activeSubTab === 'sheet' && (
               <div className="h-full overflow-y-auto p-3 flex flex-col gap-3 scrollbar-thin">
+                {/* 0. Active Conditions Banner (Blinded, Poisoned, etc. from Combat Tracker) */}
+                <PlayerConditionsBanner
+                  conditions={activeConditions}
+                  isCombatActive={inCombat}
+                />
+
                 {/* 1. Death Saves (appears prominently when dying or if manually toggled) */}
                 <DeathSavesControl
                   hp={curHp}
@@ -330,6 +359,14 @@ export const PlayerCockpit = () => {
                     profBonus={profBonus}
                   />
                 </div>
+
+                {/* 5. Classic 18 Skills Accordion (Collapsible under Ability Scores) */}
+                <SkillsListAccordion
+                  playerData={playerData}
+                  profBonus={profBonus}
+                  characterName={playerCharacterName}
+                  onToggleSkill={toggleSkillProficiency}
+                />
 
                 {/* 6. Class & Expendable Resources (Inspiration, Hit Dice, Short/Long Rest) */}
                 <ClassResourcesManager

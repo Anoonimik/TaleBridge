@@ -125,6 +125,8 @@ export interface Character {
   dexMod?: number;
   inventory?: InventoryItem[];
   playerNotes?: string;
+  conditions?: string[];
+  skills?: Record<string, 'proficient' | 'expert' | 'none'>;
 }
 
 export interface Combatant {

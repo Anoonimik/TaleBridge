@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { Combatant, CombatSide } from '../types';
 import { wsBridge } from '../api/websocket';
+import { taleSpireDriver } from '../api/talespire';
 import { sideToCategory, categoryToSide } from './dnd-rules';
+import { parseModifier, formatModifier } from './text-utils';
 
 interface CombatStore {
   active: boolean;
@@ -18,6 +20,7 @@ interface CombatStore {
   setCombatantHp: (id: string, hp: number) => void;
   changeSide: (id: string, side: CombatSide) => void;
   setInitiative: (id: string, init: number) => void;
+  rollSingleInitiative: (id: string) => void;
   rollAllInitiatives: () => void;
   sortByInitiative: () => void;
   toggleCondition: (id: string, condition: string) => void;
@@ -161,6 +164,26 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
         if (c.id !== id) return c;
         return { ...c, initiative: init };
       }),
+    }));
+    get().sortByInitiative();
+    get().syncWithObsidian();
+  },
+
+  rollSingleInitiative: (id) => {
+    const c = get().combatants.find((item) => item.id === id);
+    if (!c) return;
+    const dexMod = c.dexMod ?? (c.stats?.dex ? parseModifier(c.stats.dex) : 0);
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const init = d20 + dexMod;
+
+    // Roll in TaleSpire with physical dice
+    const modStr = formatModifier(dexMod);
+    taleSpireDriver.rollDice(`1d20${modStr}`, `Инициатива: ${c.name}`);
+
+    set((state) => ({
+      combatants: state.combatants.map((item) =>
+        item.id === id ? { ...item, initiative: init } : item
+      ),
     }));
     get().sortByInitiative();
     get().syncWithObsidian();

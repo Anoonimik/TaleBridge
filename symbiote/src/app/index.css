@@ -73,11 +73,10 @@
   height: 0 !important;
 }
 
-@supports not selector(::-webkit-scrollbar) {
-  :root, html, body, * {
-    scrollbar-width: thin;
-    scrollbar-color: #262a3d #0c0d14;
-  }
+/* Universal standard scrollbars fallback (modern Chromium, Firefox) */
+:root, html, body, * {
+  scrollbar-width: thin;
+  scrollbar-color: #262a3d #0c0d14;
 }
 
 .scrollbar-thin {
