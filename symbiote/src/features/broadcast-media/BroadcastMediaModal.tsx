@@ -124,23 +124,23 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
         <div className="p-4 overflow-y-auto flex flex-col gap-3.5 scrollbar-thin">
           {/* Active Broadcast Banner */}
           {cinemaMedia?.active && (
-            <div className="bg-amber-950/30 border border-amber-500/40 p-2.5 rounded-lg flex items-center justify-between gap-2 shrink-0">
+            <div className="bg-rose-950/40 border border-rose-500/60 p-2.5 rounded-lg flex items-center justify-between gap-2 shrink-0 shadow-sm animate-pulse">
               <div className="flex items-center gap-2 truncate">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                <span className="text-amber-200 text-xs truncate">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping shrink-0"></span>
+                <span className="text-rose-200 text-xs truncate">
                   В эфире у игроков:{' '}
-                  <strong className="text-amber-300">
+                  <strong className="text-white">
                     {cinemaMedia.title || cinemaMedia.url || 'Свиток'}
                   </strong>{' '}
-                  <span className="text-amber-400/80">({cinemaMedia.type})</span>
+                  <span className="text-rose-300">({cinemaMedia.type})</span>
                 </span>
               </div>
               <button
                 type="button"
-                className="px-2.5 py-1 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-[11px] shrink-0 font-medium cursor-pointer transition-colors"
+                className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs shrink-0 font-bold cursor-pointer transition-all shadow-xs active:scale-95"
                 onClick={handleDismiss}
               >
-                Снять трансляцию
+                Снять с трансляции ✕
               </button>
             </div>
           )}
@@ -483,14 +483,27 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#262a3d] bg-[#10111a] shrink-0">
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 hover:text-white text-xs cursor-pointer transition-colors"
-            onClick={onClose}
-          >
-            Отмена
-          </button>
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#262a3d] bg-[#10111a] shrink-0 gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 hover:text-white text-xs cursor-pointer transition-colors"
+              onClick={onClose}
+            >
+              Отмена
+            </button>
+
+            {cinemaMedia?.active && (
+              <button
+                type="button"
+                className="px-3 py-1.5 rounded bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/50 text-xs font-semibold cursor-pointer transition-colors"
+                onClick={handleDismiss}
+                title="Прекратить трансляцию и закрыть экран у игроков"
+              >
+                Снять трансляцию ✕
+              </button>
+            )}
+          </div>
 
           <button
             type="submit"

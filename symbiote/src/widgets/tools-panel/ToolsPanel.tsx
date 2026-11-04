@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { useLogStore, useAppStore, taleSpireDriver } from '../../shared';
+import { useLogStore, useAppStore, wsBridge, taleSpireDriver } from '../../shared';
 import { QuickDiceBar, BroadcastMediaModal, CameraBookmarksModal } from '../../features';
 
 export const ToolsPanel = () => {
   const { logs, clearLogs } = useLogStore();
-  const { bookmarks } = useAppStore();
+  const { bookmarks, cinemaMedia, setCinemaMedia } = useAppStore();
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [showBookmarksModal, setShowBookmarksModal] = useState(false);
+
+  const handleStopBroadcast = () => {
+    setCinemaMedia(null);
+    wsBridge.send('DISMISS_HANDOUT', {});
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-3">
@@ -43,6 +48,42 @@ export const ToolsPanel = () => {
           </button>
         </div>
       </div>
+
+      {/* Active Media Broadcast Alert & Dismiss (if active) */}
+      {cinemaMedia?.active && (
+        <div className="bg-rose-950/40 border border-rose-500/60 p-2.5 rounded-lg flex items-center justify-between gap-2 shrink-0 shadow-md animate-in fade-in">
+          <div className="flex items-center gap-2 truncate text-xs min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider">
+                В эфире у игроков ({cinemaMedia.type})
+              </span>
+              <strong className="text-white text-xs truncate max-w-[190px]">
+                {cinemaMedia.title || cinemaMedia.url}
+              </strong>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowBroadcastModal(true)}
+              className="px-2 py-1 rounded bg-[#10111a] hover:bg-[#1a1d2d] text-slate-300 border border-[#262a3d] text-xs font-medium cursor-pointer transition-colors"
+              title="Открыть настройки трансляции"
+            >
+              Сменить
+            </button>
+            <button
+              type="button"
+              onClick={handleStopBroadcast}
+              className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer transition-all shadow-xs active:scale-95"
+              title="Прекратить трансляцию и закрыть экран у всех игроков"
+            >
+              Снять с эфира ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Quick Board Locations Bar (if available) */}
       {bookmarks.length > 0 && (
@@ -93,9 +134,11 @@ export const ToolsPanel = () => {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col gap-1 font-mono text-xs scrollbar-thin">
+        <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 scrollbar-thin">
           {logs.length === 0 ? (
-            <div className="text-center py-6 text-slate-500 text-xs">Журнал пуст</div>
+            <div className="text-center py-8 text-slate-500 text-xs">
+              История бросков и событий пока пуста
+            </div>
           ) : (
             logs.map((log) => {
               let tagColor = 'text-slate-400';

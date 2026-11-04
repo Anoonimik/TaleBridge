@@ -15,6 +15,8 @@ export const AppHeader = () => {
     gmPin,
     diceSecret,
     setDiceSecret,
+    cinemaMedia,
+    setCinemaMedia,
   } = useAppStore();
   const { combatants, active: combatActive } = useCombatStore();
   const { roster } = useRosterStore();
@@ -50,11 +52,16 @@ export const AppHeader = () => {
     setTimeout(() => setIsRefreshing(false), 700);
   };
 
+  const handleStopBroadcast = () => {
+    setCinemaMedia(null);
+    wsBridge.send('DISMISS_HANDOUT', {});
+  };
+
   return (
     <>
       <header className="bg-[#141622] border-b border-[#262a3d] px-2.5 py-1.5 flex flex-col gap-1.5 select-none shrink-0 z-30 shadow-xs">
-        {/* Row 1: Brand, Role & Dice Secret Mode (Left) + Scale, Reload & Status (Right) */}
-        <div className="flex items-center justify-between gap-1.5 w-full">
+        {/* Row 1: Brand, Role & Dice Secret Mode (Left) + Active Broadcast + Scale, Reload & Status (Right) */}
+        <div className="flex items-center justify-between gap-1.5 w-full flex-wrap sm:flex-nowrap">
           {/* Left: Brand + Role + GM Secret Mode */}
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="flex items-center gap-0.5 font-bold tracking-wider text-xs shrink-0">
@@ -104,6 +111,27 @@ export const AppHeader = () => {
               </button>
             )}
           </div>
+
+          {/* Center: Live Media Broadcast Indicator (if GM and active) */}
+          {isGm && cinemaMedia?.active && (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-rose-950/70 border border-rose-500/70 text-xs shrink-0 shadow-sm animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+              <span className="text-rose-200 text-[10px] uppercase font-bold hidden md:inline">
+                В эфире:
+              </span>
+              <span className="text-white text-[11px] font-semibold truncate max-w-[100px] md:max-w-[140px]">
+                {cinemaMedia.title || cinemaMedia.url}
+              </span>
+              <button
+                type="button"
+                onClick={handleStopBroadcast}
+                className="px-1.5 py-0.2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] cursor-pointer ml-0.5 transition-colors"
+                title="Снять материал с трансляции для всех игроков"
+              >
+                ✕ Снять
+              </button>
+            </div>
+          )}
 
           {/* Right: Scale + Refresh + Connection */}
           <div className="flex items-center gap-1.5 text-xs shrink-0">

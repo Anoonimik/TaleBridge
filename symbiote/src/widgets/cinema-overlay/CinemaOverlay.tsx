@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore, useRosterStore, resolveMediaUrl, getYouTubeVideoId } from '../../shared';
+import {
+  useAppStore,
+  useRosterStore,
+  wsBridge,
+  resolveMediaUrl,
+  getYouTubeVideoId,
+} from '../../shared';
 
 export const CinemaOverlay = () => {
   const { cinemaMedia, setCinemaMedia, role } = useAppStore();
@@ -12,15 +18,24 @@ export const CinemaOverlay = () => {
     setImgError(false);
   }, [cinemaMedia?.url]);
 
+  const handleStopBroadcast = () => {
+    setCinemaMedia(null);
+    wsBridge.send('DISMISS_HANDOUT', {});
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && cinemaMedia?.active) {
-        setCinemaMedia(null);
+        if (role === 'gm') {
+          handleStopBroadcast();
+        } else {
+          setCinemaMedia(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cinemaMedia?.active, setCinemaMedia]);
+  }, [cinemaMedia?.active, role, setCinemaMedia]);
 
   if (!cinemaMedia?.active) return null;
 
@@ -56,15 +71,19 @@ export const CinemaOverlay = () => {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
-          setCinemaMedia(null);
+          if (role === 'gm') {
+            handleStopBroadcast();
+          } else {
+            setCinemaMedia(null);
+          }
         }
       }}
     >
       {/* Handout Card */}
       <div className="relative flex flex-col items-center gap-3 max-w-5xl w-full max-h-[92vh]">
         {/* Top Header Bar */}
-        <div className="w-full flex items-center justify-between px-2 gap-3">
-          <div className="flex items-center gap-2 overflow-hidden">
+        <div className="w-full flex items-center justify-between px-2 gap-3 flex-wrap">
+          <div className="flex items-center gap-2 overflow-hidden min-w-0">
             <span className="px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
               {getTypeLabel()}
             </span>
@@ -76,6 +95,18 @@ export const CinemaOverlay = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {role === 'gm' && (
+              <button
+                type="button"
+                onClick={handleStopBroadcast}
+                className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                title="Прекратить трансляцию и закрыть экран у всех игроков"
+              >
+                <span>✕</span>
+                <span>Снять с трансляции (для всех)</span>
+              </button>
+            )}
+
             <button
               type="button"
               className={`px-3 py-1 rounded text-xs font-semibold cursor-pointer transition-colors border ${
@@ -88,11 +119,18 @@ export const CinemaOverlay = () => {
             >
               {isSaved ? 'Сохранено в улики ✓' : 'В архив улик'}
             </button>
+
             <button
               type="button"
-              onClick={() => setCinemaMedia(null)}
+              onClick={() => {
+                if (role === 'gm') {
+                  handleStopBroadcast();
+                } else {
+                  setCinemaMedia(null);
+                }
+              }}
               className="text-white/70 hover:text-white text-lg font-bold cursor-pointer w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-              title="Закрыть (Esc)"
+              title={role === 'gm' ? 'Снять с эфира и закрыть' : 'Закрыть (Esc)'}
             >
               ✕
             </button>
@@ -175,15 +213,37 @@ export const CinemaOverlay = () => {
           </div>
         )}
 
-        {/* Footer Dismiss Button */}
-        <div className="flex items-center justify-center gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => setCinemaMedia(null)}
-            className="px-4 py-1 rounded bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium cursor-pointer transition-colors"
-          >
-            Свернуть окно (Esc)
-          </button>
+        {/* Footer Controls */}
+        <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+          {role === 'gm' ? (
+            <>
+              <button
+                type="button"
+                onClick={handleStopBroadcast}
+                className="px-4 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                title="Снять материал с трансляции для всех участников"
+              >
+                <span>✕</span>
+                <span>Снять трансляцию у всех игроков</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCinemaMedia(null)}
+                className="px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium cursor-pointer transition-colors"
+                title="Скрыть окно только у себя (трансляция у игроков продолжится)"
+              >
+                Скрыть только у себя
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCinemaMedia(null)}
+              className="px-4 py-1.5 rounded bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium cursor-pointer transition-colors"
+            >
+              Свернуть окно (Esc)
+            </button>
+          )}
         </div>
       </div>
     </div>
