@@ -8,7 +8,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const CombatSideMenu: React.FC<Props> = ({ combatantId, position, onClose }) => {
+export const CombatSideMenu = ({ combatantId, position, onClose }: Props) => {
   const { setCategory } = useCombatStore();
 
   const handleSelect = (side: CombatSide) => {

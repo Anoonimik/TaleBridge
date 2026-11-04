@@ -4,7 +4,7 @@ import { useCombatStore } from '../../store/useCombatStore';
 import { useAppStore } from '../../store/useAppStore';
 import { wsBridge } from '../../api/websocket';
 
-export const TokenHud: React.FC = () => {
+export const TokenHud = () => {
   const { activeToken, roster, setSelectedCharacter } = useRosterStore();
   const { addCombatant } = useCombatStore();
   const { setActiveTab } = useAppStore();

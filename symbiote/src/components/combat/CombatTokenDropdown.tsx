@@ -7,7 +7,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const CombatTokenDropdown: React.FC<Props> = ({ onClose }) => {
+export const CombatTokenDropdown = ({ onClose }: Props) => {
   const { activeToken, roster } = useRosterStore();
   const { addCombatant } = useCombatStore();
 

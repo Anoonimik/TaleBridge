@@ -3,7 +3,7 @@ import { Attack, InventoryItem } from '../../types';
 import { useRosterStore } from '../../store/useRosterStore';
 import { wsBridge } from '../../api/websocket';
 
-export const PlayerCockpit: React.FC = () => {
+export const PlayerCockpit = () => {
   const { playerCharacterName, playerData, roster, updatePlayerAttacks } = useRosterStore();
   const [activeTab, setActiveTab] = useState<'sheet' | 'inventory' | 'clues'>('sheet');
   const [deletePrimedIdx, setDeletePrimedIdx] = useState<number | null>(null);

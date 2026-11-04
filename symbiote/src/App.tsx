@@ -9,7 +9,7 @@ import { ToolsPanel } from './components/tools/ToolsPanel';
 import { PlayerCockpit } from './components/player/PlayerCockpit';
 import { PlayerCombatHud } from './components/combat/PlayerCombatHud';
 
-export const App: React.FC = () => {
+export const App = () => {
   const { role, activeTab, scale, cinemaMedia, setCinemaMedia } = useAppStore();
 
   const isGm = role === 'gm';

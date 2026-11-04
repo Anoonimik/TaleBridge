@@ -4,7 +4,7 @@ import { useRosterStore } from '../../store/useRosterStore';
 import { CharacterCard } from './CharacterCard';
 import { wsBridge } from '../../api/websocket';
 
-export const CharacterRoster: React.FC = () => {
+export const CharacterRoster = () => {
   const { roster, pinnedNames, selectedCharacter, setSelectedCharacter } = useRosterStore();
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');

@@ -3,7 +3,7 @@ import { useLogStore } from '../../store/useLogStore';
 import { useAppStore } from '../../store/useAppStore';
 import { wsBridge } from '../../api/websocket';
 
-export const ToolsPanel: React.FC = () => {
+export const ToolsPanel = () => {
   const { logs, clearLogs } = useLogStore();
   const { gmDiceMode } = useAppStore();
   const [customFormula, setCustomFormula] = useState('1d20+5');

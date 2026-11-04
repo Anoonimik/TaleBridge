@@ -2,7 +2,7 @@ import React from 'react';
 import { useCombatStore } from '../../store/useCombatStore';
 import { useRosterStore } from '../../store/useRosterStore';
 
-export const PlayerCombatHud: React.FC = () => {
+export const PlayerCombatHud = () => {
   const { active: combatActive, round, turnIndex, combatants } = useCombatStore();
   const { playerCharacterName } = useRosterStore();
 

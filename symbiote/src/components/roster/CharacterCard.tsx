@@ -10,7 +10,7 @@ interface Props {
   onOpenNote: (char: Character) => void;
 }
 
-export const CharacterCard: React.FC<Props> = ({ character, onOpenNote }) => {
+export const CharacterCard = ({ character, onOpenNote }: Props) => {
   const { addCombatant } = useCombatStore();
   const { pinnedNames, togglePinCharacter } = useRosterStore();
   const { setActiveTab } = useAppStore();

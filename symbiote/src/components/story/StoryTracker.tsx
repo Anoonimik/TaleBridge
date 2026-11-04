@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStoryStore } from '../../store/useStoryStore';
 import { wsBridge } from '../../api/websocket';
 
-export const StoryTracker: React.FC = () => {
+export const StoryTracker = () => {
   const { scenes, activeScene, sceneHistory, setActiveScene, goToScene, goBack } = useStoryStore();
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');

@@ -3,7 +3,7 @@ import { useAppStore, AppTab } from '../../store/useAppStore';
 import { useCombatStore } from '../../store/useCombatStore';
 import { useRosterStore } from '../../store/useRosterStore';
 
-export const AppHeader: React.FC = () => {
+export const AppHeader = () => {
   const {
     role,
     activeTab,

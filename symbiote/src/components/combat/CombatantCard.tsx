@@ -12,7 +12,7 @@ interface Props {
   onOpenConditions: (id: string) => void;
 }
 
-export const CombatantCard: React.FC<Props> = ({ combatant, isCurrentTurn, onOpenConditions }) => {
+export const CombatantCard = ({ combatant, isCurrentTurn, onOpenConditions }: Props) => {
   const { setInitiative, modifyHp, removeCombatant, toggleCondition, getDexModifier } = useCombatStore();
   const { gmDiceMode } = useAppStore();
   const [sideMenuPos, setSideMenuPos] = useState<{ top: number; left: number } | null>(null);

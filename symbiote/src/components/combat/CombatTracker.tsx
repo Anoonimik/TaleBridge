@@ -7,7 +7,7 @@ import { CombatTokenDropdown } from './CombatTokenDropdown';
 import { CombatRosterDropdown } from './CombatRosterDropdown';
 import { ConditionsPickerModal } from './ConditionsPickerModal';
 
-export const CombatTracker: React.FC = () => {
+export const CombatTracker = () => {
   const {
     active: combatActive,
     round,

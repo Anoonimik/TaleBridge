@@ -7,7 +7,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const ConditionsPickerModal: React.FC<Props> = ({ combatantId, onClose }) => {
+export const ConditionsPickerModal = ({ combatantId, onClose }: Props) => {
   const { combatants, toggleCondition } = useCombatStore();
   const combatant = combatants.find((c) => c.id === combatantId);
 

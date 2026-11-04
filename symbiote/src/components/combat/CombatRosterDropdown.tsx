@@ -7,7 +7,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const CombatRosterDropdown: React.FC<Props> = ({ onClose }) => {
+export const CombatRosterDropdown = ({ onClose }: Props) => {
   const { roster } = useRosterStore();
   const { addCombatant } = useCombatStore();
   const [search, setSearch] = useState('');
