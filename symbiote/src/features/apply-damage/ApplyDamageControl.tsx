@@ -62,10 +62,10 @@ export const ApplyDamageControl = ({
         <div className="flex items-center gap-1">
           <input
             type="number"
-            placeholder="Знач."
+            placeholder="ХП"
             value={customVal}
             onChange={(e) => setCustomVal(e.target.value)}
-            className="w-14 px-2 py-1 bg-[#10111a] border border-[#262a3d] rounded text-center text-xs text-slate-200 focus:outline-none"
+            className="w-16 px-2 py-1 bg-[#10111a] border border-[#262a3d] rounded text-center text-xs text-slate-200 focus:outline-none"
           />
           <button
             type="button"

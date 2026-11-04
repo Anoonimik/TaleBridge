@@ -30,7 +30,18 @@ export const App = () => {
         break;
     }
     (document.documentElement.style as any).zoom = zoomVal;
+    window.scrollTo(0, 0);
   }, [scale]);
+
+  useEffect(() => {
+    const lockScroll = () => {
+      if (window.scrollX !== 0 || window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+    window.addEventListener('scroll', lockScroll, { passive: true });
+    return () => window.removeEventListener('scroll', lockScroll);
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-[#0c0d14]">

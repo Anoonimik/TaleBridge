@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Attack, useRosterStore } from '../../shared';
+import React, { useState, useEffect } from 'react';
+import { Attack, useRosterStore, wsBridge } from '../../shared';
 import { AbilityCell, AttackCard, ActionModal } from '../../entities';
 import {
   ApplyDamageControl,
@@ -23,6 +23,14 @@ export const PlayerCockpit = () => {
   const [modalAttack, setModalAttack] = useState<{ attack: Attack | null; index?: number } | null>(null);
 
   const pcList = roster.filter((r) => r.playable || r.category === 'Игроки');
+
+  useEffect(() => {
+    if (playerCharacterName) {
+      wsBridge.send('GET_PLAYER_DATA', { characterName: playerCharacterName });
+    } else if (pcList.length > 0) {
+      setPlayerCharacterName(pcList[0].name);
+    }
+  }, [playerCharacterName, pcList.length]);
 
   const curHp = playerData?.hp ?? 20;
   const maxHp = playerData?.hp_max ?? curHp;

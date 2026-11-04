@@ -43,7 +43,11 @@ export const formatInlineText = (
           className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold cursor-pointer transition-colors align-middle shadow-xs"
           title={`Бросить ${formula} (${label})`}
         >
-          <span>🎲</span>
+          <svg className="w-3 h-3 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+            <line x1="12" y1="22.08" x2="12" y2="12" />
+          </svg>
           <span>{label}</span>
           {label !== formula && <span className="opacity-70 text-[10px]">({formula})</span>}
         </button>

@@ -38,6 +38,11 @@ class WebSocketBridge {
         this.send('GET_CHARACTERS', {});
         this.send('GET_SCENES', {});
         this.send('GET_COMBAT_STATE', {});
+
+        const activePlayer = useRosterStore.getState().playerCharacterName;
+        if (activePlayer) {
+          this.send('GET_PLAYER_DATA', { characterName: activePlayer });
+        }
       };
 
       this.ws.onclose = () => {
@@ -110,6 +115,16 @@ class WebSocketBridge {
         if (Array.isArray(payload)) {
           useRosterStore.getState().setRoster(payload);
           useLogStore.getState().addLog('sync', `Обновлен ростер: ${payload.length} записей`);
+
+          const currentName = useRosterStore.getState().playerCharacterName;
+          if (currentName) {
+            this.send('GET_PLAYER_DATA', { characterName: currentName });
+          } else if (payload.length > 0) {
+            const firstPlayer = payload.find((c: any) => c.playable || c.category === 'Игроки');
+            if (firstPlayer) {
+              useRosterStore.getState().setPlayerCharacterName(firstPlayer.name);
+            }
+          }
         }
         break;
 

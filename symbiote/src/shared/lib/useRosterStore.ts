@@ -37,13 +37,22 @@ const getStoredArray = <T,>(key: string): T[] => {
   }
 };
 
+const getStoredJson = <T,>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const useRosterStore = create<RosterStore>((set, get) => ({
   roster: [],
   selectedToken: null,
   selectedCharacter: null,
   noteContent: null,
   playerCharacterName: localStorage.getItem('tb_player_character') || '',
-  playerData: null,
+  playerData: getStoredJson<Character>('tb_player_data'),
   cluesArchive: getStoredArray<Clue>('tb_clues_archive'),
   pinnedNames: getStoredArray<string>('tb_pinned_roster'),
 
@@ -62,13 +71,30 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
 
   setPlayerCharacterName: (name) => {
     localStorage.setItem('tb_player_character', name);
-    set({ playerCharacterName: name });
+    const prev = get().playerData;
+    if (prev && prev.name !== name) {
+      set({ playerCharacterName: name, playerData: null });
+      localStorage.removeItem('tb_player_data');
+    } else {
+      set({ playerCharacterName: name });
+    }
     if (name) {
       wsBridge.send('GET_PLAYER_DATA', { characterName: name });
     }
   },
 
-  setPlayerData: (playerData) => set({ playerData }),
+  setPlayerData: (playerData) => {
+    if (playerData) {
+      try {
+        localStorage.setItem('tb_player_data', JSON.stringify(playerData));
+      } catch {
+        // ignore
+      }
+    } else {
+      localStorage.removeItem('tb_player_data');
+    }
+    set({ playerData });
+  },
 
   setCluesArchive: (cluesArchive) => {
     localStorage.setItem('tb_clues_archive', JSON.stringify(cluesArchive));
