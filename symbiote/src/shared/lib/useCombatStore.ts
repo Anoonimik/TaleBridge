@@ -20,6 +20,7 @@ interface CombatStore {
   rollAllInitiatives: () => void;
   sortByInitiative: () => void;
   toggleCondition: (id: string, condition: string) => void;
+  setConditions: (id: string, conditions: string[]) => void;
   clearCombat: () => void;
   syncWithObsidian: () => void;
   setFromSync: (state: { active: boolean; round: number; turnIndex: number; combatants: Combatant[] }) => void;
@@ -195,12 +196,20 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     set((state) => ({
       combatants: state.combatants.map((c) => {
         if (c.id !== id) return c;
-        const hasCond = c.conditions.includes(condition);
+        const currentConditions = Array.isArray(c.conditions) ? c.conditions : [];
+        const hasCond = currentConditions.includes(condition);
         const conditions = hasCond
-          ? c.conditions.filter((cond) => cond !== condition)
-          : [...c.conditions, condition];
+          ? currentConditions.filter((cond) => cond !== condition)
+          : [...currentConditions, condition];
         return { ...c, conditions };
       }),
+    }));
+    get().syncWithObsidian();
+  },
+
+  setConditions: (id, conditions) => {
+    set((state) => ({
+      combatants: state.combatants.map((c) => (c.id === id ? { ...c, conditions } : c)),
     }));
     get().syncWithObsidian();
   },

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Combatant } from '../../shared';
+import React, { useState, useEffect } from 'react';
+import { Combatant, taleSpireDriver, useRosterStore } from '../../shared';
 import { useCombatStore } from '../../shared';
 import { CombatantCard } from '../../entities';
 import {
@@ -23,12 +23,64 @@ export const CombatTracker = () => {
     clearCombat,
   } = useCombatStore();
 
+  const { roster } = useRosterStore();
+
   const [showRosterDropdown, setShowRosterDropdown] = useState(false);
-  const [conditionsCombatant, setConditionsCombatant] = useState<Combatant | null>(null);
+  const [conditionsCombatantId, setConditionsCombatantId] = useState<string | null>(null);
   const [sideMenuState, setSideMenuState] = useState<{
     combatant: Combatant;
     position: { top: number; left: number };
   } | null>(null);
+
+  // Keyboard hotkeys: 1-9 for attacks of current active combatant, Shift+1-9 for damage
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      if (!active) return;
+      const curCombatant = combatants[turnIndex];
+      if (!curCombatant) return;
+
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 9) {
+        const attacks =
+          curCombatant.attacks && curCombatant.attacks.length > 0
+            ? curCombatant.attacks
+            : roster.find((r) => r.name.toLowerCase() === curCombatant.name.toLowerCase())?.attacks || [];
+
+        const atk = attacks[num - 1];
+        if (atk) {
+          e.preventDefault();
+          if (e.shiftKey && atk.dmg) {
+            taleSpireDriver.rollDice(
+              atk.dmg,
+              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`
+            );
+          } else if (atk.hit) {
+            const bonus =
+              atk.hit.startsWith('+') || atk.hit.startsWith('-') ? atk.hit : `+${atk.hit}`;
+            taleSpireDriver.rollDice(`1d20${bonus}`, `${curCombatant.name}: ${atk.name} (Атака)`);
+          } else if (atk.dmg) {
+            taleSpireDriver.rollDice(
+              atk.dmg,
+              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`
+            );
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [active, turnIndex, combatants, roster]);
 
   const handleOpenSideMenu = (e: React.MouseEvent, c: Combatant) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -156,7 +208,7 @@ export const CombatTracker = () => {
               key={c.id}
               combatant={c}
               isActive={active && idx === turnIndex}
-              onOpenConditions={(target) => setConditionsCombatant(target)}
+              onOpenConditions={(targetId) => setConditionsCombatantId(targetId)}
               onOpenSideMenu={handleOpenSideMenu}
             />
           ))
@@ -164,10 +216,10 @@ export const CombatTracker = () => {
       </div>
 
       {/* Conditions Picker Modal */}
-      {conditionsCombatant && (
+      {conditionsCombatantId && (
         <ConditionsPickerModal
-          combatant={conditionsCombatant}
-          onClose={() => setConditionsCombatant(null)}
+          combatantId={conditionsCombatantId}
+          onClose={() => setConditionsCombatantId(null)}
         />
       )}
 
