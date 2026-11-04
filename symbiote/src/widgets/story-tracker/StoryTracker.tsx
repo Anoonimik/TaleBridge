@@ -77,17 +77,17 @@ export const StoryTracker = () => {
         </button>
 
         <div
-          className="flex-1 flex items-center justify-between px-3 py-1.5 bg-[#1a1d2d] hover:bg-[#22263b] border border-[#2d324a] rounded cursor-pointer transition-colors text-xs min-w-0"
+          className="flex-1 flex items-center justify-between px-3 py-1.5 bg-[#1a1d2d] hover:bg-[#22263b] border border-[#2d324a] rounded cursor-pointer transition-colors text-sm min-w-0"
           onClick={() => setShowCatalog(!showCatalog)}
           title="Открыть полный каталог сцен"
         >
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 mr-2 shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 mr-2 shrink-0">
             Сцена
           </span>
-          <span className="font-semibold text-slate-100 truncate flex-1">
+          <span className="font-semibold text-slate-100 truncate flex-1 text-sm">
             {activeScene ? activeScene.title : 'Выберите сцену из каталога'}
           </span>
-          <span className="text-[11px] text-slate-400 shrink-0 ml-2">Каталог ▾</span>
+          <span className="text-xs text-slate-400 shrink-0 ml-2">Каталог ▾</span>
         </div>
 
         <button
@@ -183,24 +183,24 @@ export const StoryTracker = () => {
       </div>
 
       {/* Scene Body / Blocks */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 scrollbar-thin text-xs text-slate-200">
+      <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5 scrollbar-thin text-sm text-slate-200">
         {!activeScene ? (
-          <div className="text-center py-12 text-slate-500 text-xs">
+          <div className="text-center py-12 text-slate-500 text-sm">
             Выберите сцену из каталога для просмотра описания и проверок
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3.5">
             {/* Context Header: Location, Goal, Cast, Nudge Button */}
-            <div className="bg-[#141622] border border-[#262a3d] rounded-lg p-3 flex flex-col gap-2 shadow-xs">
+            <div className="bg-[#141622] border border-[#262a3d] rounded-lg p-3.5 flex flex-col gap-2.5 shadow-xs">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   {activeScene.session && (
-                    <span className="text-[10px] uppercase font-bold text-slate-400 bg-[#10111a] px-2 py-0.5 rounded border border-[#1f2233] shrink-0">
+                    <span className="text-xs uppercase font-bold text-slate-400 bg-[#10111a] px-2 py-0.5 rounded border border-[#1f2233] shrink-0">
                       {activeScene.session}
                     </span>
                   )}
                   {activeScene.location && (
-                    <span className="text-xs text-amber-400 font-medium truncate">
+                    <span className="text-sm text-amber-400 font-semibold truncate">
                       {activeScene.location}
                     </span>
                   )}
@@ -209,7 +209,7 @@ export const StoryTracker = () => {
                 {activeScene.nudge && (
                   <button
                     type="button"
-                    className={`px-2 py-0.5 rounded text-[11px] font-medium border cursor-pointer transition-colors ${
+                    className={`px-2.5 py-1 rounded text-xs font-medium border cursor-pointer transition-colors ${
                       showNudge
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                         : 'bg-[#1a1d2d] text-slate-400 border-[#262a3d] hover:text-white'
@@ -223,25 +223,25 @@ export const StoryTracker = () => {
               </div>
 
               {activeScene.goal && (
-                <div className="text-xs text-slate-300 bg-[#10111a] p-2 rounded border border-[#1f2233] leading-relaxed">
+                <div className="text-sm text-slate-200 bg-[#10111a] p-2.5 rounded border border-[#1f2233] leading-relaxed">
                   <strong className="text-slate-100 font-semibold">Цель:</strong> {activeScene.goal}
                 </div>
               )}
 
               {activeScene.sensory && (
-                <div className="text-[11px] text-slate-400 italic bg-[#10111a] px-2 py-1.5 rounded border border-[#1f2233]">
-                  <strong>Сенсорика:</strong> {activeScene.sensory}
+                <div className="text-xs text-slate-300 italic bg-[#10111a] px-2.5 py-2 rounded border border-[#1f2233]">
+                  <strong className="text-slate-200 font-semibold">Сенсорика:</strong> {activeScene.sensory}
                 </div>
               )}
 
               {activeScene.cast && activeScene.cast.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Участники:</span>
+                <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                  <span className="text-xs uppercase font-bold text-slate-500">Участники:</span>
                   {activeScene.cast.map((charName) => (
                     <button
                       key={charName}
                       type="button"
-                      className="px-2 py-0.5 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/30 text-[10px] cursor-pointer transition-colors"
+                      className="px-2 py-0.5 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/30 text-xs cursor-pointer transition-colors"
                       onClick={() => handleFocusCharacter(charName)}
                       title={`Открыть карточку ${charName}`}
                     >
@@ -252,8 +252,8 @@ export const StoryTracker = () => {
               )}
 
               {showNudge && activeScene.nudge && (
-                <div className="bg-amber-950/20 border border-amber-500/40 p-2.5 rounded text-xs text-amber-200 flex flex-col gap-1 animate-in fade-in duration-100">
-                  <strong className="text-amber-400 uppercase text-[10px] tracking-wider">
+                <div className="bg-amber-950/20 border border-amber-500/40 p-3 rounded text-sm text-amber-200 flex flex-col gap-1 animate-in fade-in duration-100">
+                  <strong className="text-amber-400 uppercase text-xs tracking-wider">
                     Пинок Мастера:
                   </strong>
                   <p className="m-0 leading-relaxed">{activeScene.nudge}</p>
@@ -263,14 +263,14 @@ export const StoryTracker = () => {
 
             {/* Read Aloud Section */}
             {(mode === 'all' || mode === 'readAloud') && readAloudItems.length > 0 && (
-              <div className="bg-[#141622] border-l-4 border-amber-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+              <div className="bg-[#141622] border-l-4 border-amber-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                <div className="text-xs font-bold uppercase tracking-wider text-amber-400">
                   Текст для зачитки игрокам:
                 </div>
                 {readAloudItems.map((text, idx) => (
                   <blockquote
                     key={idx}
-                    className="m-0 pl-2 text-slate-200 italic leading-relaxed border-l-2 border-amber-400/30"
+                    className="m-0 pl-3 text-base text-slate-100 italic leading-relaxed border-l-2 border-amber-400/40"
                   >
                     «{text}»
                   </blockquote>
@@ -282,15 +282,15 @@ export const StoryTracker = () => {
             {(mode === 'all' || mode === 'roleplay') && (
               <>
                 {activeScene.personas && activeScene.personas.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-purple-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-purple-400">
+                  <div className="bg-[#141622] border-l-4 border-purple-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                    <div className="text-xs font-bold uppercase tracking-wider text-purple-400">
                       Отыгрыш персонажей:
                     </div>
                     <div className="flex flex-col gap-2">
                       {activeScene.personas.map((p, idx) => (
-                        <div key={idx} className="bg-[#10111a] p-2 rounded border border-[#1f2233]">
-                          <strong className="text-purple-300 block mb-1">{p.title}</strong>
-                          <p className="text-slate-300 leading-relaxed m-0">{p.body}</p>
+                        <div key={idx} className="bg-[#10111a] p-2.5 rounded border border-[#1f2233]">
+                          <strong className="text-sm font-semibold text-purple-300 block mb-1">{p.title}</strong>
+                          <p className="text-sm text-slate-200 leading-relaxed m-0">{p.body}</p>
                         </div>
                       ))}
                     </div>
@@ -298,15 +298,15 @@ export const StoryTracker = () => {
                 )}
 
                 {activeScene.dialogues && activeScene.dialogues.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-indigo-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
+                  <div className="bg-[#141622] border-l-4 border-indigo-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                    <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">
                       Реплики и диалоги:
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       {activeScene.dialogues.map((d, idx) => (
                         <div
                           key={idx}
-                          className="bg-[#10111a] p-1.5 rounded border border-[#1f2233] italic text-slate-200"
+                          className="bg-[#10111a] p-2 rounded border border-[#1f2233] italic text-sm text-slate-100"
                         >
                           {d}
                         </div>
@@ -321,11 +321,11 @@ export const StoryTracker = () => {
             {(mode === 'all' || mode === 'mechanics') && (
               <>
                 {activeScene.clues && activeScene.clues.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-blue-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
+                  <div className="bg-[#141622] border-l-4 border-blue-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                    <div className="text-xs font-bold uppercase tracking-wider text-blue-400">
                       Улики и проверки:
                     </div>
-                    <ul className="m-0 pl-4 list-disc space-y-1 text-slate-300 leading-relaxed">
+                    <ul className="m-0 pl-4 list-disc space-y-1.5 text-sm text-slate-200 leading-relaxed">
                       {activeScene.clues.map((c, idx) => (
                         <li key={idx}>{c}</li>
                       ))}
@@ -334,15 +334,15 @@ export const StoryTracker = () => {
                 )}
 
                 {activeScene.mechanics && activeScene.mechanics.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-rose-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-rose-400">
+                  <div className="bg-[#141622] border-l-4 border-rose-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                    <div className="text-xs font-bold uppercase tracking-wider text-rose-400">
                       Тактика и опасности:
                     </div>
                     <div className="flex flex-col gap-2">
                       {activeScene.mechanics.map((m, idx) => (
-                        <div key={idx} className="bg-[#10111a] p-2 rounded border border-[#1f2233]">
-                          <strong className="text-rose-300 block mb-1">{m.title}</strong>
-                          <p className="text-slate-300 leading-relaxed m-0">{m.content}</p>
+                        <div key={idx} className="bg-[#10111a] p-2.5 rounded border border-[#1f2233]">
+                          <strong className="text-sm font-semibold text-rose-300 block mb-1">{m.title}</strong>
+                          <p className="text-sm text-slate-200 leading-relaxed m-0">{m.content}</p>
                         </div>
                       ))}
                     </div>
@@ -355,11 +355,11 @@ export const StoryTracker = () => {
             {(mode === 'all' || mode === 'branches') &&
               activeScene.branches &&
               activeScene.branches.length > 0 && (
-                <div className="bg-[#141622] border-l-4 border-emerald-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                <div className="bg-[#141622] border-l-4 border-emerald-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                  <div className="text-xs font-bold uppercase tracking-wider text-emerald-400">
                     Куда вести сюжет дальше (Развилки):
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     {activeScene.branches.map((bText, idx) => {
                       // Extract wiki link target if present: [[SceneName|Label]]
                       const linkMatch = bText.match(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/);
@@ -380,14 +380,14 @@ export const StoryTracker = () => {
                       return (
                         <div
                           key={idx}
-                          className="p-2 rounded bg-[#10111a] hover:bg-[#1a1d2d] border border-[#1f2233] hover:border-emerald-500/40 text-slate-200 transition-colors flex items-center justify-between gap-2"
+                          className="p-2.5 rounded bg-[#10111a] hover:bg-[#1a1d2d] border border-[#1f2233] hover:border-emerald-500/40 text-slate-200 transition-colors flex items-center justify-between gap-3"
                         >
-                          <span className="font-medium text-xs leading-relaxed">▸ {cleanText}</span>
+                          <span className="font-medium text-sm leading-relaxed text-slate-100">▸ {cleanText}</span>
 
                           {targetScene && (
                             <button
                               type="button"
-                              className="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded text-[10px] font-mono shrink-0 cursor-pointer transition-colors"
+                              className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded text-xs font-mono shrink-0 cursor-pointer transition-colors"
                               onClick={() => goToScene(targetScene.id)}
                             >
                               → {targetScene.title}

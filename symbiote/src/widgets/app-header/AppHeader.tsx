@@ -101,10 +101,13 @@ export const AppHeader = () => {
           <select
             value={scale}
             onChange={(e) => setScale(e.target.value)}
-            className="bg-[#10111a] border border-[#262a3d] text-slate-300 text-[11px] rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+            className="bg-[#10111a] border border-[#262a3d] text-slate-300 text-xs rounded px-2 py-0.5 focus:outline-none cursor-pointer"
             title="Масштаб интерфейса"
           >
             <option value="100%">100%</option>
+            <option value="115%">115%</option>
+            <option value="125%">125%</option>
+            <option value="150%">150%</option>
             <option value="85%">85%</option>
           </select>
 

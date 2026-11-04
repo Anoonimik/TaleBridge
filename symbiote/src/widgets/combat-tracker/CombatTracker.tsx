@@ -46,12 +46,12 @@ export const CombatTracker = () => {
           {active ? (
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              <span className="font-bold text-amber-400 text-xs uppercase tracking-wider">
+              <span className="font-bold text-amber-400 text-sm uppercase tracking-wider">
                 Раунд {round}
               </span>
             </div>
           ) : (
-            <span className="text-slate-400 text-xs font-semibold">Бой не начат</span>
+            <span className="text-slate-400 text-sm font-semibold">Бой не начат</span>
           )}
         </div>
 
@@ -98,10 +98,10 @@ export const CombatTracker = () => {
 
       {/* Sub-toolbar: Initiative roll, Add from roster, Clear */}
       <div className="px-3 py-2 bg-[#10111a] border-b border-[#1f2233] flex items-center justify-between gap-2 shrink-0 relative">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="px-2 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-slate-300 border border-[#262a3d] rounded text-[11px] cursor-pointer"
+            className="px-2.5 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-slate-200 border border-[#262a3d] rounded text-xs cursor-pointer"
             onClick={rollAllInitiatives}
             title="Бросить инициативу всем существам без броска"
           >
@@ -109,7 +109,7 @@ export const CombatTracker = () => {
           </button>
           <button
             type="button"
-            className="px-2 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-slate-300 border border-[#262a3d] rounded text-[11px] cursor-pointer"
+            className="px-2.5 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-slate-200 border border-[#262a3d] rounded text-xs cursor-pointer"
             onClick={sortByInitiative}
             title="Сортировать по инициативе"
           >
@@ -117,14 +117,14 @@ export const CombatTracker = () => {
           </button>
         </div>
 
-        <div className="flex items-center gap-1 relative">
+        <div className="flex items-center gap-1.5 relative">
           <button
             type="button"
-            className="px-2 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded text-[11px] font-medium cursor-pointer flex items-center gap-1"
+            className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded text-xs font-medium cursor-pointer flex items-center gap-1"
             onClick={() => setShowRosterDropdown(!showRosterDropdown)}
           >
             <span>+ Из ростера</span>
-            <span className="text-[9px]">▾</span>
+            <span className="text-[10px]">▾</span>
           </button>
 
           {showRosterDropdown && (
@@ -134,7 +134,7 @@ export const CombatTracker = () => {
           {combatants.length > 0 && (
             <button
               type="button"
-              className="px-2 py-1 bg-[#141622] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-[#262a3d] rounded text-[11px] cursor-pointer"
+              className="px-2 py-1 bg-[#141622] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-[#262a3d] rounded text-xs cursor-pointer"
               onClick={clearCombat}
               title="Очистить всех бойцов"
             >
@@ -147,7 +147,7 @@ export const CombatTracker = () => {
       {/* Combatants List */}
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin">
         {combatants.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-xs">
+          <div className="text-center py-12 text-slate-500 text-sm">
             В бою пока никого нет. Выберите фигурку на доске или добавьте существ из Ростера.
           </div>
         ) : (

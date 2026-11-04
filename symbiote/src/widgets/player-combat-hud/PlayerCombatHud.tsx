@@ -20,16 +20,16 @@ export const PlayerCombatHud = () => {
           : 'bg-[#141622] border-[#262a3d]'
       }`}
     >
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-          <span className="font-bold tracking-wider text-amber-400 uppercase text-[11px]">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+          <span className="font-bold tracking-wider text-amber-400 uppercase text-xs">
             Бой: Раунд {round}
           </span>
         </div>
 
         <div
-          className={`px-2.5 py-0.5 rounded text-[11px] font-semibold border flex items-center gap-1.5 ${
+          className={`px-3 py-1 rounded text-xs font-semibold border flex items-center gap-2 ${
             isMyTurn
               ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
               : 'bg-[#1a1d2d] text-slate-300 border-[#262a3d]'
@@ -45,7 +45,7 @@ export const PlayerCombatHud = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
         {combatants.map((c, idx) => {
           const isActive = idx === turnIndex;
           const isMe =
@@ -65,7 +65,7 @@ export const PlayerCombatHud = () => {
           return (
             <div
               key={c.id}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs border whitespace-nowrap shrink-0 transition-all ${
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded text-xs border whitespace-nowrap shrink-0 transition-all ${
                 isActive
                   ? 'bg-amber-500/20 border-amber-500 text-amber-200 font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/60'
                   : hasActed
@@ -73,33 +73,33 @@ export const PlayerCombatHud = () => {
                   : 'bg-[#1a1d2d] border-[#262a3d] text-slate-300'
               } ${isMe && !isActive ? 'ring-1 ring-blue-500/60' : ''}`}
             >
-              <span className="text-[10px] text-slate-500 font-mono">#{idx + 1}</span>
+              <span className="text-xs text-slate-400 font-mono">#{idx + 1}</span>
 
-              <span className="font-medium text-slate-200 text-xs max-w-[120px] truncate" title={c.name}>
+              <span className="font-semibold text-slate-100 text-sm max-w-[130px] truncate" title={c.name}>
                 {c.name}
               </span>
 
               {isMe && (
-                <span className="bg-blue-600/30 text-blue-300 text-[9px] font-bold px-1 rounded border border-blue-500/40">
+                <span className="bg-blue-600/30 text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-500/40">
                   ВЫ
                 </span>
               )}
 
-              <span className={`text-[9px] px-1 py-0.2 rounded border font-normal ${catColor}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-normal ${catColor}`}>
                 {c.category || 'Враг'}
               </span>
 
-              <span className="text-[10px] font-mono text-slate-400" title="Инициатива">
+              <span className="text-xs font-mono text-slate-300" title="Инициатива">
                 [{c.initiative ?? '—'}]
               </span>
 
               {isActive ? (
-                <span className="flex items-center gap-1 text-[9px] text-amber-400 font-bold bg-amber-500/20 px-1 py-0.5 rounded border border-amber-500/30">
+                <span className="flex items-center gap-1 text-[10px] text-amber-400 font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   ХОДИТ
                 </span>
               ) : hasActed ? (
-                <span className="text-[9px] text-slate-600">(ходил)</span>
+                <span className="text-[10px] text-slate-500">(ходил)</span>
               ) : null}
             </div>
           );

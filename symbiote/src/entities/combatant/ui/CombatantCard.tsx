@@ -63,10 +63,10 @@ export const CombatantCard = ({
     >
       {/* Top row: Side badge, Name, Initiative, Note & Delete */}
       <div className="flex items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
-            className={`text-[10px] px-1.5 py-0.5 rounded font-bold border cursor-pointer uppercase transition-colors shrink-0 ${sideMeta.bg} ${sideMeta.text} ${sideMeta.border}`}
+            className={`text-xs px-2 py-0.5 rounded font-bold border cursor-pointer uppercase transition-colors shrink-0 ${sideMeta.bg} ${sideMeta.text} ${sideMeta.border}`}
             onClick={(e) => onOpenSideMenu(e, combatant)}
             title="Сменить сторону (Игрок / Союзник / Нейтрал / Враг)"
           >
@@ -74,7 +74,7 @@ export const CombatantCard = ({
           </button>
 
           <span
-            className="font-semibold text-slate-100 text-xs truncate max-w-[140px]"
+            className="font-semibold text-slate-100 text-sm truncate max-w-[150px]"
             title={combatant.name}
           >
             {combatant.name}
@@ -82,11 +82,11 @@ export const CombatantCard = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 bg-[#10111a] px-1.5 py-0.5 rounded border border-[#262a3d] text-xs">
-            <span className="text-[10px] text-slate-500 font-mono">Иниц</span>
+          <div className="flex items-center gap-1 bg-[#10111a] px-2 py-0.5 rounded border border-[#262a3d] text-xs">
+            <span className="text-xs text-slate-400 font-mono">Иниц</span>
             <input
               type="number"
-              className="w-9 bg-transparent text-right font-mono font-bold text-amber-400 focus:outline-none text-xs"
+              className="w-10 bg-transparent text-right font-mono font-bold text-amber-400 focus:outline-none text-sm"
               value={combatant.initiative ?? 0}
               onChange={(e) => setInitiative(combatant.id, parseInt(e.target.value, 10) || 0)}
             />
@@ -94,7 +94,7 @@ export const CombatantCard = ({
 
           <button
             type="button"
-            className="w-6 h-6 flex items-center justify-center rounded bg-[#1a1d2d] hover:bg-slate-700 text-slate-400 hover:text-white text-xs cursor-pointer transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1d2d] hover:bg-slate-700 text-slate-300 hover:text-white text-sm cursor-pointer transition-colors"
             onClick={handleOpenNote}
             title="Открыть заметку существа"
           >
@@ -103,7 +103,7 @@ export const CombatantCard = ({
 
           <button
             type="button"
-            className="w-6 h-6 flex items-center justify-center rounded bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs cursor-pointer transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-sm cursor-pointer transition-colors"
             onClick={() => removeCombatant(combatant.id)}
             title="Удалить из боя"
           >
@@ -113,34 +113,34 @@ export const CombatantCard = ({
       </div>
 
       {/* HP Bar and Quick Deltas */}
-      <div className="flex flex-col gap-1 bg-[#10111a] p-2 rounded border border-[#1f2233]">
-        <div className="flex items-center justify-between text-xs">
+      <div className="flex flex-col gap-1.5 bg-[#10111a] p-2.5 rounded border border-[#1f2233]">
+        <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-500 uppercase font-bold">ХП</span>
-            <strong className="text-slate-100 font-mono">
+            <span className="text-xs text-slate-400 uppercase font-bold">ХП</span>
+            <strong className="text-slate-100 font-mono text-sm">
               {combatant.hp} / {combatant.maxHp}
             </strong>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-[10px] text-slate-500 uppercase font-bold">КД</span>
-            <strong className="text-slate-200 text-xs">{combatant.ac || 10}</strong>
+            <span className="text-xs text-slate-400 uppercase font-bold">КД</span>
+            <strong className="text-slate-200 text-sm font-mono">{combatant.ac || 10}</strong>
           </div>
         </div>
 
-        <div className="w-full h-1.5 bg-[#1a1d2d] rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-[#1a1d2d] rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${hpColor}`}
             style={{ width: `${hpPercent}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between gap-1 pt-1">
-          <div className="flex items-center gap-0.5">
+        <div className="flex items-center justify-between gap-1.5 pt-1">
+          <div className="flex items-center gap-1">
             {[-5, -1].map((val) => (
               <button
                 key={val}
                 type="button"
-                className="px-1.5 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 rounded text-[10px] font-mono cursor-pointer transition-colors"
+                className="px-2 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 rounded text-xs font-mono cursor-pointer transition-colors"
                 onClick={() => updateCombatantHp(combatant.id, val)}
               >
                 {val}
@@ -154,11 +154,11 @@ export const CombatantCard = ({
               placeholder="Урон"
               value={customHpVal}
               onChange={(e) => setCustomHpVal(e.target.value)}
-              className="w-12 px-1.5 py-0.5 bg-[#141622] border border-[#262a3d] rounded text-center text-[10px] text-slate-200 focus:outline-none"
+              className="w-14 px-1.5 py-0.5 bg-[#141622] border border-[#262a3d] rounded text-center text-xs text-slate-200 focus:outline-none"
             />
             <button
               type="button"
-              className="px-1.5 py-0.5 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-[10px] cursor-pointer"
+              className="px-2 py-0.5 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-xs cursor-pointer font-bold"
               onClick={() => handleApplyCustomHp(true)}
               title="Нанести урон"
             >
@@ -166,7 +166,7 @@ export const CombatantCard = ({
             </button>
             <button
               type="button"
-              className="px-1.5 py-0.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded text-[10px] cursor-pointer"
+              className="px-2 py-0.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded text-xs cursor-pointer font-bold"
               onClick={() => handleApplyCustomHp(false)}
               title="Восстановить здоровье"
             >
@@ -174,12 +174,12 @@ export const CombatantCard = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             {[1, 5].map((val) => (
               <button
                 key={val}
                 type="button"
-                className="px-1.5 py-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 rounded text-[10px] font-mono cursor-pointer transition-colors"
+                className="px-2 py-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 rounded text-xs font-mono cursor-pointer transition-colors"
                 onClick={() => updateCombatantHp(combatant.id, val)}
               >
                 +{val}
@@ -190,16 +190,16 @@ export const CombatantCard = ({
       </div>
 
       {/* Conditions list and picker button */}
-      <div className="flex items-center gap-1 flex-wrap pt-0.5">
+      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
         <button
           type="button"
-          className="px-1.5 py-0.5 bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] rounded text-[10px] cursor-pointer transition-colors flex items-center gap-1 shrink-0"
+          className="px-2 py-0.5 bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] rounded text-xs cursor-pointer transition-colors flex items-center gap-1.5 shrink-0"
           onClick={() => onOpenConditions(combatant)}
           title="Добавить или снять состояния (5e)"
         >
           <span>+ Состояние</span>
           {conditions.length > 0 && (
-            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 text-black text-[9px] font-bold flex items-center justify-center">
+            <span className="w-4 h-4 rounded-full bg-amber-500 text-black text-[10px] font-bold flex items-center justify-center">
               {conditions.length}
             </span>
           )}
@@ -210,7 +210,7 @@ export const CombatantCard = ({
           return (
             <span
               key={condName}
-              className="text-[10px] px-1.5 py-0.5 rounded font-medium flex items-center gap-1 border shrink-0"
+              className="text-xs px-2 py-0.5 rounded font-medium flex items-center gap-1 border shrink-0"
               style={{
                 backgroundColor: `${meta?.color || '#6366f1'}20`,
                 borderColor: `${meta?.color || '#6366f1'}50`,
