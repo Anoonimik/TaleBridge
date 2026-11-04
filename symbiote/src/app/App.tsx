@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { useAppStore } from '../shared';
-import { AppHeader, TokenHud, CinemaOverlay } from '../widgets';
+import { useAppStore, useRosterStore } from '../shared';
+import { AppHeader, TokenHud, CinemaOverlay, NoteViewer } from '../widgets';
 import { GmScreen, PlayerScreen } from '../pages';
 
 export const App = () => {
   const { role, scale } = useAppStore();
+  const { selectedCharacter, setSelectedCharacter } = useRosterStore();
 
   const isGm = role === 'gm';
 
@@ -41,6 +42,10 @@ export const App = () => {
       </main>
 
       <CinemaOverlay />
+      <NoteViewer
+        character={selectedCharacter}
+        onClose={() => setSelectedCharacter(null)}
+      />
     </div>
   );
 };

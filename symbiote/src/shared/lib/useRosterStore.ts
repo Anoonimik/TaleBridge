@@ -6,6 +6,7 @@ interface RosterStore {
   roster: Character[];
   selectedToken: TaleSpireCreature | null;
   selectedCharacter: Character | null;
+  noteContent: { name: string; path: string; content: string } | null;
   playerCharacterName: string;
   playerData: Character | null;
   cluesArchive: Clue[];
@@ -13,6 +14,7 @@ interface RosterStore {
   setRoster: (roster: Character[]) => void;
   setSelectedToken: (token: TaleSpireCreature | null) => void;
   setSelectedCharacter: (char: Character | null) => void;
+  setNoteContent: (content: { name: string; path: string; content: string } | null) => void;
   setPlayerCharacterName: (name: string) => void;
   setPlayerData: (data: Character | null) => void;
   setCluesArchive: (clues: Clue[]) => void;
@@ -39,6 +41,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   roster: [],
   selectedToken: null,
   selectedCharacter: null,
+  noteContent: null,
   playerCharacterName: localStorage.getItem('tb_player_character') || '',
   playerData: null,
   cluesArchive: getStoredArray<Clue>('tb_clues_archive'),
@@ -46,7 +49,16 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
 
   setRoster: (roster) => set({ roster: Array.isArray(roster) ? roster : [] }),
   setSelectedToken: (selectedToken) => set({ selectedToken }),
-  setSelectedCharacter: (selectedCharacter) => set({ selectedCharacter }),
+  setSelectedCharacter: (selectedCharacter) => {
+    set({ selectedCharacter, noteContent: null });
+    if (selectedCharacter && (selectedCharacter.path || selectedCharacter.name)) {
+      wsBridge.send('GET_NOTE', {
+        path: selectedCharacter.path,
+        name: selectedCharacter.name,
+      });
+    }
+  },
+  setNoteContent: (noteContent) => set({ noteContent }),
 
   setPlayerCharacterName: (name) => {
     localStorage.setItem('tb_player_character', name);

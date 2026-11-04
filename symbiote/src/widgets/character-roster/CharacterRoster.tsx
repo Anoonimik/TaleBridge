@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Character, useRosterStore, wsBridge } from '../../shared';
 import { CharacterCard } from '../../entities';
-import { NoteViewer } from '../note-viewer/NoteViewer';
 
 export const CharacterRoster = () => {
   const { roster, pinnedNames, selectedCharacter, setSelectedCharacter } = useRosterStore();
@@ -102,12 +101,6 @@ export const CharacterRoster = () => {
           ))
         )}
       </div>
-
-      {/* Note Viewer Drawer */}
-      <NoteViewer
-        character={selectedCharacter}
-        onClose={() => setSelectedCharacter(null)}
-      />
     </div>
   );
 };

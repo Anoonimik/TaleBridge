@@ -132,6 +132,12 @@ class WebSocketBridge {
         }
         break;
 
+      case 'NOTE_CONTENT':
+        if (payload) {
+          useRosterStore.getState().setNoteContent(payload);
+        }
+        break;
+
       case 'MEDIA_HANDOUT':
         if (payload) {
           useAppStore.getState().setCinemaMedia({ ...payload, active: true });
