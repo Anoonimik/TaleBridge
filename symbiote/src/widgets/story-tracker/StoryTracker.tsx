@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStoryStore, useRosterStore, wsBridge } from '../../shared';
+import { useStoryStore, useRosterStore, wsBridge, formatInlineText } from '../../shared';
 
 export const StoryTracker = () => {
   const { scenes, activeScene, sceneHistory, goToScene, goBack } = useStoryStore();
@@ -224,13 +224,13 @@ export const StoryTracker = () => {
 
               {activeScene.goal && (
                 <div className="text-sm text-slate-200 bg-[#10111a] p-2.5 rounded border border-[#1f2233] leading-relaxed">
-                  <strong className="text-slate-100 font-semibold">Цель:</strong> {activeScene.goal}
+                  <strong className="text-slate-100 font-semibold">Цель:</strong> {formatInlineText(activeScene.goal)}
                 </div>
               )}
 
               {activeScene.sensory && (
                 <div className="text-xs text-slate-300 italic bg-[#10111a] px-2.5 py-2 rounded border border-[#1f2233]">
-                  <strong className="text-slate-200 font-semibold">Сенсорика:</strong> {activeScene.sensory}
+                  <strong className="text-slate-200 font-semibold">Сенсорика:</strong> {formatInlineText(activeScene.sensory)}
                 </div>
               )}
 
@@ -256,23 +256,23 @@ export const StoryTracker = () => {
                   <strong className="text-amber-400 uppercase text-xs tracking-wider">
                     Пинок Мастера:
                   </strong>
-                  <p className="m-0 leading-relaxed">{activeScene.nudge}</p>
+                  <p className="m-0 leading-relaxed">{formatInlineText(activeScene.nudge)}</p>
                 </div>
               )}
             </div>
 
             {/* Read Aloud Section */}
             {(mode === 'all' || mode === 'readAloud') && readAloudItems.length > 0 && (
-              <div className="bg-[#141622] border-l-4 border-amber-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+              <div className="bg-[#141622] border-l-4 border-amber-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
                 <div className="text-xs font-bold uppercase tracking-wider text-amber-400">
                   Текст для зачитки игрокам:
                 </div>
                 {readAloudItems.map((text, idx) => (
                   <blockquote
                     key={idx}
-                    className="m-0 pl-3 text-base text-slate-100 italic leading-relaxed border-l-2 border-amber-400/40"
+                    className="m-0 pl-3 text-sm text-amber-200/90 italic leading-relaxed border-l-2 border-amber-400/50"
                   >
-                    «{text}»
+                    «{formatInlineText(text)}»
                   </blockquote>
                 ))}
               </div>
@@ -282,15 +282,19 @@ export const StoryTracker = () => {
             {(mode === 'all' || mode === 'roleplay') && (
               <>
                 {activeScene.personas && activeScene.personas.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-purple-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                  <div className="bg-[#141622] border-l-4 border-purple-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
                     <div className="text-xs font-bold uppercase tracking-wider text-purple-400">
                       Отыгрыш персонажей:
                     </div>
                     <div className="flex flex-col gap-2">
                       {activeScene.personas.map((p, idx) => (
                         <div key={idx} className="bg-[#10111a] p-2.5 rounded border border-[#1f2233]">
-                          <strong className="text-sm font-semibold text-purple-300 block mb-1">{p.title}</strong>
-                          <p className="text-sm text-slate-200 leading-relaxed m-0">{p.body}</p>
+                          <strong className="text-sm font-semibold text-purple-300 block mb-1">
+                            {formatInlineText(p.title)}
+                          </strong>
+                          <div className="text-sm text-slate-300 leading-relaxed m-0 whitespace-pre-wrap">
+                            {formatInlineText(p.body)}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -298,7 +302,7 @@ export const StoryTracker = () => {
                 )}
 
                 {activeScene.dialogues && activeScene.dialogues.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-indigo-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                  <div className="bg-[#141622] border-l-4 border-indigo-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
                     <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">
                       Реплики и диалоги:
                     </div>
@@ -308,7 +312,7 @@ export const StoryTracker = () => {
                           key={idx}
                           className="bg-[#10111a] p-2 rounded border border-[#1f2233] italic text-sm text-slate-100"
                         >
-                          {d}
+                          {formatInlineText(d)}
                         </div>
                       ))}
                     </div>
@@ -321,28 +325,32 @@ export const StoryTracker = () => {
             {(mode === 'all' || mode === 'mechanics') && (
               <>
                 {activeScene.clues && activeScene.clues.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-blue-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                  <div className="bg-[#141622] border-l-4 border-blue-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
                     <div className="text-xs font-bold uppercase tracking-wider text-blue-400">
                       Улики и проверки:
                     </div>
                     <ul className="m-0 pl-4 list-disc space-y-1.5 text-sm text-slate-200 leading-relaxed">
                       {activeScene.clues.map((c, idx) => (
-                        <li key={idx}>{c}</li>
+                        <li key={idx}>{formatInlineText(c)}</li>
                       ))}
                     </ul>
                   </div>
                 )}
 
                 {activeScene.mechanics && activeScene.mechanics.length > 0 && (
-                  <div className="bg-[#141622] border-l-4 border-rose-500/80 border border-[#262a3d] p-3.5 rounded-r-lg shadow-sm flex flex-col gap-2.5">
+                  <div className="bg-[#141622] border-l-4 border-rose-500/80 border border-[#262a3d] p-3 rounded-r-lg shadow-sm flex flex-col gap-2">
                     <div className="text-xs font-bold uppercase tracking-wider text-rose-400">
                       Тактика и опасности:
                     </div>
                     <div className="flex flex-col gap-2">
                       {activeScene.mechanics.map((m, idx) => (
                         <div key={idx} className="bg-[#10111a] p-2.5 rounded border border-[#1f2233]">
-                          <strong className="text-sm font-semibold text-rose-300 block mb-1">{m.title}</strong>
-                          <p className="text-sm text-slate-200 leading-relaxed m-0">{m.content}</p>
+                          <strong className="text-sm font-semibold text-rose-300 block mb-1">
+                            {formatInlineText(m.title)}
+                          </strong>
+                          <p className="text-sm text-slate-200 leading-relaxed m-0">
+                            {formatInlineText(m.content)}
+                          </p>
                         </div>
                       ))}
                     </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppStore } from '../shared';
 import { AppHeader, TokenHud, CinemaOverlay } from '../widgets';
 import { GmScreen, PlayerScreen } from '../pages';
@@ -8,44 +8,31 @@ export const App = () => {
 
   const isGm = role === 'gm';
 
-  const getScaleStyle = (): React.CSSProperties => {
+  useEffect(() => {
+    let zoomVal = '1';
     switch (scale) {
       case '115%':
-        return {
-          transform: 'scale(1.15)',
-          transformOrigin: 'top left',
-          width: '86.95%',
-          height: '86.95%',
-        };
+        zoomVal = '1.15';
+        break;
       case '125%':
-        return {
-          transform: 'scale(1.25)',
-          transformOrigin: 'top left',
-          width: '80%',
-          height: '80%',
-        };
+        zoomVal = '1.25';
+        break;
       case '150%':
-        return {
-          transform: 'scale(1.5)',
-          transformOrigin: 'top left',
-          width: '66.66%',
-          height: '66.66%',
-        };
+        zoomVal = '1.5';
+        break;
       case '85%':
-        return {
-          transform: 'scale(0.85)',
-          transformOrigin: 'top left',
-          width: '117.64%',
-          height: '117.64%',
-        };
+        zoomVal = '0.85';
+        break;
       case '100%':
       default:
-        return { width: '100%', height: '100%' };
+        zoomVal = '1';
+        break;
     }
-  };
+    (document.documentElement.style as any).zoom = zoomVal;
+  }, [scale]);
 
   return (
-    <div className="w-screen h-screen flex flex-col overflow-hidden bg-[#0c0d14]" style={getScaleStyle()}>
+    <div className="w-full h-full flex flex-col overflow-hidden bg-[#0c0d14]">
       <AppHeader />
       <TokenHud />
 

@@ -82,12 +82,12 @@ export const PlayerNotesEditor = () => {
           <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
             Личный журнал: <span className="text-amber-400">{playerCharacterName || 'Герой'}</span>
           </h3>
-          <p className="text-[11px] text-slate-400 m-0">
+          <p className="text-xs text-slate-400 m-0">
             Заметки синхронизируются с секцией «Заметки игрока» в Obsidian
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 text-xs font-mono">
           <span
             className={`w-2 h-2 rounded-full ${
               saveStatus === 'saving' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
@@ -102,28 +102,28 @@ export const PlayerNotesEditor = () => {
       <div className="flex items-center gap-1 bg-[#10111a] p-1 rounded border border-[#1f2233] overflow-x-auto scrollbar-thin shrink-0">
         <button
           type="button"
-          className="px-2 py-0.5 rounded text-[11px] bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] cursor-pointer"
+          className="px-2.5 py-1 rounded text-xs bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] cursor-pointer"
           onClick={() => handleToolInsert('bullet')}
         >
           • Список
         </button>
         <button
           type="button"
-          className="px-2 py-0.5 rounded text-[11px] bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] cursor-pointer font-bold"
+          className="px-2.5 py-1 rounded text-xs bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] cursor-pointer font-bold"
           onClick={() => handleToolInsert('bold')}
         >
           B Жирный
         </button>
         <button
           type="button"
-          className="px-2 py-0.5 rounded text-[11px] bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] cursor-pointer italic"
+          className="px-2.5 py-1 rounded text-xs bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] cursor-pointer italic"
           onClick={() => handleToolInsert('quote')}
         >
           " Цитата
         </button>
         <button
           type="button"
-          className="px-2 py-0.5 rounded text-[11px] bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/20 cursor-pointer"
+          className="px-2.5 py-1 rounded text-xs bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/20 cursor-pointer"
           onClick={() => handleToolInsert('crystal')}
         >
           Кристалл
@@ -133,7 +133,7 @@ export const PlayerNotesEditor = () => {
 
         <button
           type="button"
-          className="px-2.5 py-0.5 rounded text-[11px] bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-medium"
+          className="px-2.5 py-1 rounded text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-medium"
           onClick={() => saveToObsidian(notes)}
         >
           Сохранить сейчас

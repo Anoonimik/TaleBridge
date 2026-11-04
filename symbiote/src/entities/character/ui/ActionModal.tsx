@@ -59,61 +59,61 @@ export const ActionModal = ({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 text-xs text-slate-300">
           <div>
-            <label className="text-[11px] text-slate-400 block mb-1">Название *</label>
+            <label className="text-xs text-slate-400 block mb-1">Название *</label>
             <input
               type="text"
               required
               placeholder="Например: Длинный меч или Огненный шар"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
               autoFocus
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Попадание (hit)</label>
+              <label className="text-xs text-slate-400 block mb-1">Попадание (hit)</label>
               <input
                 type="text"
                 placeholder="+5"
                 value={hit}
                 onChange={(e) => setHit(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs font-mono"
+                className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm font-mono"
               />
             </div>
 
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Урон (dmg)</label>
+              <label className="text-xs text-slate-400 block mb-1">Урон (dmg)</label>
               <input
                 type="text"
                 placeholder="1d8+3 колющий"
                 value={dmg}
                 onChange={(e) => setDmg(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs font-mono"
+                className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[11px] text-slate-400 block mb-1">Тип / Тег</label>
+            <label className="text-xs text-slate-400 block mb-1">Тип / Тег</label>
             <input
               type="text"
               placeholder="Оружие, Заклинание, Бонусное действие..."
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
             />
           </div>
 
           <div>
-            <label className="text-[11px] text-slate-400 block mb-1">Описание / Эффект</label>
+            <label className="text-xs text-slate-400 block mb-1">Описание / Эффект</label>
             <textarea
               rows={2}
               placeholder="Дополнительные свойства, условия или спасбросок..."
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs leading-relaxed"
+              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm leading-relaxed"
             />
           </div>
 

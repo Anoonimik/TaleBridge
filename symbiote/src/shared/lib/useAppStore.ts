@@ -22,14 +22,21 @@ interface AppStore {
   setCinemaMedia: (media: AppStore['cinemaMedia']) => void;
 }
 
+const getInitialRole = (): UserRole => {
+  const storedRole = localStorage.getItem('tb_role') as UserRole;
+  const isAuth = sessionStorage.getItem('tb_gm_auth') === 'true';
+  if (storedRole === 'gm' && isAuth) return 'gm';
+  return 'player';
+};
+
 export const useAppStore = create<AppStore>((set) => ({
-  role: (localStorage.getItem('tb_role') as UserRole) || 'player',
+  role: getInitialRole(),
   activeTab: 'story',
   scale: localStorage.getItem('tb_scale') || '100%',
   diceSecret: false,
   connected: false,
   vaultName: 'Obsidian Vault',
-  gmPin: '5',
+  gmPin: localStorage.getItem('tb_gm_pin') || '5',
   cinemaMedia: null,
 
   setRole: (role) => {
@@ -44,6 +51,9 @@ export const useAppStore = create<AppStore>((set) => ({
   setDiceSecret: (diceSecret) => set({ diceSecret }),
   setConnected: (connected) => set({ connected }),
   setVaultName: (vaultName) => set({ vaultName }),
-  setGmPin: (gmPin) => set({ gmPin }),
+  setGmPin: (gmPin) => {
+    localStorage.setItem('tb_gm_pin', gmPin);
+    set({ gmPin });
+  },
   setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
 }));

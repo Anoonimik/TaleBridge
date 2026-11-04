@@ -7,5 +7,6 @@ export * from './lib/useStoryStore';
 export * from './lib/useLogStore';
 export * from './lib/clipboard';
 export * from './lib/text-utils';
+export * from './lib/format-text';
 export * from './api/websocket';
 export * from './api/talespire';

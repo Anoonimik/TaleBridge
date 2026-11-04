@@ -59,7 +59,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
             </span>
             <button
               type="button"
-              className="px-2 py-1 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-[11px] shrink-0 font-medium cursor-pointer"
+              className="px-2.5 py-1 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-xs shrink-0 font-medium cursor-pointer"
               onClick={handleDismiss}
             >
               Снять
@@ -69,7 +69,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
 
         <form onSubmit={handleBroadcast} className="flex flex-col gap-2.5 text-slate-300">
           <div>
-            <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+            <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
               Тип медиа
             </label>
             <div className="grid grid-cols-3 gap-1">
@@ -91,7 +91,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
           </div>
 
           <div>
-            <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+            <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
               URL или путь в Vault
             </label>
             <input
@@ -100,13 +100,13 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
               placeholder="https://... или public/art.png"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+            <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
               Заголовок (опционально)
             </label>
             <input
@@ -114,7 +114,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
               placeholder="Таинственное письмо / Карта катакомб"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
             />
           </div>
 

@@ -115,7 +115,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       {/* Weight Gauge Panel */}
       <div className="bg-[#141622] p-2.5 rounded-lg border border-[#262a3d] flex flex-col gap-1.5 shrink-0">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Переносимый вес
           </span>
           <span className={`font-mono text-xs font-semibold ${weightStatusText}`}>
@@ -180,7 +180,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-slate-400 block mb-1">Название *</label>
+              <label className="text-xs text-slate-400 block mb-1">Название *</label>
               <input
                 type="text"
                 required
@@ -193,7 +193,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
             </div>
 
             <div>
-              <label className="text-[10px] text-slate-400 block mb-1">Категория</label>
+              <label className="text-xs text-slate-400 block mb-1">Категория</label>
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
@@ -208,7 +208,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
             </div>
 
             <div>
-              <label className="text-[10px] text-slate-400 block mb-1">Количество</label>
+              <label className="text-xs text-slate-400 block mb-1">Количество</label>
               <input
                 type="number"
                 min="1"
@@ -219,7 +219,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
             </div>
 
             <div>
-              <label className="text-[10px] text-slate-400 block mb-1">Вес одного (кг)</label>
+              <label className="text-xs text-slate-400 block mb-1">Вес одного (кг)</label>
               <input
                 type="number"
                 step="0.1"
@@ -232,7 +232,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
           </div>
 
           <div>
-            <label className="text-[10px] text-slate-400 block mb-1">Описание свойства</label>
+            <label className="text-xs text-slate-400 block mb-1">Описание свойства</label>
             <input
               type="text"
               placeholder="Восстанавливает 2d4+2 хитов..."

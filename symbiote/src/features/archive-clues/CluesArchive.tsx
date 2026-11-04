@@ -12,7 +12,7 @@ export const CluesArchive = () => {
           <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
             Архив полученных улик ({cluesArchive.length})
           </h3>
-          <p className="text-[11px] text-slate-400 m-0">
+          <p className="text-xs text-slate-400 m-0">
             Здесь сохраняются показанные Мастером арты, карты, свитки и улики
           </p>
         </div>
@@ -20,7 +20,7 @@ export const CluesArchive = () => {
 
       <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-2.5 scrollbar-thin">
         {cluesArchive.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-slate-500 text-xs">
+          <div className="col-span-full text-center py-12 text-slate-500 text-sm">
             Архив пуст. Когда Мастер покажет важную улику или письмо, нажмите «В архив улик».
           </div>
         ) : (

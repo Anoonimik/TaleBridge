@@ -17,7 +17,7 @@ export const ToolsPanel = () => {
 
       {/* GM Utility Quick Actions */}
       <div className="bg-[#141622] p-2.5 rounded-lg border border-[#262a3d] flex flex-col gap-2 shrink-0">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
           Инструменты ГМ
         </span>
 
@@ -44,13 +44,13 @@ export const ToolsPanel = () => {
       {/* Activity and Roll Log */}
       <div className="flex-1 overflow-hidden bg-[#141622] rounded-lg border border-[#262a3d] p-2.5 flex flex-col gap-2">
         <div className="flex items-center justify-between pb-1 border-b border-[#262a3d] shrink-0">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Журнал действий ({logs.length})
           </span>
           {logs.length > 0 && (
             <button
               type="button"
-              className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer"
+              className="text-xs text-slate-500 hover:text-slate-300 cursor-pointer"
               onClick={clearLogs}
             >
               Очистить
@@ -71,10 +71,10 @@ export const ToolsPanel = () => {
               return (
                 <div
                   key={log.id}
-                  className="p-1 rounded bg-[#10111a] border border-[#1f2233] flex items-start gap-1.5"
+                  className="p-1.5 rounded bg-[#10111a] border border-[#1f2233] flex items-start gap-1.5"
                 >
-                  <span className="text-[10px] text-slate-500 shrink-0">[{log.time}]</span>
-                  <span className={`text-[10px] uppercase font-bold shrink-0 ${tagColor}`}>
+                  <span className="text-xs text-slate-500 shrink-0">[{log.time}]</span>
+                  <span className={`text-xs uppercase font-bold shrink-0 ${tagColor}`}>
                     [{log.type}]
                   </span>
                   <span className="text-slate-300 leading-tight break-all">{log.message}</span>

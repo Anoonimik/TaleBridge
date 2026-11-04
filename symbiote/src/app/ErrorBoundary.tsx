@@ -36,12 +36,12 @@ export class ErrorBoundary extends Component<Props, State> {
               <span>Ошибка отображения интерфейса</span>
             </div>
 
-            <p className="text-slate-300 font-mono text-[11px] bg-[#10111a] p-2.5 rounded border border-[#262a3d] break-all">
+            <p className="text-slate-300 font-mono text-xs bg-[#10111a] p-2.5 rounded border border-[#262a3d] break-all">
               {this.state.error?.message || 'Неизвестная ошибка'}
             </p>
 
             {this.state.errorInfo?.componentStack && (
-              <pre className="text-[10px] text-slate-500 font-mono bg-[#10111a] p-2 rounded max-h-32 overflow-y-auto scrollbar-thin">
+              <pre className="text-xs text-slate-500 font-mono bg-[#10111a] p-2 rounded max-h-32 overflow-y-auto scrollbar-thin">
                 {this.state.errorInfo.componentStack}
               </pre>
             )}

@@ -30,7 +30,7 @@ export const ApplyDamageControl = ({
   return (
     <div className="bg-[#141622] p-3 rounded-lg border border-[#262a3d] flex flex-col gap-2">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
           Здоровье (ХП)
         </span>
         <span className="font-mono text-sm font-bold text-slate-100">

@@ -51,11 +51,11 @@ export const PlayerCockpit = () => {
       {/* Cockpit Top Bar: Character Select & Tabs */}
       <div className="bg-[#141622] border-b border-[#262a3d] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0">Персонаж:</span>
+          <span className="text-xs uppercase font-bold text-slate-400 shrink-0">Герой:</span>
           <select
             value={playerCharacterName}
             onChange={(e) => setPlayerCharacterName(e.target.value)}
-            className="bg-[#10111a] border border-[#262a3d] text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-indigo-500 max-w-[160px] truncate cursor-pointer font-medium"
+            className="bg-[#10111a] border border-[#262a3d] text-slate-100 text-sm rounded px-2.5 py-1 focus:outline-none focus:border-indigo-500 max-w-[170px] truncate cursor-pointer font-medium"
           >
             <option value="">Выберите героя...</option>
             {pcList.map((pc) => (
@@ -66,9 +66,9 @@ export const PlayerCockpit = () => {
           </select>
 
           {playerData && (
-            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 truncate">
               {playerData.race && <span>{playerData.race}</span>}
-              {playerData.class && <span className="text-slate-300 font-semibold">{playerData.class}</span>}
+              {playerData.class && <span className="text-slate-200 font-semibold">{playerData.class}</span>}
               {playerData.level && <span>Ур. {playerData.level}</span>}
             </div>
           )}
@@ -80,7 +80,7 @@ export const PlayerCockpit = () => {
             <button
               key={t}
               type="button"
-              className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-colors ${
+              className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
                 activeSubTab === t
                   ? 'bg-[#1a1d2d] text-amber-300 font-bold shadow-xs'
                   : 'text-slate-400 hover:text-white'
@@ -102,7 +102,7 @@ export const PlayerCockpit = () => {
       {/* Sub-tab views */}
       <div className="flex-1 overflow-hidden relative">
         {!playerCharacterName ? (
-          <div className="flex items-center justify-center h-full text-slate-500 text-xs">
+          <div className="flex items-center justify-center h-full text-slate-500 text-sm">
             Выберите персонажа в выпадающем списке сверху для управления карточкой
           </div>
         ) : (
@@ -120,7 +120,7 @@ export const PlayerCockpit = () => {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      className="px-2.5 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-indigo-300 border border-indigo-500/30 rounded text-[11px] font-medium cursor-pointer transition-colors"
+                      className="px-2.5 py-1 bg-[#141622] hover:bg-[#1a1d2d] text-indigo-300 border border-indigo-500/30 rounded text-xs font-medium cursor-pointer transition-colors"
                       onClick={handleLongRest}
                       title="Восстановить здоровье до максимума"
                     >
@@ -177,7 +177,7 @@ export const PlayerCockpit = () => {
                     </h4>
                     <button
                       type="button"
-                      className="px-2 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-[11px] font-medium cursor-pointer"
+                      className="px-2.5 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-medium cursor-pointer"
                       onClick={handleAddAttack}
                     >
                       + Действие

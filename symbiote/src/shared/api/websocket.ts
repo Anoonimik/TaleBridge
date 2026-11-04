@@ -97,7 +97,13 @@ class WebSocketBridge {
     switch (type) {
       case 'HANDSHAKE_ACK':
         if (payload?.vault) useAppStore.getState().setVaultName(payload.vault);
-        if (payload?.gmPin) useAppStore.getState().setGmPin(payload.gmPin);
+        if (payload?.gmPin !== undefined) useAppStore.getState().setGmPin(String(payload.gmPin));
+        break;
+
+      case 'CONFIG_UPDATE':
+        if (payload?.gmPin !== undefined) {
+          useAppStore.getState().setGmPin(String(payload.gmPin));
+        }
         break;
 
       case 'CHARACTERS_LIST':

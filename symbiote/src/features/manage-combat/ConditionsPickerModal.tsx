@@ -47,10 +47,10 @@ export const ConditionsPickerModal = ({
                 onClick={() => toggleCondition(combatant.id, cond.name)}
               >
                 <div className="flex items-center justify-between text-xs">
-                  <span style={{ color: cond.color }}>{cond.label}</span>
+                  <span className="font-semibold" style={{ color: cond.color }}>{cond.label}</span>
                   {isApplied && <span className="text-emerald-400 font-bold">✓</span>}
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight m-0">{cond.desc}</p>
+                <p className="text-xs text-slate-400 leading-tight m-0">{cond.desc}</p>
               </button>
             );
           })}

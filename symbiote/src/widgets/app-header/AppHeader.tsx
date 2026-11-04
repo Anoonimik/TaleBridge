@@ -3,7 +3,7 @@ import { useAppStore, useCombatStore, useRosterStore, wsBridge } from '../../sha
 import { GmAuthModal } from '../../features';
 
 export const AppHeader = () => {
-  const { role, activeTab, setRole, setActiveTab, scale, setScale, connected, vaultName } =
+  const { role, activeTab, setRole, setActiveTab, scale, setScale, connected, vaultName, gmPin } =
     useAppStore();
   const { combatants, active: combatActive } = useCombatStore();
   const { roster } = useRosterStore();
@@ -14,9 +14,15 @@ export const AppHeader = () => {
 
   const handleRoleToggle = () => {
     if (isGm) {
+      sessionStorage.removeItem('tb_gm_auth');
       setRole('player');
     } else {
-      // Check if session authenticated
+      const expected = (gmPin || '').trim();
+      if (!expected) {
+        sessionStorage.setItem('tb_gm_auth', 'true');
+        setRole('gm');
+        return;
+      }
       if (sessionStorage.getItem('tb_gm_auth') === 'true') {
         setRole('gm');
       } else {
@@ -45,15 +51,20 @@ export const AppHeader = () => {
 
           <button
             type="button"
-            className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
               isGm
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                 : 'bg-blue-500/20 text-blue-300 border-blue-500/50'
             }`}
             onClick={handleRoleToggle}
-            title={isGm ? 'Режим Мастера (нажмите для перехода в режим Игрока)' : 'Режим Игрока (нажмите для перехода в режим Мастера)'}
+            title={
+              isGm
+                ? 'Режим Мастера (нажмите для выхода и блокировки экрана ГМа)'
+                : 'Режим Игрока (нажмите для перехода в режим Мастера)'
+            }
           >
-            {isGm ? 'ГМ' : 'ИГРОК'}
+            <span>{isGm ? 'ГМ' : 'ИГРОК'}</span>
+            <span className="text-[10px] opacity-70">▾</span>
           </button>
         </div>
 

@@ -19,12 +19,12 @@ export const QuickDiceBar = () => {
   return (
     <div className="bg-[#141622] p-2.5 rounded-lg border border-[#262a3d] flex flex-col gap-2">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
           Быстрые кости (3D Dice)
         </span>
         <button
           type="button"
-          className={`px-2 py-0.5 rounded text-[10px] font-bold border cursor-pointer transition-colors ${
+          className={`px-2.5 py-0.5 rounded text-xs font-bold border cursor-pointer transition-colors ${
             diceSecret
               ? 'bg-purple-600/30 text-purple-300 border-purple-500/50'
               : 'bg-[#10111a] text-slate-400 border-[#262a3d] hover:text-white'
@@ -52,14 +52,14 @@ export const QuickDiceBar = () => {
       <div className="flex items-center gap-1.5">
         <button
           type="button"
-          className="flex-1 py-1 rounded bg-[#10111a] hover:bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-semibold border border-emerald-500/30 cursor-pointer transition-colors"
+          className="flex-1 py-1.5 rounded bg-[#10111a] hover:bg-emerald-500/20 text-emerald-300 font-mono text-xs font-semibold border border-emerald-500/30 cursor-pointer transition-colors"
           onClick={() => handleRoll('2d20kh1', 'Преимущество')}
         >
           Преимущество
         </button>
         <button
           type="button"
-          className="flex-1 py-1 rounded bg-[#10111a] hover:bg-rose-500/20 text-rose-300 font-mono text-[11px] font-semibold border border-rose-500/30 cursor-pointer transition-colors"
+          className="flex-1 py-1.5 rounded bg-[#10111a] hover:bg-rose-500/20 text-rose-300 font-mono text-xs font-semibold border border-rose-500/30 cursor-pointer transition-colors"
           onClick={() => handleRoll('2d20kl1', 'Помеха')}
         >
           Помеха

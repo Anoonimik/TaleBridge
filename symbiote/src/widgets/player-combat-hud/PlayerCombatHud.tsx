@@ -80,12 +80,12 @@ export const PlayerCombatHud = () => {
               </span>
 
               {isMe && (
-                <span className="bg-blue-600/30 text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-500/40">
+                <span className="bg-blue-600/30 text-blue-300 text-xs font-bold px-1.5 py-0.5 rounded border border-blue-500/40">
                   ВЫ
                 </span>
               )}
 
-              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-normal ${catColor}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded border font-normal ${catColor}`}>
                 {c.category || 'Враг'}
               </span>
 
@@ -94,12 +94,12 @@ export const PlayerCombatHud = () => {
               </span>
 
               {isActive ? (
-                <span className="flex items-center gap-1 text-[10px] text-amber-400 font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                <span className="flex items-center gap-1 text-xs text-amber-400 font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   ХОДИТ
                 </span>
               ) : hasActed ? (
-                <span className="text-[10px] text-slate-500">(ходил)</span>
+                <span className="text-xs text-slate-500">(ходил)</span>
               ) : null}
             </div>
           );

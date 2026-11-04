@@ -51,10 +51,10 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
 
         <button
           type="button"
-          className={`h-5 text-[11px] rounded transition-colors cursor-pointer flex items-center justify-center font-medium ${
+          className={`h-6 text-xs rounded transition-colors cursor-pointer flex items-center justify-center font-medium ${
             isConfirmingDelete
               ? 'bg-rose-600 text-white font-bold px-2'
-              : 'w-5 bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
+              : 'w-6 bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
           }`}
           onClick={handleDelete}
           title={
@@ -84,14 +84,14 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
       )}
 
       {clue.text && (
-        <p className="text-[11px] text-slate-400 italic line-clamp-3 bg-[#10111a] p-1.5 rounded border border-[#1f2233]">
+        <p className="text-xs text-slate-400 italic line-clamp-3 bg-[#10111a] p-2 rounded border border-[#1f2233]">
           {clue.text}
         </p>
       )}
 
       <button
         type="button"
-        className="w-full py-1 bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/20 rounded text-[11px] font-medium cursor-pointer transition-colors"
+        className="w-full py-1.5 bg-[#1a1d2d] hover:bg-[#25293d] text-indigo-300 border border-indigo-500/20 rounded text-xs font-medium cursor-pointer transition-colors"
         onClick={handleOpenMedia}
       >
         Открыть

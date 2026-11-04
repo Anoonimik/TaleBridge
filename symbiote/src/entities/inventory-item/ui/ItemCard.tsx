@@ -66,17 +66,17 @@ export const ItemCard = ({
           </span>
 
           {item.category && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#10111a] border border-[#262a3d] text-slate-400 shrink-0">
+            <span className="text-xs px-1.5 py-0.5 rounded bg-[#10111a] border border-[#262a3d] text-slate-400 shrink-0">
               {item.category}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 bg-[#10111a] px-1.5 py-0.5 rounded border border-[#262a3d] text-xs">
+          <div className="flex items-center gap-1 bg-[#10111a] px-2 py-0.5 rounded border border-[#262a3d] text-xs">
             <button
               type="button"
-              className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-white cursor-pointer"
+              className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-white cursor-pointer font-bold"
               onClick={() => onUpdateQuantity(item.id, -1)}
               title="Уменьшить количество"
             >
@@ -85,7 +85,7 @@ export const ItemCard = ({
             <span className="font-mono text-slate-200 px-1">{item.quantity || 1} шт</span>
             <button
               type="button"
-              className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-white cursor-pointer"
+              className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-white cursor-pointer font-bold"
               onClick={() => onUpdateQuantity(item.id, 1)}
               title="Увеличить количество"
             >
@@ -95,10 +95,10 @@ export const ItemCard = ({
 
           <button
             type="button"
-            className={`h-5 text-[11px] rounded transition-colors cursor-pointer flex items-center justify-center font-medium ${
+            className={`h-6 text-xs rounded transition-colors cursor-pointer flex items-center justify-center font-medium ${
               isConfirmingDelete
                 ? 'bg-rose-600 text-white font-bold px-2'
-                : 'w-5 bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
+                : 'w-6 bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
             }`}
             onClick={handleDelete}
             title={
@@ -112,10 +112,10 @@ export const ItemCard = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+      <div className="flex items-center justify-between text-xs text-slate-400 pt-0.5">
         <span>Вес: {item.weight ? `${item.weight} кг` : '—'}</span>
         {item.description && (
-          <span className="text-slate-400 truncate max-w-[200px]" title={item.description}>
+          <span className="text-slate-300 truncate max-w-[200px]" title={item.description}>
             {item.description}
           </span>
         )}

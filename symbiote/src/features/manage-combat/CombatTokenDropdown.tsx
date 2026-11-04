@@ -45,7 +45,7 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
   };
 
   return (
-    <div className="absolute top-full left-0 mt-1 z-30 bg-[#141622] border border-[#2d324a] rounded-lg shadow-2xl p-3 w-64 flex flex-col gap-2.5 animate-in fade-in duration-100 text-xs">
+    <div className="absolute top-full left-0 mt-1 z-50 bg-[#141622] border border-[#2d324a] rounded-lg shadow-2xl p-3 w-64 flex flex-col gap-2.5 animate-in fade-in duration-100 text-xs">
       <div className="flex items-center justify-between pb-1 border-b border-[#262a3d]">
         <span className="font-semibold text-slate-100 truncate">
           Добавить: <strong className="text-amber-400">{token.name}</strong>
@@ -60,7 +60,7 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
       </div>
 
       <div>
-        <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+        <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
           Выберите сторону:
         </label>
         <div className="grid grid-cols-2 gap-1">

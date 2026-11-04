@@ -18,16 +18,16 @@ export const SceneCard = ({ scene, isActive, onSelect }: SceneCardProps) => {
       }`}
     >
       <div className="flex items-center justify-between text-xs">
-        <span className="font-semibold truncate">{scene.title}</span>
+        <span className="font-semibold text-sm truncate">{scene.title}</span>
         {scene.location && (
-          <span className="text-[10px] text-slate-400 font-normal shrink-0 ml-2">
+          <span className="text-xs text-amber-400/90 font-medium shrink-0 ml-2">
             {scene.location}
           </span>
         )}
       </div>
 
       {scene.goal && (
-        <div className="text-[11px] text-slate-400 mt-1 line-clamp-2 italic">
+        <div className="text-xs text-slate-400 mt-1 line-clamp-2 italic">
           Цель: {scene.goal}
         </div>
       )}

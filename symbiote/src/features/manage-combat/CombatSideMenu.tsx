@@ -27,7 +27,7 @@ export const CombatSideMenu = ({
         className="fixed z-50 bg-[#141622] border border-[#2d324a] rounded-lg shadow-2xl p-1.5 flex flex-col gap-1 w-36 animate-in fade-in duration-100"
         style={{ top: position.top, left: position.left }}
       >
-        <span className="text-[10px] uppercase font-bold text-slate-400 px-2 py-0.5 block">
+        <span className="text-xs uppercase font-bold text-slate-400 px-2 py-0.5 block">
           Сменить сторону:
         </span>
         {COMBAT_SIDES.map((side) => {
