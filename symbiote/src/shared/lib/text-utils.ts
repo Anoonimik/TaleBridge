@@ -1,13 +1,24 @@
 export const cleanFormula = (raw: string): string => {
   if (!raw) return '1d20';
-  const trimmed = raw.trim();
-  if (/^[+-]\d+$/.test(trimmed)) {
-    return `1d20${trimmed}`;
+  const str = String(raw).trim();
+
+  // Extract valid dice formula including advantage (kh1/kl1) and modifiers, e.g. "2d20kh1", "1d6+2"
+  const diceMatch = str.match(/\b\d*d\d+(?:(?:kh|kl)\d+)?(?:\s*[+-]\s*\d+)?\b/i);
+  if (diceMatch) {
+    return diceMatch[0].replace(/\s+/g, '');
   }
-  if (/^\d+$/.test(trimmed)) {
-    return `1d20+${trimmed}`;
+
+  // Pure signed modifier, e.g. "+3" -> "1d20+3"
+  if (/^[+-]\s*\d+$/.test(str)) {
+    return `1d20${str.replace(/\s+/g, '')}`;
   }
-  return trimmed;
+
+  // Pure unsigned number, e.g. "5" -> "1d20+5"
+  if (/^\d+$/.test(str)) {
+    return `1d20+${str}`;
+  }
+
+  return str.replace(/\s+/g, '');
 };
 
 export const parseModifier = (modStr: string | number | undefined): number => {
