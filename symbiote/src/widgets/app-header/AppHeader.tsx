@@ -3,8 +3,19 @@ import { useAppStore, useCombatStore, useRosterStore, wsBridge } from '../../sha
 import { GmAuthModal } from '../../features';
 
 export const AppHeader = () => {
-  const { role, activeTab, setRole, setActiveTab, scale, setScale, connected, vaultName, gmPin } =
-    useAppStore();
+  const {
+    role,
+    activeTab,
+    setRole,
+    setActiveTab,
+    scale,
+    setScale,
+    connected,
+    vaultName,
+    gmPin,
+    diceSecret,
+    setDiceSecret,
+  } = useAppStore();
   const { combatants, active: combatActive } = useCombatStore();
   const { roster } = useRosterStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -42,7 +53,7 @@ export const AppHeader = () => {
   return (
     <>
       <header className="h-11 bg-[#141622] border-b border-[#262a3d] px-2 flex items-center justify-between select-none shrink-0 z-30 gap-1.5 overflow-x-hidden">
-        {/* Left: Logo & Role Toggle */}
+        {/* Left: Logo, Role Toggle, GM Dice Mode */}
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="flex items-center gap-1 font-bold tracking-wider text-xs shrink-0">
             <span className="text-amber-400">TALE</span>
@@ -66,6 +77,31 @@ export const AppHeader = () => {
             <span>{isGm ? 'ГМ' : 'ИГРОК'}</span>
             <span className="text-[10px] opacity-70">▾</span>
           </button>
+
+          {isGm && (
+            <button
+              type="button"
+              className={`px-2 py-0.5 rounded text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                diceSecret
+                  ? 'bg-purple-600/25 text-purple-200 border-purple-500/50 hover:bg-purple-600/35 shadow-[0_0_8px_rgba(168,85,247,0.25)]'
+                  : 'bg-amber-500/20 text-amber-200 border-amber-500/50 hover:bg-amber-500/30'
+              }`}
+              onClick={() => setDiceSecret(!diceSecret)}
+              title={
+                diceSecret
+                  ? 'Броски Мастера: Скрытые (видны только вам в GM-лотке). Нажмите для переключения в открытые'
+                  : 'Броски Мастера: Открытые (видны всем в общем лотке). Нажмите для переключения в скрытые'
+              }
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  diceSecret ? 'bg-purple-400 animate-pulse' : 'bg-amber-400'
+                }`}
+              />
+              <span className="hidden xl:inline">Броски: </span>
+              <span>{diceSecret ? 'Скрытно' : 'В открытую'}</span>
+            </button>
+          )}
         </div>
 
         {/* Center: Tabs */}

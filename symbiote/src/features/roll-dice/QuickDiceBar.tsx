@@ -24,15 +24,24 @@ export const QuickDiceBar = () => {
         </span>
         <button
           type="button"
-          className={`px-2.5 py-0.5 rounded text-xs font-bold border cursor-pointer transition-colors ${
+          className={`px-2.5 py-0.5 rounded text-xs font-semibold border cursor-pointer transition-colors flex items-center gap-1 ${
             diceSecret
-              ? 'bg-purple-600/30 text-purple-300 border-purple-500/50'
-              : 'bg-[#10111a] text-slate-400 border-[#262a3d] hover:text-white'
+              ? 'bg-purple-600/25 text-purple-200 border-purple-500/50 hover:bg-purple-600/35 shadow-[0_0_8px_rgba(168,85,247,0.25)]'
+              : 'bg-amber-500/20 text-amber-200 border-amber-500/50 hover:bg-amber-500/30'
           }`}
           onClick={() => setDiceSecret(!diceSecret)}
-          title="Скрытый бросок (видит только ГМ)"
+          title={
+            diceSecret
+              ? 'Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в открытые'
+              : 'Броски Мастера: Открытые (общий лоток). Нажмите для переключения в скрытые'
+          }
         >
-          {diceSecret ? 'ГМ (Скрытно)' : 'Публично'}
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              diceSecret ? 'bg-purple-400 animate-pulse' : 'bg-amber-400'
+            }`}
+          />
+          <span>{diceSecret ? 'Скрытно' : 'В открытую'}</span>
         </button>
       </div>
 
