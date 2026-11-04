@@ -2,6 +2,73 @@
 
 (function() {
     class ManageCombatFeature {
+        constructor() {
+            window.TBState?.on('roster', (roster) => this.syncCombatantsFromRoster(roster));
+        }
+
+        /**
+         * Pulls fresh data from Obsidian vault via WebSocket
+         */
+        refreshCombatantsFromObsidian() {
+            if (window.TBNetwork) {
+                window.TBNetwork.send('GET_ROSTER', {});
+                window.TBNetwork.send('GET_SCENES', {});
+                const curChar = window.TBState?.get('playerCharacter');
+                if (curChar) {
+                    window.TBNetwork.send('GET_PLAYER_DATA', { characterName: curChar });
+                }
+                window.TBLogger?.log('Запрос обновления персонажей и атак из Obsidian...', 'sys');
+            }
+        }
+
+        /**
+         * Synchronizes active combatants with freshly updated roster data from Obsidian
+         */
+        syncCombatantsFromRoster(roster) {
+            if (!Array.isArray(roster) || roster.length === 0) return;
+            const list = [...(window.TBState?.get('combatants') || [])];
+            if (list.length === 0) return;
+
+            let updatedCount = 0;
+            list.forEach(c => {
+                const matched = roster.find(r => (c.path && r.path === c.path) || (r.name && r.name.toLowerCase() === (c.name || '').toLowerCase()));
+                if (matched) {
+                    let changed = false;
+                    // Update attacks
+                    if (Array.isArray(matched.attacks)) {
+                        c.attacks = matched.attacks;
+                        changed = true;
+                    }
+                    // Update stats & dexMod
+                    if (matched.stats) {
+                        c.stats = matched.stats;
+                        c.dexMod = this.extractDexModifier(c);
+                        changed = true;
+                    }
+                    // Update AC & Max HP
+                    if (matched.ac) {
+                        c.ac = Number(matched.ac) || c.ac;
+                        changed = true;
+                    }
+                    if (matched.hp_max || matched.hp) {
+                        c.maxHp = Number(matched.hp_max || matched.hp) || c.maxHp;
+                        changed = true;
+                    }
+                    if (matched.speed) {
+                        c.speed = matched.speed;
+                        changed = true;
+                    }
+                    if (changed) updatedCount++;
+                }
+            });
+
+            if (updatedCount > 0) {
+                window.TBState?.set('combatants', list);
+                this.syncCombatState();
+                window.TBLogger?.log(`Данные участников боя обновлены из Obsidian (${updatedCount} существ)`, 'sys');
+            }
+        }
+
         /**
          * Starts active combat encounter
          */

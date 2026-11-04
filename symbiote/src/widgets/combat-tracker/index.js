@@ -120,13 +120,16 @@
 
                 <div class="combat-quick-tools-bar">
                     <button id="btnCombatAddToken" class="btn-combat-tool" title="Добавить выбранную миниатюру на доске TaleSpire">
-                        + Выбранный токен
+                        + Токен
                     </button>
                     <button id="btnCombatAddRoster" class="btn-combat-tool" title="Добавить персонажа из ростера">
-                        + Из ростера ▾
+                        + Ростер ▾
                     </button>
                     <button id="btnCombatRollAll" class="btn-combat-tool" title="Автоматически бросить d20+ЛОВ всем участникам">
-                        Бросить всем d20
+                        Бросить всем
+                    </button>
+                    <button id="btnCombatSyncObsidian" class="btn-combat-tool sync" title="Подтянуть свежие данные персонажей, параметры и новые атаки из Obsidian">
+                        ⟳ Обновить
                     </button>
                     <button id="btnCombatClear" class="btn-combat-tool muted" title="Очистить всех участников">
                         Очистить
@@ -289,6 +292,7 @@
                         ${c.path || c.name ? `
                             <button class="btn-combatant-action note" data-path="${c.path || c.name}" title="Открыть заметку существа">Заметка</button>
                         ` : ''}
+                        <button class="btn-combatant-action sync" data-id="${c.id}" data-name="${this.escape(c.name)}" title="Обновить атаки и параметры этого существа из Obsidian">⟳</button>
                         <button class="btn-combatant-action remove" data-id="${c.id}" title="Удалить из боя">✕</button>
                     </div>
                 </div>
@@ -474,6 +478,25 @@
                     if (path && window.TBNoteViewer) {
                         window.TBNoteViewer.openNote(path);
                     }
+                };
+            });
+
+            // Refresh from Obsidian (Quick tool toolbar)
+            const btnSync = this.container.querySelector('#btnCombatSyncObsidian');
+            if (btnSync) {
+                btnSync.onclick = () => {
+                    btnSync.classList.add('rotating');
+                    window.TBFeatureManageCombat?.refreshCombatantsFromObsidian();
+                    setTimeout(() => btnSync.classList.remove('rotating'), 700);
+                };
+            }
+
+            // Individual creature refresh from Obsidian
+            this.container.querySelectorAll('.btn-combatant-action.sync').forEach(btn => {
+                btn.onclick = () => {
+                    btn.classList.add('rotating');
+                    window.TBFeatureManageCombat?.refreshCombatantsFromObsidian();
+                    setTimeout(() => btn.classList.remove('rotating'), 700);
                 };
             });
 

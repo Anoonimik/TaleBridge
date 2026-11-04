@@ -971,6 +971,22 @@ class TaleBridgePlugin extends obsidian.Plugin {
             }
         });
 
+        // Auto-sync when notes are modified or created in Obsidian
+        this.registerEvent(
+            this.app.vault.on('modify', (file) => {
+                if (file && file.extension === 'md') {
+                    this.debouncedScanCharacters(500);
+                }
+            })
+        );
+        this.registerEvent(
+            this.app.vault.on('create', (file) => {
+                if (file && file.extension === 'md') {
+                    this.debouncedScanCharacters(500);
+                }
+            })
+        );
+
         // Settings tab
         this.addSettingTab(new TaleBridgeSettingTab(this.app, this));
     }

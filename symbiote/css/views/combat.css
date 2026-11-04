@@ -208,6 +208,18 @@
     border-color: #f87171 !important;
 }
 
+.btn-combat-tool.sync {
+    background: rgba(14, 165, 233, 0.1);
+    border-color: #0284c7;
+    color: #7dd3fc;
+}
+
+.btn-combat-tool.sync:hover {
+    background: rgba(14, 165, 233, 0.2);
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
 /* Roster Dropdown Drawer */
 .combat-roster-dropdown {
     position: absolute;
@@ -798,6 +810,25 @@
 
 .btn-combatant-action.remove:hover {
     color: #ef4444;
+}
+
+.btn-combatant-action.sync {
+    color: #7dd3fc;
+}
+
+.btn-combatant-action.sync:hover {
+    color: #ffffff;
+    border-color: #38bdf8;
+    background: rgba(14, 165, 233, 0.2);
+}
+
+.rotating {
+    animation: combatSpin 0.7s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+}
+
+@keyframes combatSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 /* Conditions Picker Modal */
