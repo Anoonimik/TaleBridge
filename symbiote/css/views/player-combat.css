@@ -332,6 +332,12 @@
     color: #fca5a5;
 }
 
+.turn-order-cat-tag.neutral {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fde68a;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
 .turn-order-init {
     font-size: 9.5px;
     font-weight: 700;

@@ -119,10 +119,10 @@
                 </div>
 
                 <div class="combat-quick-tools-bar">
-                    <button id="btnCombatAddToken" class="btn-combat-tool" title="Добавить выбранную миниатюру на доске TaleSpire">
-                        + Токен
+                    <button id="btnCombatAddToken" class="btn-combat-tool" title="Добавить выбранную миниатюру в TaleSpire (клик для выбора стороны, Shift+клик для быстрого добавления)">
+                        + Токен ▾
                     </button>
-                    <button id="btnCombatAddRoster" class="btn-combat-tool" title="Добавить персонажа из ростера">
+                    <button id="btnCombatAddRoster" class="btn-combat-tool" title="Добавить персонажа из ростера с выбором стороны">
                         + Ростер ▾
                     </button>
                     <button id="btnCombatRollAll" class="btn-combat-tool" title="Автоматически бросить d20+ЛОВ всем участникам">
@@ -136,13 +136,49 @@
                     </button>
                 </div>
 
+                <!-- Dropdown selector for active token side adding -->
+                <div id="combatTokenDropdown" class="combat-token-dropdown" style="display: none;">
+                    <div class="combat-dropdown-header">
+                        <span>Вступить в бой (Токен на доске):</span>
+                        <button id="btnCloseTokenDropdown" class="btn-close-dropdown">✕</button>
+                    </div>
+                    <div id="combatTokenPreview" class="combat-token-preview"></div>
+                    <div class="combat-side-selector-label">Выберите сторону в бою:</div>
+                    <div class="combat-side-buttons-grid">
+                        <button type="button" class="btn-side-choice enemy" data-side="Враги" title="Добавить как Врага (красный маркер)">🔴 Враг</button>
+                        <button type="button" class="btn-side-choice ally" data-side="Союзники" title="Добавить как Союзника (зеленый маркер)">🟢 Союзник</button>
+                        <button type="button" class="btn-side-choice neutral" data-side="Нейтрал" title="Добавить как Нейтрала (желтый маркер)">🟡 Нейтрал</button>
+                        <button type="button" class="btn-side-choice player" data-side="Игроки" title="Добавить как Игрока (синий маркер)">🔵 Игрок</button>
+                    </div>
+                </div>
+
                 <!-- Dropdown selector for roster adding -->
                 <div id="combatRosterDropdown" class="combat-roster-dropdown" style="display: none;">
-                    <div class="combat-roster-dropdown-header">
-                        <span>Выберите персонажа:</span>
+                    <div class="combat-dropdown-header">
+                        <span>Добавить из ростера:</span>
                         <button id="btnCloseRosterDropdown" class="btn-close-dropdown">✕</button>
                     </div>
+                    <div class="combat-roster-search-box">
+                        <input type="text" id="combatRosterSearch" placeholder="Поиск персонажа или существа..." />
+                    </div>
+                    <div class="combat-roster-side-picker">
+                        <span class="side-picker-label">Сторона:</span>
+                        <button type="button" class="btn-roster-side-filter active" data-side="default" title="Использовать категорию из заметки">По умолч.</button>
+                        <button type="button" class="btn-roster-side-filter enemy" data-side="Враги" title="Вступать как Враг">🔴 Враг</button>
+                        <button type="button" class="btn-roster-side-filter ally" data-side="Союзники" title="Вступать как Союзник">🟢 Союзник</button>
+                        <button type="button" class="btn-roster-side-filter neutral" data-side="Нейтрал" title="Вступать как Нейтрал">🟡 Нейтрал</button>
+                        <button type="button" class="btn-roster-side-filter player" data-side="Игроки" title="Вступать как Игрок">🔵 Игрок</button>
+                    </div>
                     <div id="combatRosterList" class="combat-roster-list"></div>
+                </div>
+
+                <!-- Floating Side Switcher Popover for active Combatants -->
+                <div id="combatSideMenu" class="combat-side-menu" style="display: none;">
+                    <div class="combat-side-menu-header">Сменить сторону:</div>
+                    <button type="button" class="side-menu-btn enemy" data-side="Враги">🔴 Враг</button>
+                    <button type="button" class="side-menu-btn ally" data-side="Союзники">🟢 Союзник</button>
+                    <button type="button" class="side-menu-btn neutral" data-side="Нейтрал">🟡 Нейтрал</button>
+                    <button type="button" class="side-menu-btn player" data-side="Игроки">🔵 Игрок</button>
                 </div>
 
                 <div class="combatants-container">
@@ -181,8 +217,9 @@
 
             const category = c.category || (c.isPlayer ? 'Игроки' : 'Враги');
             let catClass = 'enemy';
-            if (c.isPlayer || category === 'Игроки') catClass = 'player';
-            else if (category === 'Союзники') catClass = 'ally';
+            if (c.isPlayer || category === 'Игроки' || category === 'Игрок') catClass = 'player';
+            else if (category === 'Союзники' || category === 'Союзник') catClass = 'ally';
+            else if (category === 'Нейтрал' || category === 'Нейтралы' || category === 'Нейтральный') catClass = 'neutral';
 
             const dexMod = window.TBFeatureManageCombat?.extractDexModifier(c) || 0;
             const modStr = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
@@ -216,7 +253,9 @@
                     <div class="combatant-main-info">
                         <div class="combatant-top-row">
                             <span class="combatant-name" title="${this.escape(c.name)}">${this.escape(c.name)}</span>
-                            <span class="combatant-cat-badge ${catClass}">${this.escape(category)}</span>
+                            <button type="button" class="combatant-cat-badge ${catClass} interactive" data-id="${c.id}" title="Сменить сторону (кликните для выбора: Враг / Союзник / Нейтрал / Игрок)">
+                                ${this.escape(category)} ▾
+                            </button>
                             <span class="combatant-ac-badge" title="Класс доспеха">КД: ${c.ac || 10}</span>
                             ${c.speed ? `<span class="combatant-speed-badge" title="Скорость">${c.speed}</span>` : ''}
                         </div>
@@ -327,8 +366,67 @@
 
             // Quick Tool Buttons
             const btnAddToken = this.container.querySelector('#btnCombatAddToken');
-            if (btnAddToken) {
-                btnAddToken.onclick = () => window.TBFeatureManageCombat?.addSelectedToken();
+            const tokenDropdown = this.container.querySelector('#combatTokenDropdown');
+            const tokenPreviewEl = this.container.querySelector('#combatTokenPreview');
+            const btnCloseTokenDropdown = this.container.querySelector('#btnCloseTokenDropdown');
+
+            const btnAddRoster = this.container.querySelector('#btnCombatAddRoster');
+            const dropdown = this.container.querySelector('#combatRosterDropdown');
+            const rosterListEl = this.container.querySelector('#combatRosterList');
+            const btnCloseDropdown = this.container.querySelector('#btnCloseRosterDropdown');
+            const rosterSearchInput = this.container.querySelector('#combatRosterSearch');
+
+            if (btnAddToken && tokenDropdown) {
+                btnAddToken.onclick = (e) => {
+                    e.stopPropagation();
+                    if (dropdown) dropdown.style.display = 'none';
+
+                    // Shift+Click: Instant add with default side
+                    if (e.shiftKey) {
+                        tokenDropdown.style.display = 'none';
+                        window.TBFeatureManageCombat?.addSelectedToken();
+                        return;
+                    }
+
+                    const isVisible = tokenDropdown.style.display !== 'none';
+                    if (isVisible) {
+                        tokenDropdown.style.display = 'none';
+                    } else {
+                        const token = window.TBState?.get('activeToken');
+                        if (tokenPreviewEl) {
+                            if (token) {
+                                tokenPreviewEl.innerHTML = `
+                                    <div class="token-preview-card">
+                                        <span class="token-preview-dot"></span>
+                                        <strong class="token-preview-name">${this.escape(token.name)}</strong>
+                                        <span class="token-preview-hp">${token.hp || 14}/${token.maxHp || token.hp || 14} HP</span>
+                                    </div>
+                                `;
+                            } else {
+                                tokenPreviewEl.innerHTML = `
+                                    <div class="token-preview-empty">
+                                        Миниатюра не выбрана в TaleSpire.<br>
+                                        <span class="token-sub-hint">Кликните по фигурке на доске, затем выберите сторону.</span>
+                                    </div>
+                                `;
+                            }
+                        }
+                        tokenDropdown.style.display = 'block';
+                    }
+                };
+
+                if (btnCloseTokenDropdown) {
+                    btnCloseTokenDropdown.onclick = () => { tokenDropdown.style.display = 'none'; };
+                }
+
+                tokenDropdown.querySelectorAll('.btn-side-choice').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        const side = btn.dataset.side;
+                        window.TBFeatureManageCombat?.addSelectedToken(side);
+                        tokenDropdown.style.display = 'none';
+                    };
+                });
             }
 
             const btnRollAll = this.container.querySelector('#btnCombatRollAll');
@@ -368,27 +466,101 @@
             }
 
             // Add from Roster Dropdown
-            const btnAddRoster = this.container.querySelector('#btnCombatAddRoster');
-            const dropdown = this.container.querySelector('#combatRosterDropdown');
-            const rosterListEl = this.container.querySelector('#combatRosterList');
-            const btnCloseDropdown = this.container.querySelector('#btnCloseRosterDropdown');
-
             if (btnAddRoster && dropdown && rosterListEl) {
+                this.selectedRosterSide = this.selectedRosterSide || 'default';
+                this.rosterSearchQuery = '';
+
                 btnAddRoster.onclick = (e) => {
                     e.stopPropagation();
+                    if (tokenDropdown) tokenDropdown.style.display = 'none';
+
                     const isVisible = dropdown.style.display !== 'none';
                     if (isVisible) {
                         dropdown.style.display = 'none';
                     } else {
                         this.renderRosterDropdown(rosterListEl, dropdown);
                         dropdown.style.display = 'block';
+                        if (rosterSearchInput) {
+                            rosterSearchInput.value = '';
+                            rosterSearchInput.focus();
+                        }
                     }
                 };
 
                 if (btnCloseDropdown) {
                     btnCloseDropdown.onclick = () => { dropdown.style.display = 'none'; };
                 }
+
+                if (rosterSearchInput) {
+                    rosterSearchInput.oninput = () => {
+                        this.rosterSearchQuery = rosterSearchInput.value.trim().toLowerCase();
+                        this.renderRosterDropdown(rosterListEl, dropdown);
+                    };
+                }
+
+                dropdown.querySelectorAll('.btn-roster-side-filter').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        dropdown.querySelectorAll('.btn-roster-side-filter').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.selectedRosterSide = btn.dataset.side;
+                    };
+                });
             }
+
+            // Combatant side switcher menu
+            const sideMenu = this.container.querySelector('#combatSideMenu');
+            let activeSideCombatantId = null;
+
+            this.container.querySelectorAll('.combatant-cat-badge.interactive').forEach(badge => {
+                badge.onclick = (e) => {
+                    e.stopPropagation();
+                    const combatantId = badge.dataset.id;
+                    if (sideMenu && sideMenu.style.display !== 'none' && activeSideCombatantId === combatantId) {
+                        sideMenu.style.display = 'none';
+                        activeSideCombatantId = null;
+                        return;
+                    }
+
+                    activeSideCombatantId = combatantId;
+                    if (sideMenu) {
+                        const rect = badge.getBoundingClientRect();
+                        const containerRect = this.container.getBoundingClientRect();
+
+                        sideMenu.style.top = `${rect.bottom - containerRect.top + 4}px`;
+                        sideMenu.style.left = `${Math.max(8, rect.left - containerRect.left)}px`;
+                        sideMenu.style.display = 'flex';
+                    }
+                };
+            });
+
+            if (sideMenu) {
+                sideMenu.querySelectorAll('.side-menu-btn').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        const side = btn.dataset.side;
+                        if (activeSideCombatantId && side) {
+                            window.TBFeatureManageCombat?.setCombatantCategory(activeSideCombatantId, side);
+                        }
+                        sideMenu.style.display = 'none';
+                        activeSideCombatantId = null;
+                    };
+                });
+            }
+
+            // Close floating side menu and dropdowns when clicking outside
+            this.container.addEventListener('click', (e) => {
+                if (sideMenu && !e.target.closest('.combat-side-menu') && !e.target.closest('.combatant-cat-badge.interactive')) {
+                    sideMenu.style.display = 'none';
+                    activeSideCombatantId = null;
+                }
+                if (tokenDropdown && !e.target.closest('#combatTokenDropdown') && !e.target.closest('#btnCombatAddToken')) {
+                    tokenDropdown.style.display = 'none';
+                }
+                if (dropdown && !e.target.closest('#combatRosterDropdown') && !e.target.closest('#btnCombatAddRoster')) {
+                    dropdown.style.display = 'none';
+                }
+            });
 
             // Combatant Actions (Initiative Input, HP Delta, Conditions, Remove)
             this.container.querySelectorAll('.combatant-init-input').forEach(input => {
@@ -509,36 +681,69 @@
         }
 
         renderRosterDropdown(container, dropdown) {
-            const roster = window.TBState?.get('roster') || [];
+            let roster = window.TBState?.get('roster') || [];
             if (roster.length === 0) {
                 container.innerHTML = '<div class="empty-hint">Ростер пуст. Синхронизируйте заметки в Obsidian.</div>';
                 return;
             }
 
+            if (this.rosterSearchQuery) {
+                roster = roster.filter(r => (r.name && r.name.toLowerCase().includes(this.rosterSearchQuery)) || (r.category && r.category.toLowerCase().includes(this.rosterSearchQuery)));
+            }
+
+            if (roster.length === 0) {
+                container.innerHTML = '<div class="empty-hint">Ничего не найдено по запросу</div>';
+                return;
+            }
+
             container.innerHTML = roster.map(r => `
                 <div class="roster-dropdown-item" data-name="${this.escape(r.name)}">
-                    <span class="dropdown-item-name">${this.escape(r.name)}</span>
-                    <span class="dropdown-item-meta">${r.category || 'Существо'} • КД ${r.ac || 10} • ${r.hp || 10} HP</span>
+                    <div class="dropdown-item-main">
+                        <span class="dropdown-item-name">${this.escape(r.name)}</span>
+                        <span class="dropdown-item-meta">${r.category || 'Существо'} • КД ${r.ac || 10} • ${r.hp || 10} HP</span>
+                    </div>
+                    <div class="dropdown-item-side-chips">
+                        <button type="button" class="btn-roster-add-side enemy" data-name="${this.escape(r.name)}" data-side="Враги" title="Добавить как Врага">Враг</button>
+                        <button type="button" class="btn-roster-add-side ally" data-name="${this.escape(r.name)}" data-side="Союзники" title="Добавить как Союзника">Союзник</button>
+                        <button type="button" class="btn-roster-add-side neutral" data-name="${this.escape(r.name)}" data-side="Нейтрал" title="Добавить как Нейтрала">Нейтрал</button>
+                    </div>
                 </div>
             `).join('');
 
+            const addWithCategory = (name, side) => {
+                const found = roster.find(r => r.name === name);
+                if (found) {
+                    const finalCategory = (side && side !== 'default') ? side : (found.category || 'Враги');
+                    window.TBFeatureManageCombat?.addCombatant({
+                        name: found.name,
+                        category: finalCategory,
+                        hp: found.hp || 10,
+                        maxHp: found.hp_max || found.hp || 10,
+                        ac: found.ac || 10,
+                        speed: found.speed || '30 фт.',
+                        path: found.path || null,
+                        isPlayer: Boolean(finalCategory === 'Игроки' || found.playable || found.category === 'Игроки')
+                    });
+                    dropdown.style.display = 'none';
+                }
+            };
+
+            // Direct side buttons on each row
+            container.querySelectorAll('.btn-roster-add-side').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const name = btn.dataset.name;
+                    const side = btn.dataset.side;
+                    addWithCategory(name, side);
+                };
+            });
+
+            // Clicking row uses currently active side filter
             container.querySelectorAll('.roster-dropdown-item').forEach(item => {
-                item.onclick = () => {
+                item.onclick = (e) => {
+                    if (e.target.closest('.btn-roster-add-side')) return;
                     const name = item.dataset.name;
-                    const found = roster.find(r => r.name === name);
-                    if (found) {
-                        window.TBFeatureManageCombat?.addCombatant({
-                            name: found.name,
-                            category: found.category || 'Враги',
-                            hp: found.hp || 10,
-                            maxHp: found.hp_max || found.hp || 10,
-                            ac: found.ac || 10,
-                            speed: found.speed || '30 фт.',
-                            path: found.path || null,
-                            isPlayer: Boolean(found.playable || found.category === 'Игроки')
-                        });
-                        dropdown.style.display = 'none';
-                    }
+                    addWithCategory(name, this.selectedRosterSide);
                 };
             });
         }

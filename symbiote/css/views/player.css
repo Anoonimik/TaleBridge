@@ -607,6 +607,15 @@
     background: rgba(239, 68, 68, 0.15);
 }
 
+.btn-atk-manage.delete.confirm-delete {
+    background: #ef4444 !important;
+    border-color: #f87171 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    padding: 2px 8px !important;
+    font-size: 10px !important;
+}
+
 /* Modal for Adding / Editing Actions */
 .action-modal-overlay {
     position: fixed;

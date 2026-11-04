@@ -156,8 +156,9 @@
                                     const hasActed = idx < turnIndex;
 
                                     let catClass = 'enemy';
-                                    if (c.isPlayer || c.category === 'Игроки') catClass = 'player';
-                                    else if (c.category === 'Союзники') catClass = 'ally';
+                                    if (c.isPlayer || c.category === 'Игроки' || c.category === 'Игрок') catClass = 'player';
+                                    else if (c.category === 'Союзники' || c.category === 'Союзник') catClass = 'ally';
+                                    else if (c.category === 'Нейтрал' || c.category === 'Нейтралы' || c.category === 'Нейтральный') catClass = 'neutral';
 
                                     const conditions = Array.isArray(c.conditions) ? c.conditions : [];
 

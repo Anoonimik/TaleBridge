@@ -730,13 +730,15 @@
 
         deleteAction(data, index) {
             if (!data.attacks || index < 0 || index >= data.attacks.length) return;
-            data.attacks.splice(index, 1);
+            const removed = data.attacks.splice(index, 1);
             if (window.TBNetwork) {
                 window.TBNetwork.send('UPDATE_CHARACTER_ACTIONS', {
                     characterName: data.name,
                     attacks: data.attacks
                 });
             }
+            window.TBState?.set('playerData', { ...data, attacks: data.attacks });
+            window.TBLogger?.log(`Действие "${removed[0]?.name || 'Атака'}" удалено`, 'sys');
             const charPane = this.container?.querySelector('#pTabCharacter');
             if (charPane) {
                 charPane.innerHTML = this.renderCharacterSheet(data);
@@ -1092,13 +1094,37 @@
                 });
             });
 
+            // 2-step inline delete (or Shift+Click for instant delete) without blocking window.confirm()
             this.container.querySelectorAll('.btn-atk-manage.delete').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const idx = parseInt(btn.dataset.index, 10);
-                    if (confirm(`Удалить действие "${data.attacks[idx]?.name || 'Атака'}"?`)) {
+                    if (e.shiftKey || btn.dataset.primed === 'true') {
+                        if (btn._resetTimer) clearTimeout(btn._resetTimer);
                         this.deleteAction(data, idx);
+                        return;
                     }
+
+                    // Reset any other primed delete buttons
+                    this.container.querySelectorAll('.btn-atk-manage.delete[data-primed="true"]').forEach(other => {
+                        if (other._resetTimer) clearTimeout(other._resetTimer);
+                        other.dataset.primed = 'false';
+                        other.classList.remove('confirm-delete');
+                        other.textContent = '✕';
+                        other.title = 'Удалить действие';
+                    });
+
+                    btn.dataset.primed = 'true';
+                    btn.classList.add('confirm-delete');
+                    btn.textContent = 'Удалить?';
+                    btn.title = 'Нажмите ещё раз для подтверждения (или Shift+Клик)';
+
+                    btn._resetTimer = setTimeout(() => {
+                        btn.dataset.primed = 'false';
+                        btn.classList.remove('confirm-delete');
+                        btn.textContent = '✕';
+                        btn.title = 'Удалить действие';
+                    }, 3500);
                 });
             });
 

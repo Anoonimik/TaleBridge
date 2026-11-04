@@ -269,12 +269,17 @@
                 dexMod = this.extractDexModifier({ name: data.name, stats, isPlayer: data.isPlayer });
             }
 
+            const category = data.category || 'Враги';
+            const isPlayer = Boolean(data.isPlayer || data.playable || category === 'Игроки');
+
             // Check if already in combat
             const existingIdx = list.findIndex(c => (c.creatureId && c.creatureId === data.creatureId) || (c.name.toLowerCase() === data.name.toLowerCase()));
             if (existingIdx >= 0) {
                 list[existingIdx] = {
                     ...list[existingIdx],
                     ...data,
+                    category: data.category || list[existingIdx].category,
+                    isPlayer: data.category ? (data.category === 'Игроки') : list[existingIdx].isPlayer,
                     stats: stats || list[existingIdx].stats,
                     dexMod: dexMod !== null ? dexMod : list[existingIdx].dexMod,
                     attacks: (attacks && attacks.length > 0) ? attacks : (list[existingIdx].attacks || [])
@@ -288,11 +293,11 @@
                     maxHp: Number(data.maxHp ?? 10),
                     ac: Number(data.ac ?? 10),
                     speed: data.speed || '30 фт.',
-                    category: data.category || 'Враги',
+                    category,
                     conditions: Array.isArray(data.conditions) ? data.conditions : [],
                     creatureId: data.creatureId || null,
                     path: data.path || null,
-                    isPlayer: Boolean(data.isPlayer || data.playable || data.category === 'Игроки'),
+                    isPlayer,
                     stats,
                     dexMod,
                     attacks: attacks || []
@@ -444,8 +449,9 @@
 
         /**
          * Adds currently selected token from TaleSpire board
+         * @param {string} [targetCategory] - Optional side override ('Враги', 'Союзники', 'Нейтрал', 'Игроки')
          */
-        async addSelectedToken() {
+        async addSelectedToken(targetCategory = null) {
             const token = window.TBState?.get('activeToken');
             if (!token) {
                 window.TBLogger?.log('Нет выбранной миниатюры в TaleSpire', 'sys');
@@ -454,23 +460,41 @@
 
             const roster = window.TBState?.get('roster') || [];
             const matched = roster.find(r => r.name.toLowerCase() === token.name.toLowerCase());
+            const category = targetCategory || matched?.category || 'Враги';
 
             this.addCombatant({
                 name: token.name,
-                category: matched?.category || 'Враги',
+                category,
                 hp: token.hp || matched?.hp || 14,
                 maxHp: token.maxHp || matched?.hp_max || matched?.hp || 14,
                 ac: matched?.ac || 12,
                 speed: matched?.speed || '30 фт.',
                 creatureId: token.id,
                 path: matched?.path || null,
-                isPlayer: Boolean(matched?.playable || matched?.category === 'Игроки'),
+                isPlayer: Boolean(category === 'Игроки' || matched?.playable || matched?.category === 'Игроки'),
                 stats: matched?.stats,
                 dexMod: matched?.dexMod,
                 attacks: matched?.attacks
             });
 
-            window.TBLogger?.log(`Миниатюра [${token.name}] добавлена в трекер боя`, 'sys');
+            window.TBLogger?.log(`Миниатюра [${token.name}] добавлена в трекер боя (${category})`, 'sys');
+        }
+
+        /**
+         * Changes faction / side of an active combatant
+         * @param {string} id - Combatant ID
+         * @param {string} newCategory - 'Враги' | 'Союзники' | 'Нейтрал' | 'Игроки'
+         */
+        setCombatantCategory(id, newCategory) {
+            const list = [...(window.TBState?.get('combatants') || [])];
+            const c = list.find(item => item.id === id);
+            if (!c) return;
+
+            c.category = newCategory;
+            c.isPlayer = (newCategory === 'Игроки');
+            window.TBState?.set('combatants', list);
+            this.syncCombatState();
+            window.TBLogger?.log(`Сторона "${c.name}" изменена на: ${newCategory}`, 'sys');
         }
 
         /**
