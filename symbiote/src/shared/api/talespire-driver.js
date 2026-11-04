@@ -4,6 +4,8 @@
     class TaleSpireDriver {
         constructor() {
             this.isInitialized = false;
+            this.pendingRollResolvers = new Map();
+            this.latestPendingRoll = null;
         }
 
         isReady() {
@@ -21,6 +23,50 @@
                 return `1d20${str.replace(/\s+/g, '')}`;
             }
             return str;
+        }
+
+        parseRollResults(rollResults) {
+            if (!rollResults) return null;
+
+            if (typeof rollResults.total === 'number') return rollResults.total;
+            if (typeof rollResults.value === 'number') return rollResults.value;
+
+            if (Array.isArray(rollResults.results) && rollResults.results.length > 0) {
+                return rollResults.results.reduce((sum, r) => {
+                    const v = typeof r === 'number' ? r : (r && typeof r.value === 'number' ? r.value : 0);
+                    return sum + v;
+                }, 0);
+            }
+
+            const groups = rollResults.resultsGroups || rollResults.resultsGroup;
+            if (Array.isArray(groups) && groups.length > 0) {
+                let sum = 0;
+                let foundAny = false;
+                for (const g of groups) {
+                    if (typeof g.total === 'number') {
+                        sum += g.total;
+                        foundAny = true;
+                    } else if (typeof g.value === 'number') {
+                        sum += g.value;
+                        foundAny = true;
+                    } else if (Array.isArray(g.results)) {
+                        for (const r of g.results) {
+                            const v = typeof r === 'number' ? r : (r && typeof r.value === 'number' ? r.value : 0);
+                            sum += v;
+                            foundAny = true;
+                        }
+                    } else if (Array.isArray(g.operands)) {
+                        for (const op of g.operands) {
+                            const v = typeof op === 'number' ? op : (op && typeof op.value === 'number' ? op.value : 0);
+                            sum += v;
+                            foundAny = true;
+                        }
+                    }
+                }
+                if (foundAny) return sum;
+            }
+
+            return null;
         }
 
         async rollDice(formula, name = 'Бросок', isGmOnly = null) {
@@ -64,10 +110,94 @@
                 }
 
                 window.TBLogger?.log(`Бросок отправлен в лоток TaleSpire [${trayLabel}]: ${clean}`, 'sys');
-                await window.TS.dice.putDiceInTray(descriptors, isSecret);
+                const rollId = await window.TS.dice.putDiceInTray(descriptors, isSecret);
+                return rollId;
             } catch (err) {
                 window.TBLogger?.log(`Ошибка TS.dice.putDiceInTray: ${err.message}`, 'err');
                 console.error('TaleSpire putDiceInTray error:', err);
+            }
+        }
+
+        async rollAndWait(formula, name = 'Бросок', isGmOnly = null, timeoutMs = 25000) {
+            const clean = this.cleanFormula(formula);
+
+            let isSecret = true;
+            if (typeof isGmOnly === 'boolean') {
+                isSecret = isGmOnly;
+            } else {
+                const currentRole = window.TBState?.get('role') || 'gm';
+                isSecret = (currentRole !== 'player');
+            }
+
+            const trayLabel = isSecret ? 'GM-лоток (скрытый)' : 'общий лоток (открытый)';
+            window.TBLogger?.log(`Запуск ожидаемого броска [${trayLabel}]: ${clean} (${name})`, 'out');
+
+            if (!this.isReady() || !window.TS.dice || !window.TS.dice.putDiceInTray) {
+                window.TBLogger?.log(`Запрос броска в TaleSpire через Obsidian: ${clean}`, 'out');
+                if (window.TBNetwork) {
+                    window.TBNetwork.send('REQUEST_ROLL', { formula: clean, name, isGmOnly: isSecret });
+                }
+                // Simulate physical roll delay outside TaleSpire
+                await new Promise(res => setTimeout(res, 1800));
+                let fallbackVal = Math.floor(Math.random() * 20) + 1;
+                const matchD = clean.match(/d(\d+)/i);
+                if (matchD) {
+                    const sides = parseInt(matchD[1], 10) || 20;
+                    fallbackVal = Math.floor(Math.random() * sides) + 1;
+                }
+                return { total: fallbackVal, simulated: true };
+            }
+
+            try {
+                let descriptors = null;
+                if (typeof window.TS.dice.makeRollDescriptors === 'function') {
+                    descriptors = await window.TS.dice.makeRollDescriptors(clean);
+                }
+
+                if (!descriptors || !Array.isArray(descriptors) || descriptors.length === 0) {
+                    descriptors = [{ name: name, roll: clean }];
+                } else {
+                    descriptors.forEach(d => {
+                        if (name) d.name = name;
+                    });
+                }
+
+                window.TBLogger?.log(`Бросок отправлен в лоток TaleSpire [${trayLabel}]: ${clean}. Ожидание кубика...`, 'sys');
+                const rollId = await window.TS.dice.putDiceInTray(descriptors, isSecret);
+
+                return await new Promise((resolve) => {
+                    let timer = null;
+
+                    const resolver = (rollResults) => {
+                        if (timer) clearTimeout(timer);
+                        let total = this.parseRollResults(rollResults);
+                        if (total === null || isNaN(total)) {
+                            total = Math.floor(Math.random() * 20) + 1;
+                        }
+                        resolve({ total, rollResults, rollId });
+                    };
+
+                    timer = setTimeout(() => {
+                        if (rollId && this.pendingRollResolvers.has(String(rollId))) {
+                            this.pendingRollResolvers.delete(String(rollId));
+                        }
+                        if (this.latestPendingRoll === resolver) {
+                            this.latestPendingRoll = null;
+                        }
+                        const fallback = Math.floor(Math.random() * 20) + 1;
+                        window.TBLogger?.log(`Таймаут ожидания физического кубика (${timeoutMs}мс). Результат: ${fallback}`, 'sys');
+                        resolve({ total: fallback, timeout: true });
+                    }, timeoutMs);
+
+                    if (rollId) {
+                        this.pendingRollResolvers.set(String(rollId), resolver);
+                    }
+                    this.latestPendingRoll = resolver;
+                });
+            } catch (err) {
+                window.TBLogger?.log(`Ошибка TS.dice.putDiceInTray: ${err.message}`, 'err');
+                console.error('TaleSpire rollAndWait error:', err);
+                return { total: Math.floor(Math.random() * 20) + 1, error: err.message };
             }
         }
 
@@ -250,18 +380,37 @@
     };
 
     window.handleRollResults = function(rollResults) {
-        if (rollResults) {
-            let total = 0;
-            if (rollResults.results && Array.isArray(rollResults.results)) {
-                total = rollResults.results.reduce((sum, r) => sum + (r.value || 0), 0);
+        if (!rollResults) return;
+
+        const total = driverInstance.parseRollResults(rollResults);
+        const rollId = rollResults.rollId || rollResults.id;
+
+        let resolver = null;
+        if (rollId && driverInstance.pendingRollResolvers.has(String(rollId))) {
+            resolver = driverInstance.pendingRollResolvers.get(String(rollId));
+            driverInstance.pendingRollResolvers.delete(String(rollId));
+        } else if (driverInstance.latestPendingRoll) {
+            resolver = driverInstance.latestPendingRoll;
+            driverInstance.latestPendingRoll = null;
+        }
+
+        if (resolver) {
+            try {
+                resolver(rollResults);
+            } catch (e) {
+                console.error('Error invoking roll resolver:', e);
             }
-            if (window.TBNetwork) {
-                window.TBNetwork.send('DICE_RESULT', {
-                    total: total || rollResults.kind || 'Завершен',
-                    name: 'Бросок',
-                    raw: rollResults
-                });
-            }
+        }
+
+        const displayTotal = total !== null ? total : (rollResults.kind || 'Завершен');
+        window.TBLogger?.log(`Кубик в лотке TaleSpire остановился: результат [${displayTotal}]`, 'sys');
+
+        if (window.TBNetwork) {
+            window.TBNetwork.send('DICE_RESULT', {
+                total: displayTotal,
+                name: 'Бросок',
+                raw: rollResults
+            });
         }
     };
 

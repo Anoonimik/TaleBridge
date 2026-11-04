@@ -6,6 +6,7 @@
             this.container = null;
             this.activeSubTab = 'character'; // 'character' | 'inventory' | 'notes' | 'clues'
             this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
+            this.isRollingDeathSave = false;
         }
 
         init(containerId = 'playerContainer') {
@@ -314,7 +315,9 @@
                         </div>
                     </div>
                     <div class="death-save-buttons">
-                        <button id="btnRollDeathSave" class="btn-death-save">🎲 Бросить спасбросок (d20)</button>
+                        <button id="btnRollDeathSave" class="btn-death-save ${this.isRollingDeathSave ? 'rolling' : ''}" ${this.isRollingDeathSave || ds.status ? 'disabled' : ''}>
+                            ${this.isRollingDeathSave ? 'Кубик брошен в TaleSpire...' : 'Бросить спасбросок (d20)'}
+                        </button>
                         <button id="btnResetDeathSaves" class="btn-death-reset" title="Сбросить спасброски">Сброс</button>
                     </div>
                     ${ds.status ? `<div class="death-save-status ${ds.statusClass || ''}">${ds.status}</div>` : ''}
@@ -508,41 +511,64 @@
             }
         }
 
-        handleDeathSaveRoll(data) {
+        async handleDeathSaveRoll(data) {
             if (this.deathSaves.status === 'Стабилизирован' || this.deathSaves.status === 'Мёртв') {
                 return;
             }
+            if (this.isRollingDeathSave) {
+                return;
+            }
 
-            window.TBFeatureRollDice?.roll('1d20', `${data.name}: Спасбросок от смерти`, false);
+            this.isRollingDeathSave = true;
 
-            const d20 = Math.floor(Math.random() * 20) + 1;
+            const rollBtn = this.container?.querySelector('#btnRollDeathSave');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.classList.add('rolling');
+                rollBtn.textContent = 'Кубик брошен в TaleSpire...';
+            }
+
+            let rollOutcome = null;
+            try {
+                if (window.TBFeatureRollDice && typeof window.TBFeatureRollDice.rollAndWait === 'function') {
+                    rollOutcome = await window.TBFeatureRollDice.rollAndWait('1d20', `${data.name}: Спасбросок от смерти`, false);
+                } else if (window.TBApi && typeof window.TBApi.rollAndWait === 'function') {
+                    rollOutcome = await window.TBApi.rollAndWait('1d20', `${data.name}: Спасбросок от смерти`, false);
+                }
+            } catch (err) {
+                console.error('Error during death save rollAndWait:', err);
+            } finally {
+                this.isRollingDeathSave = false;
+            }
+
+            const d20 = (rollOutcome && typeof rollOutcome.total === 'number') ? rollOutcome.total : (Math.floor(Math.random() * 20) + 1);
             let msg = '';
 
-            if (d20 === 20) {
+            if (d20 >= 20) {
                 this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
                 if (window.TBFeatureApplyDamage) {
                     window.TBFeatureApplyDamage.modifyHp(data, 1, this.container);
                 }
-                msg = `🌟 ${data.name} выбрасывает [20] на спасброске от смерти и поднимается с 1 ХП!`;
+                msg = `${data.name} выбрасывает [20] на спасброске от смерти и поднимается с 1 ХП!`;
             } else if (d20 === 1) {
                 this.deathSaves.failures = Math.min(3, this.deathSaves.failures + 2);
-                msg = `💀 ${data.name} выбрасывает [1] на спасброске от смерти: сразу 2 ПРОВАЛА!`;
+                msg = `${data.name} выбрасывает [1] на спасброске от смерти: 2 провала (${this.deathSaves.failures}/3)!`;
             } else if (d20 >= 10) {
                 this.deathSaves.successes = Math.min(3, this.deathSaves.successes + 1);
-                msg = `🛡️ ${data.name} спасбросок от смерти [${d20}]: УСПЕХ (${this.deathSaves.successes}/3)`;
+                msg = `${data.name} спасбросок от смерти [${d20}]: Успех (${this.deathSaves.successes}/3)`;
             } else {
                 this.deathSaves.failures = Math.min(3, this.deathSaves.failures + 1);
-                msg = `⚠️ ${data.name} спасбросок от смерти [${d20}]: ПРОВАЛ (${this.deathSaves.failures}/3)`;
+                msg = `${data.name} спасбросок от смерти [${d20}]: Провал (${this.deathSaves.failures}/3)`;
             }
 
             if (this.deathSaves.successes >= 3) {
                 this.deathSaves.status = 'Стабилизирован';
                 this.deathSaves.statusClass = 'stabilized';
-                msg += ` — ${data.name} стабилизирован!`;
+                msg += ` - Персонаж стабилизирован!`;
             } else if (this.deathSaves.failures >= 3) {
                 this.deathSaves.status = 'Мёртв';
                 this.deathSaves.statusClass = 'dead';
-                msg += ` — ${data.name} погибает (3 провала)...`;
+                msg += ` - Персонаж погиб (3 провала).`;
             }
 
             if (window.TBApi?.sendChatMessage && msg) {
@@ -909,6 +935,34 @@
                     }
                 });
             }
+
+            // Interactive Death Save bubbles (manual toggle)
+            this.container.querySelectorAll('.death-bubble').forEach(bubble => {
+                bubble.addEventListener('click', () => {
+                    const type = bubble.dataset.type; // 'success' | 'failure'
+                    const idx = parseInt(bubble.dataset.idx, 10);
+                    if (type === 'success') {
+                        this.deathSaves.successes = (this.deathSaves.successes === idx) ? idx - 1 : idx;
+                    } else if (type === 'failure') {
+                        this.deathSaves.failures = (this.deathSaves.failures === idx) ? idx - 1 : idx;
+                    }
+                    if (this.deathSaves.successes >= 3) {
+                        this.deathSaves.status = 'Стабилизирован';
+                        this.deathSaves.statusClass = 'stabilized';
+                    } else if (this.deathSaves.failures >= 3) {
+                        this.deathSaves.status = 'Мёртв';
+                        this.deathSaves.statusClass = 'dead';
+                    } else {
+                        this.deathSaves.status = null;
+                        this.deathSaves.statusClass = '';
+                    }
+                    const charPane = this.container?.querySelector('#pTabCharacter');
+                    if (charPane) {
+                        charPane.innerHTML = this.renderCharacterSheet(data);
+                        this.bindSheetEvents(data);
+                    }
+                });
+            });
 
             // Resource bubble clicks
             this.container.querySelectorAll('.resource-bubble').forEach(bubble => {

@@ -24,6 +24,20 @@
         }
 
         /**
+         * Rolls dice formula and waits asynchronously for physical 3D dice in TaleSpire to settle
+         * @param {string} formula 
+         * @param {string} label 
+         * @param {boolean|null} isGmOnly
+         * @returns {Promise<{total: number, rollResults?: any, rollId?: string}>}
+         */
+        async rollAndWait(formula, label = 'Бросок', isGmOnly = null) {
+            if (window.TBApi && typeof window.TBApi.rollAndWait === 'function') {
+                return await window.TBApi.rollAndWait(formula, label, isGmOnly);
+            }
+            return { total: Math.floor(Math.random() * 20) + 1 };
+        }
+
+        /**
          * Rolls initiative for character
          * @param {string} charName 
          * @param {boolean|null} isGmOnly
