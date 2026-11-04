@@ -29,9 +29,7 @@
                 Авто: ВЫКЛ
             </button>
             <!-- GM Dice Visibility Toggle: Secret (GM Tray) vs Open (Public Tray) -->
-            <button id="btnGmDiceMode" type="button" class="btn-gm-dice-mode secret"
-                onclick="window.TBToggleDiceMode ? window.TBToggleDiceMode(event) : (window.TBWidgetAppHeader && window.TBWidgetAppHeader.toggleGmDiceMode(event))"
-                title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в Открытые">
+            <button id="btnGmDiceMode" type="button" class="btn-gm-dice-mode secret" title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в Открытые">
                 Броски: Скрытые
             </button>
             <button id="btnScaleToggle" type="button" class="btn-scale-toggle" title="Переключить масштаб интерфейса (100% / 85%)">
@@ -81,7 +79,6 @@
         <button class="tab-btn active" data-tab="tab-story">Сюжет</button>
         <button class="tab-btn" data-tab="tab-characters">Персонажи</button>
         <button class="tab-btn" data-tab="tab-combat">Бой <span id="combatBadge" class="combat-badge" style="display: none;">R1</span></button>
-        <button class="tab-btn" data-tab="tab-note">Заметка</button>
         <button class="tab-btn" data-tab="tab-tools">Утилиты</button>
     </div>
 
@@ -129,28 +126,43 @@
         </div>
     </div>
 
-    <!-- TAB 2: CHARACTERS (Roster, Pinned Quick Bar & Bestiary) -->
+    <!-- TAB 2: CHARACTERS (Roster, Pinned Quick Bar, Bestiary & Integrated Note Viewer) -->
     <div id="tab-characters" class="tab-content">
-        <div class="roster-container">
-            <!-- Pinned Quick Bar (Key NPCs of the current scene) -->
-            <div id="pinnedBar" class="pinned-bar" style="display: none;"></div>
+        <!-- Sub-View A: Roster List View -->
+        <div id="rosterListView" class="roster-view-panel">
+            <div class="roster-container">
+                <!-- Pinned Quick Bar (Key NPCs of the current scene) -->
+                <div id="pinnedBar" class="pinned-bar" style="display: none;"></div>
 
-            <!-- Search and Category Filters -->
-            <div class="search-bar">
-                <input type="text" id="charSearch" placeholder="Быстрый поиск NPC или существа..." />
-            </div>
-            <div class="filter-pills">
-                <span class="pill active" data-filter="all">Все</span>
-                <span class="pill" data-filter="pinned">★ Закрепленные</span>
-                <span class="pill" data-filter="Бестиарий">Бестиарий</span>
-                <span class="pill" data-filter="Игроки">Игроки</span>
-                <span class="pill" data-filter="Союзники">Союзники</span>
-                <span class="pill" data-filter="Враги">Враги</span>
-            </div>
+                <!-- Search and Category Filters -->
+                <div class="search-bar">
+                    <input type="text" id="charSearch" placeholder="Быстрый поиск NPC или существа..." />
+                </div>
+                <div class="filter-pills">
+                    <span class="pill active" data-filter="all">Все</span>
+                    <span class="pill" data-filter="pinned">★ Закрепленные</span>
+                    <span class="pill" data-filter="Бестиарий">Бестиарий</span>
+                    <span class="pill" data-filter="Игроки">Игроки</span>
+                    <span class="pill" data-filter="Союзники">Союзники</span>
+                    <span class="pill" data-filter="Враги">Враги</span>
+                </div>
 
-            <!-- Roster Scrollbox -->
-            <div id="characterRoster" class="roster-list">
-                <div class="empty-hint">Загрузка персонажей из Obsidian...</div>
+                <!-- Roster Scrollbox -->
+                <div id="characterRoster" class="roster-list">
+                    <div class="empty-hint">Загрузка персонажей из Obsidian...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub-View B: Integrated Note Viewer View -->
+        <div id="rosterNoteView" class="roster-view-panel roster-note-panel" style="display: none;">
+            <div class="note-viewer-header">
+                <button id="btnNoteBack" class="btn-note-nav" title="Вернуться к списку персонажей">← К списку персонажей</button>
+                <span id="noteViewerTitle" class="note-viewer-title">Выберите заметку</span>
+                <button id="btnNoteInObsidian" class="btn-note-nav">В Obsidian</button>
+            </div>
+            <div id="noteContentContainer" class="note-content-box">
+                <div class="empty-hint">Кликните «Заметка» у любого персонажа или в сцене, чтобы прочитать полный лор</div>
             </div>
         </div>
     </div>
@@ -158,18 +170,6 @@
     <!-- TAB 3: COMBAT TRACKER (Initiative Order, Rounds & D&D 5e Conditions) -->
     <div id="tab-combat" class="tab-content">
         <div id="combatTrackerContainer" class="combat-tracker-wrapper"></div>
-    </div>
-
-    <!-- TAB 4: NOTE VIEWER (In-Game Obsidian Reader) -->
-    <div id="tab-note" class="tab-content">
-        <div class="note-viewer-header">
-            <button id="btnNoteBack" class="btn-note-nav">← Назад</button>
-            <span id="noteViewerTitle" class="note-viewer-title">Выберите заметку</span>
-            <button id="btnNoteInObsidian" class="btn-note-nav">В Obsidian</button>
-        </div>
-        <div id="noteContentContainer" class="note-content-box">
-            <div class="empty-hint">Кликните «Заметка» у любого персонажа или в сцене, чтобы прочитать полный лор</div>
-        </div>
     </div>
 
     <!-- TAB 4: TOOLS & TABLE (Background Sync, Token Inspector, Log) -->

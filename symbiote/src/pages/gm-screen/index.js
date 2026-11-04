@@ -21,11 +21,19 @@
         setupTabNavigation() {
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
+                    const isAlreadyActive = btn.classList.contains('active');
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     btn.classList.add('active');
                     const target = document.getElementById(btn.dataset.tab);
                     if (target) target.classList.add('active');
+
+                    // If user clicks "Персонажи" tab while already in characters, return to roster list
+                    if (btn.dataset.tab === 'tab-characters' && isAlreadyActive) {
+                        if (window.TBNoteViewer && typeof window.TBNoteViewer.closeNoteView === 'function') {
+                            window.TBNoteViewer.closeNoteView();
+                        }
+                    }
                 });
             });
         }

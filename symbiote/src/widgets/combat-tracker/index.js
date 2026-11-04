@@ -160,18 +160,26 @@
                         </div>
 
                         <div class="combatant-conditions-row">
-                            <div class="conditions-chips-list">
-                                ${conditions.map(condId => {
-                                    const meta = window.TBFeatureManageCombat?.getConditionMeta(condId) || { name: condId, color: '#64748b', desc: '' };
-                                    return `
-                                        <span class="condition-chip" style="background: ${meta.color}22; border-color: ${meta.color}; color: ${meta.color};" title="${this.escape(meta.desc || meta.name)}">
-                                            ${this.escape(meta.name)}
-                                            <button class="btn-remove-cond" data-id="${c.id}" data-cond="${condId}" title="Снять состояние">✕</button>
-                                        </span>
-                                    `;
-                                }).join('')}
+                            <div class="conditions-block-header">
+                                <span class="conditions-label">Дебаффы / Состояния (${conditions.length}):</span>
+                                <button class="btn-add-condition" data-id="${c.id}" title="Наложить состояние D&D 5e">+ Добавить</button>
                             </div>
-                            <button class="btn-add-condition" data-id="${c.id}" title="Добавить состояние D&D 5e">+ Состояние</button>
+                            ${conditions.length > 0 ? `
+                                <div class="conditions-details-list">
+                                    ${conditions.map(condId => {
+                                        const meta = window.TBFeatureManageCombat?.getConditionMeta(condId) || { name: condId, color: '#64748b', desc: '' };
+                                        return `
+                                            <div class="condition-detail-entry" style="--cond-color: ${meta.color};">
+                                                <span class="condition-chip" style="background: ${meta.color}25; border-color: ${meta.color}; color: ${meta.color};">
+                                                    ${this.escape(meta.name)}
+                                                    <button class="btn-remove-cond" data-id="${c.id}" data-cond="${condId}" title="Снять ${this.escape(meta.name)}">✕</button>
+                                                </span>
+                                                <span class="condition-desc-text">${this.escape(meta.desc || '')}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 

@@ -70,11 +70,15 @@
             this.btnGmDiceMode = document.getElementById('btnGmDiceMode');
             if (!this.btnGmDiceMode) return;
 
+            this._lastToggleTime = 0;
+
             const initialMode = window.TBState?.get('gmDiceMode') || 'secret';
             this.updateDiceModeButton(initialMode);
 
-            this.btnGmDiceMode.addEventListener('click', (e) => this.toggleGmDiceMode(e));
-            this.btnGmDiceMode.onclick = (e) => this.toggleGmDiceMode(e);
+            // Single dedicated click handler
+            this.btnGmDiceMode.addEventListener('click', (e) => {
+                this.toggleGmDiceMode(e);
+            });
 
             window.TBState?.on('gmDiceMode', (mode) => {
                 this.updateDiceModeButton(mode);
@@ -100,6 +104,17 @@
             this.btnGmDiceMode.title = isOpen
                 ? 'Броски Мастера: Открытые (видны всем игрокам в общем лотке). Нажмите для переключения в Скрытые'
                 : 'Броски Мастера: Скрытые (видны только вам в GM-лотке). Нажмите для переключения в Открытые';
+
+            // Explicit direct styles for 100% reliable visual feedback in TaleSpire WebView
+            if (isOpen) {
+                this.btnGmDiceMode.style.backgroundColor = '#271f14';
+                this.btnGmDiceMode.style.borderColor = '#d97706';
+                this.btnGmDiceMode.style.color = '#fde68a';
+            } else {
+                this.btnGmDiceMode.style.backgroundColor = '#1e1b2e';
+                this.btnGmDiceMode.style.borderColor = '#7c3aed';
+                this.btnGmDiceMode.style.color = '#c4b5fd';
+            }
         }
 
         toggleGmDiceMode(e) {
@@ -107,6 +122,13 @@
                 if (typeof e.preventDefault === 'function') e.preventDefault();
                 if (typeof e.stopPropagation === 'function') e.stopPropagation();
             }
+
+            // Debounce guard to prevent accidental double-execution
+            const now = Date.now();
+            if (this._lastToggleTime && (now - this._lastToggleTime) < 300) {
+                return;
+            }
+            this._lastToggleTime = now;
 
             const current = window.TBState?.get('gmDiceMode') || 'secret';
             const next = (current === 'open') ? 'secret' : 'open';

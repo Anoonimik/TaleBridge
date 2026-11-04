@@ -1,5 +1,23 @@
 /* --- TaleBridge Roster & Bestiary Styles --- */
 
+.roster-view-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.roster-note-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
 .roster-container {
     display: flex;
     flex-direction: column;

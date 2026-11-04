@@ -19,6 +19,7 @@
 
             if (this.btnBack) {
                 this.btnBack.onclick = () => this.goBack();
+                this.updateBackButton();
             }
 
             if (this.btnOpenObsidian) {
@@ -67,6 +68,7 @@
             }
 
             this.activateNoteTab();
+            this.updateBackButton();
 
             const displayName = targetPathOrName.replace(/^.*[\\\/]/, '').replace(/\.md$/, '');
             if (this.titleEl) this.titleEl.textContent = displayName;
@@ -82,23 +84,53 @@
         }
 
         goBack() {
-            if (this.history.length === 0) return;
-            const prev = this.history.pop();
-            this.currentNote = prev;
-            if (this.titleEl) this.titleEl.textContent = prev.title || prev.name;
-            if (this.container) {
-                this.container.scrollTop = 0;
-                this.container.innerHTML = prev.html || '';
+            if (this.history.length > 0) {
+                const prev = this.history.pop();
+                this.currentNote = prev;
+                if (this.titleEl) this.titleEl.textContent = prev.title || prev.name;
+                if (this.container) {
+                    this.container.scrollTop = 0;
+                    this.container.innerHTML = prev.html || '';
+                }
+                this.updateBackButton();
+            } else {
+                this.closeNoteView();
             }
+        }
+
+        updateBackButton() {
+            if (!this.btnBack) return;
+            if (this.history.length > 0) {
+                this.btnBack.textContent = '← Назад';
+                this.btnBack.title = 'Вернуться к предыдущей заметке';
+            } else {
+                this.btnBack.textContent = '← К списку персонажей';
+                this.btnBack.title = 'Вернуться к ростеру персонажей';
+            }
+        }
+
+        closeNoteView() {
+            this.currentNote = null;
+            this.history = [];
+            const rosterListView = document.getElementById('rosterListView');
+            const rosterNoteView = document.getElementById('rosterNoteView');
+            if (rosterListView) rosterListView.style.display = 'flex';
+            if (rosterNoteView) rosterNoteView.style.display = 'none';
+            this.updateBackButton();
         }
 
         activateNoteTab() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            const noteTabBtn = document.querySelector('[data-tab="tab-note"]');
-            const noteTab = document.getElementById('tab-note');
-            if (noteTabBtn) noteTabBtn.classList.add('active');
-            if (noteTab) noteTab.classList.add('active');
+            const charTabBtn = document.querySelector('[data-tab="tab-characters"]');
+            const charTab = document.getElementById('tab-characters');
+            if (charTabBtn) charTabBtn.classList.add('active');
+            if (charTab) charTab.classList.add('active');
+
+            const rosterListView = document.getElementById('rosterListView');
+            const rosterNoteView = document.getElementById('rosterNoteView');
+            if (rosterListView) rosterListView.style.display = 'none';
+            if (rosterNoteView) rosterNoteView.style.display = 'flex';
         }
 
         render(noteData) {
