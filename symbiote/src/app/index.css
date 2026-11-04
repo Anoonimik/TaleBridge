@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root, html, body {
+  color-scheme: dark;
+}
+
 @layer base {
   :root {
     --bg-main: #0c0d14;
@@ -31,31 +35,82 @@
     line-height: 1.5;
     user-select: none;
   }
-
-  /* Custom scrollbars */
-  *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  *::-webkit-scrollbar-track {
-    background: #10111a;
-  }
-  *::-webkit-scrollbar-thumb {
-    background: #2a2e42;
-    border-radius: 3px;
-  }
-  *::-webkit-scrollbar-thumb:hover {
-    background: #3c425e;
-  }
 }
 
-.no-scrollbar::-webkit-scrollbar {
+/* Custom scrollbars matching TaleBridge dark theme */
+:root, html, body, * {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2e42 #0c0d14;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0c0d14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262a3d;
+  border-radius: 4px;
+  border: 1px solid #141622;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f4663;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
 
-.no-scrollbar {
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2e42 #0c0d14;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #0c0d14;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #262a3d;
+  border-radius: 4px;
+  border: 1px solid #141622;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #3f4663;
+}
+
+.scrollbar-thin::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.scrollbar-none {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
