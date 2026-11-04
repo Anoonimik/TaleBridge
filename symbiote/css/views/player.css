@@ -707,10 +707,50 @@
 .action-modal-footer {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 8px;
     padding: 10px 14px;
     background: #14161f;
     border-top: 1px solid #252936;
+}
+
+.btn-modal-cancel {
+    background: #1e2230 !important;
+    border: 1px solid #374151 !important;
+    color: #94a3b8 !important;
+    padding: 6px 14px !important;
+    border-radius: 4px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    text-transform: none !important;
+    flex: none !important;
+}
+
+.btn-modal-cancel:hover {
+    background: #2a3044 !important;
+    color: #fff !important;
+    border-color: #4b5563 !important;
+}
+
+.btn-modal-save {
+    background: #4f46e5 !important;
+    border: 1px solid #6366f1 !important;
+    color: #fff !important;
+    padding: 6px 16px !important;
+    border-radius: 4px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    text-transform: none !important;
+    flex: none !important;
+}
+
+.btn-modal-save:hover {
+    background: #4338ca !important;
+    border-color: #818cf8 !important;
 }
 
 /* Death Saves Card */
@@ -978,7 +1018,40 @@
 .stats-modal-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 12px;
+}
+
+.stats-modal-grid .modal-form-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.stats-modal-grid .modal-form-group label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    min-height: 28px;
+    display: flex;
+    align-items: flex-end;
+    line-height: 1.25;
+    margin-bottom: 4px;
+}
+
+.stats-modal-grid .modal-form-group input {
+    height: 32px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    background: #12141c;
+    border: 1px solid #282d3e;
+    border-radius: 4px;
+    color: #fff;
+}
+
+.stats-modal-grid .modal-form-group input:focus {
+    border-color: #6366f1;
+    outline: none;
 }
 
 /* --- TAB 2: INVENTORY --- */

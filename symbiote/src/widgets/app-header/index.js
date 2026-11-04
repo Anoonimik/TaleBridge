@@ -72,23 +72,32 @@
 
             const updateButton = (mode) => {
                 const isOpen = mode === 'open';
-                this.btnGmDiceMode.className = `btn-gm-dice-mode ${isOpen ? 'open' : 'secret'}`;
-                this.btnGmDiceMode.textContent = isOpen ? 'Броски: Открытые' : 'Броски: Скрытые';
+                this.btnGmDiceMode.classList.toggle('open', isOpen);
+                this.btnGmDiceMode.classList.toggle('secret', !isOpen);
+                this.btnGmDiceMode.textContent = isOpen ? 'Броски: Общие' : 'Броски: GM';
                 this.btnGmDiceMode.title = isOpen
-                    ? 'Броски Мастера: Открытые (видны всем в общем лотке). Нажмите для переключения в скрытые'
-                    : 'Броски Мастера: Скрытые (видны только вам в GM-лотке). Нажмите для переключения в открытые';
+                    ? 'Броски Мастера: Общие (видны всем в общем лотке стола). Нажмите для переключения в GM-лоток'
+                    : 'Броски Мастера: Скрытые (видны только вам в GM-лотке). Нажмите для переключения в общие';
             };
 
             const initialMode = window.TBState?.get('gmDiceMode') || 'secret';
             updateButton(initialMode);
 
-            this.btnGmDiceMode.addEventListener('click', () => {
+            this.btnGmDiceMode.onclick = (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
                 const current = window.TBState?.get('gmDiceMode') || 'secret';
                 const next = (current === 'open') ? 'secret' : 'open';
-                window.TBState?.set('gmDiceMode', next);
+                if (window.TBState) {
+                    window.TBState.set('gmDiceMode', next);
+                } else {
+                    localStorage.setItem('tb_gm_dice_mode', next);
+                }
                 updateButton(next);
-                window.TBLogger?.log(`Режим бросков мастера: ${next === 'open' ? 'Открытые (общий лоток)' : 'Скрытые (GM-лоток)'}`, 'sys');
-            });
+                window.TBLogger?.log(`Режим бросков мастера: ${next === 'open' ? 'Общие (открытый лоток стола)' : 'Скрытые (GM-лоток)'}`, 'sys');
+            };
 
             window.TBState?.on('gmDiceMode', (mode) => {
                 updateButton(mode);

@@ -1,11 +1,17 @@
 .header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 6px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 8px;
     flex-shrink: 0;
+}
+
+.header-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
 }
 
@@ -24,107 +30,150 @@
 
 .brand-sub {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--accent);
 }
 
-.header-active-token {
-    display: none;
+.header-controls {
+    display: grid;
+    grid-template-columns: 1.15fr 0.9fr 1.05fr 0.9fr;
+    gap: 5px;
     align-items: center;
-    gap: 6px;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.35);
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 11px;
-    color: #e0e7ff;
-    cursor: pointer;
+    width: 100%;
+}
+
+body.mode-player .header-controls {
+    grid-template-columns: 1fr 1fr;
+}
+
+.header-controls button {
+    height: 26px;
+    padding: 0 4px;
+    font-size: 10.5px;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
-    transition: all 0.15s ease;
-}
-
-.header-active-token:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: var(--accent);
-}
-
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.btn-gm-dice-mode {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 7px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
-    white-space: nowrap;
-    user-select: none;
-}
-
-.btn-gm-dice-mode.secret {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #c4b5fd;
-}
-
-.btn-gm-dice-mode.secret:hover {
-    background: rgba(139, 92, 246, 0.28);
-    border-color: #8b5cf6;
-    color: #ffffff;
-}
-
-.btn-gm-dice-mode.open {
-    background: rgba(245, 158, 11, 0.18);
-    border-color: rgba(245, 158, 11, 0.45);
-    color: #fde68a;
-}
-
-.btn-gm-dice-mode.open:hover {
-    background: rgba(245, 158, 11, 0.3);
-    border-color: #f59e0b;
-    color: #ffffff;
-}
-
-.btn-scale-toggle {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 7px;
+    justify-content: center;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
+    user-select: none;
+    box-sizing: border-box;
 }
 
-.btn-scale-toggle:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+/* Master/Player Role Switcher in Header */
+button.btn-role-toggle {
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
 }
 
+button.btn-role-toggle.mode-gm {
+    background: #1a2236 !important;
+    border: 1px solid #3b82f6 !important;
+    color: #93c5fd !important;
+}
+
+button.btn-role-toggle.mode-gm:hover {
+    background: #2563eb !important;
+    border-color: #60a5fa !important;
+    color: #ffffff !important;
+}
+
+button.btn-role-toggle.mode-player {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border: 1px solid #10b981 !important;
+    color: #a7f3d0 !important;
+}
+
+button.btn-role-toggle.mode-player:hover {
+    background: #10b981 !important;
+    color: #ffffff !important;
+}
+
+/* Auto-inspect Miniatures Toggle */
+button.btn-auto-inspect {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+button.btn-auto-inspect:hover {
+    color: #ffffff !important;
+    border-color: #4b5563 !important;
+}
+
+button.btn-auto-inspect.active {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border: 1px solid var(--status-online) !important;
+    color: #a7f3d0 !important;
+}
+
+/* GM Dice Mode Switcher (Secret vs Open) */
+button.btn-gm-dice-mode {
+    background: #1e1b2e !important;
+    border: 1px solid #7c3aed !important;
+    color: #c4b5fd !important;
+}
+
+button.btn-gm-dice-mode:hover {
+    background: #2a2444 !important;
+    border-color: #a78bfa !important;
+    color: #ffffff !important;
+}
+
+button.btn-gm-dice-mode.secret {
+    background: #1e1b2e !important;
+    border: 1px solid #7c3aed !important;
+    color: #c4b5fd !important;
+}
+
+button.btn-gm-dice-mode.secret:hover {
+    background: #2a2444 !important;
+    border-color: #a78bfa !important;
+    color: #ffffff !important;
+}
+
+button.btn-gm-dice-mode.open {
+    background: #271f14 !important;
+    border: 1px solid #d97706 !important;
+    color: #fde68a !important;
+}
+
+button.btn-gm-dice-mode.open:hover {
+    background: #3b2c19 !important;
+    border-color: #fbbf24 !important;
+    color: #ffffff !important;
+}
+
+/* Scale Toggle */
+button.btn-scale-toggle {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+button.btn-scale-toggle:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: #4b5563 !important;
+}
+
+/* Status Badge */
 .status-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     font-size: 11px;
     font-weight: 500;
-    padding: 3px 7px;
+    padding: 2px 7px;
+    height: 22px;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
 }
 
 .status-dot {

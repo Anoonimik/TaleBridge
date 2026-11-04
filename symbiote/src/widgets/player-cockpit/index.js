@@ -625,8 +625,8 @@
                         </div>
                     </div>
                     <div class="action-modal-footer">
-                        <button class="btn-rest" id="btnModalCancel" style="border: 1px solid #374151;">Отмена</button>
-                        <button class="btn-primary" id="btnModalSave">Сохранить</button>
+                        <button type="button" class="btn-modal-cancel" id="btnModalCancel">Отмена</button>
+                        <button type="button" class="btn-modal-save" id="btnModalSave">Сохранить</button>
                     </div>
                 </div>
             `;
@@ -717,8 +717,8 @@
                         </div>
                     </div>
                     <div class="action-modal-footer">
-                        <button class="btn-rest" id="btnModalCancel" style="border: 1px solid #374151;">Отмена</button>
-                        <button class="btn-primary" id="btnModalSave">Сохранить</button>
+                        <button type="button" class="btn-modal-cancel" id="btnModalCancel">Отмена</button>
+                        <button type="button" class="btn-modal-save" id="btnModalSave">Сохранить</button>
                     </div>
                 </div>
             `;
@@ -787,7 +787,7 @@
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'action-modal-overlay';
             modalOverlay.innerHTML = `
-                <div class="action-modal" style="max-width: 360px;">
+                <div class="action-modal" style="max-width: 440px;">
                     <div class="action-modal-header">
                         <h3>Характеристики персонажа</h3>
                         <button class="btn-close-modal" id="btnModalClose">✕</button>
@@ -821,8 +821,8 @@
                         </div>
                     </div>
                     <div class="action-modal-footer">
-                        <button class="btn-rest" id="btnModalCancel" style="border: 1px solid #374151;">Отмена</button>
-                        <button class="btn-primary" id="btnModalSave">Сохранить</button>
+                        <button type="button" class="btn-modal-cancel" id="btnModalCancel">Отмена</button>
+                        <button type="button" class="btn-modal-save" id="btnModalSave">Сохранить</button>
                     </div>
                 </div>
             `;

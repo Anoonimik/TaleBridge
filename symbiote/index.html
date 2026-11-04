@@ -9,30 +9,32 @@
 </head>
 <body>
     <div class="header">
-        <div class="brand-box">
-            <span class="brand">TaleBridge</span>
-            <span class="brand-sub">GM Screen</span>
-        </div>
-        <div class="header-controls">
-            <!-- Role Toggle: GM Screen vs Player Cockpit -->
-            <button id="btnRoleToggle" class="btn-role-toggle mode-gm" title="Переключиться в интерфейс Игрока">
-                Режим: Мастер
-            </button>
-            <!-- Auto-inspect toggle: automatically opens character card when clicked on board -->
-            <button id="btnAutoInspect" class="btn-auto-inspect" title="Автоматически открывать карточку персонажа при клике по фигурке на столе">
-                Авто: ВЫКЛ
-            </button>
-            <!-- GM Dice Visibility Toggle: Secret (GM Tray) vs Open (Public Tray) -->
-            <button id="btnGmDiceMode" class="btn-gm-dice-mode secret" title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в открытые">
-                Броски: Скрытые
-            </button>
-            <button id="btnScaleToggle" class="btn-scale-toggle" title="Переключить масштаб интерфейса (100% / 85%)">
-                Масштаб: 100%
-            </button>
+        <div class="header-top-row">
+            <div class="brand-box">
+                <span class="brand">TaleBridge</span>
+                <span class="brand-sub">GM Screen</span>
+            </div>
             <div id="statusBadge" class="status-badge">
                 <span class="status-dot"></span>
                 <span id="statusText">Obsidian: Поиск...</span>
             </div>
+        </div>
+        <div class="header-controls">
+            <!-- Role Toggle: GM Screen vs Player Cockpit -->
+            <button id="btnRoleToggle" type="button" class="btn-role-toggle mode-gm" title="Переключиться в интерфейс Игрока">
+                Режим: Мастер
+            </button>
+            <!-- Auto-inspect toggle: automatically opens character card when clicked on board -->
+            <button id="btnAutoInspect" type="button" class="btn-auto-inspect" title="Автоматически открывать карточку персонажа при клике по фигурке на столе">
+                Авто: ВЫКЛ
+            </button>
+            <!-- GM Dice Visibility Toggle: Secret (GM Tray) vs Open (Public Tray) -->
+            <button id="btnGmDiceMode" type="button" class="btn-gm-dice-mode secret" title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в общие">
+                Броски: GM
+            </button>
+            <button id="btnScaleToggle" type="button" class="btn-scale-toggle" title="Переключить масштаб интерфейса (100% / 85%)">
+                Масштаб: 100%
+            </button>
         </div>
     </div>
 
