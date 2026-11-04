@@ -571,7 +571,7 @@
 }
 
 .conditions-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
 }
@@ -586,11 +586,11 @@
 .conditions-details-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-    padding: 4px 6px;
+    border-radius: 5px;
+    padding: 6px 8px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -598,18 +598,19 @@
 .condition-detail-entry {
     display: flex;
     align-items: flex-start;
-    gap: 6px;
-    line-height: 1.3;
+    gap: 8px;
+    line-height: 1.4;
+    padding: 2px 0;
 }
 
 .condition-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 1px 6px;
-    font-size: 9.5px;
+    gap: 5px;
+    padding: 2px 8px;
+    font-size: 11px;
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid;
     white-space: nowrap;
     cursor: default;
@@ -617,9 +618,9 @@
 }
 
 .condition-desc-text {
-    font-size: 9.5px;
-    color: #cbd5e1;
-    line-height: 1.35;
+    font-size: 12px;
+    color: #e2e8f0;
+    line-height: 1.45;
     flex: 1;
 }
 
@@ -627,10 +628,10 @@
     background: transparent;
     border: none;
     color: inherit;
-    font-size: 9px;
-    padding: 0;
+    font-size: 11px;
+    padding: 0 2px;
     cursor: pointer;
-    opacity: 0.7;
+    opacity: 0.75;
 }
 
 .btn-remove-cond:hover {
@@ -638,9 +639,9 @@
 }
 
 .btn-add-condition {
-    height: 18px;
-    padding: 0 6px;
-    font-size: 9.5px;
+    height: 20px;
+    padding: 0 8px;
+    font-size: 10.5px;
     font-weight: 600;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.05);
@@ -796,27 +797,28 @@
 .cond-item-title {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 11px;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
     color: #ffffff;
 }
 
 .cond-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
 .cond-check {
     margin-left: auto;
-    font-size: 10px;
+    font-size: 11px;
     color: #10b981;
     font-weight: 800;
 }
 
 .cond-item-desc {
-    font-size: 9.5px;
-    color: var(--text-muted);
-    line-height: 1.25;
+    font-size: 11px;
+    color: #cbd5e1;
+    line-height: 1.35;
 }
