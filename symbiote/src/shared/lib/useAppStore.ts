@@ -1,0 +1,49 @@
+import { create } from 'zustand';
+
+export type UserRole = 'gm' | 'player';
+export type AppTab = 'story' | 'characters' | 'combat' | 'tools' | 'player-cockpit';
+
+interface AppStore {
+  role: UserRole;
+  activeTab: AppTab;
+  scale: string;
+  diceSecret: boolean;
+  connected: boolean;
+  vaultName: string;
+  gmPin: string;
+  cinemaMedia: { type: 'image' | 'video' | 'text' | 'audio'; url: string; title?: string; active: boolean } | null;
+  setRole: (role: UserRole) => void;
+  setActiveTab: (tab: AppTab) => void;
+  setScale: (scale: string) => void;
+  setDiceSecret: (secret: boolean) => void;
+  setConnected: (connected: boolean) => void;
+  setVaultName: (name: string) => void;
+  setGmPin: (pin: string) => void;
+  setCinemaMedia: (media: AppStore['cinemaMedia']) => void;
+}
+
+export const useAppStore = create<AppStore>((set) => ({
+  role: (localStorage.getItem('tb_role') as UserRole) || 'player',
+  activeTab: 'story',
+  scale: localStorage.getItem('tb_scale') || '100%',
+  diceSecret: false,
+  connected: false,
+  vaultName: 'Obsidian Vault',
+  gmPin: '5',
+  cinemaMedia: null,
+
+  setRole: (role) => {
+    localStorage.setItem('tb_role', role);
+    set({ role });
+  },
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setScale: (scale) => {
+    localStorage.setItem('tb_scale', scale);
+    set({ scale });
+  },
+  setDiceSecret: (diceSecret) => set({ diceSecret }),
+  setConnected: (connected) => set({ connected }),
+  setVaultName: (vaultName) => set({ vaultName }),
+  setGmPin: (gmPin) => set({ gmPin }),
+  setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
+}));
