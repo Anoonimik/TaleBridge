@@ -5,6 +5,7 @@
         constructor() {
             this.container = null;
             this.activeSubTab = 'character'; // 'character' | 'inventory' | 'notes' | 'clues'
+            this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
         }
 
         init(containerId = 'playerContainer') {
@@ -277,6 +278,10 @@
             const ability = window.TBAbilityCell;
             const attack = window.TBAttackCard;
             const resources = this.getResources(data);
+            if (!this.deathSaves) {
+                this.deathSaves = { successes: 0, failures: 0, status: null, statusClass: '' };
+            }
+            const ds = this.deathSaves;
 
             const deathSavesHtml = `
                 <div class="death-saves-card">
@@ -285,17 +290,17 @@
                         <div class="death-save-row success">
                             <span class="death-save-label">Успехи:</span>
                             <div class="death-save-bubbles">
-                                <span class="death-bubble ${this.deathSaves.successes >= 1 ? 'filled' : ''}" data-type="success" data-idx="1">●</span>
-                                <span class="death-bubble ${this.deathSaves.successes >= 2 ? 'filled' : ''}" data-type="success" data-idx="2">●</span>
-                                <span class="death-bubble ${this.deathSaves.successes >= 3 ? 'filled' : ''}" data-type="success" data-idx="3">●</span>
+                                <span class="death-bubble ${(ds.successes || 0) >= 1 ? 'filled' : ''}" data-type="success" data-idx="1">●</span>
+                                <span class="death-bubble ${(ds.successes || 0) >= 2 ? 'filled' : ''}" data-type="success" data-idx="2">●</span>
+                                <span class="death-bubble ${(ds.successes || 0) >= 3 ? 'filled' : ''}" data-type="success" data-idx="3">●</span>
                             </div>
                         </div>
                         <div class="death-save-row failure">
                             <span class="death-save-label">Провалы:</span>
                             <div class="death-save-bubbles">
-                                <span class="death-bubble ${this.deathSaves.failures >= 1 ? 'filled' : ''}" data-type="failure" data-idx="1">●</span>
-                                <span class="death-bubble ${this.deathSaves.failures >= 2 ? 'filled' : ''}" data-type="failure" data-idx="2">●</span>
-                                <span class="death-bubble ${this.deathSaves.failures >= 3 ? 'filled' : ''}" data-type="failure" data-idx="3">●</span>
+                                <span class="death-bubble ${(ds.failures || 0) >= 1 ? 'filled' : ''}" data-type="failure" data-idx="1">●</span>
+                                <span class="death-bubble ${(ds.failures || 0) >= 2 ? 'filled' : ''}" data-type="failure" data-idx="2">●</span>
+                                <span class="death-bubble ${(ds.failures || 0) >= 3 ? 'filled' : ''}" data-type="failure" data-idx="3">●</span>
                             </div>
                         </div>
                     </div>
@@ -303,7 +308,7 @@
                         <button id="btnRollDeathSave" class="btn-death-save">🎲 Бросить спасбросок (d20)</button>
                         <button id="btnResetDeathSaves" class="btn-death-reset" title="Сбросить спасброски">Сброс</button>
                     </div>
-                    ${this.deathSaves.status ? `<div class="death-save-status ${this.deathSaves.statusClass}">${this.deathSaves.status}</div>` : ''}
+                    ${ds.status ? `<div class="death-save-status ${ds.statusClass || ''}">${ds.status}</div>` : ''}
                 </div>
             `;
 
