@@ -74,13 +74,19 @@
 
             // Determine visibility:
             // - If explicitly passed as boolean, use it.
-            // - Otherwise, based on role: 'player' -> false (open roll), 'gm' -> true (hidden GM roll).
+            // - If role is 'player': false (always open roll in public tray).
+            // - If role is 'gm': respect gmDiceMode ('secret' -> GM tray, 'open' -> Public tray).
             let isSecret = true;
             if (typeof isGmOnly === 'boolean') {
                 isSecret = isGmOnly;
             } else {
                 const currentRole = window.TBState?.get('role') || 'gm';
-                isSecret = (currentRole !== 'player');
+                if (currentRole === 'player') {
+                    isSecret = false;
+                } else {
+                    const gmMode = window.TBState?.get('gmDiceMode') || 'secret';
+                    isSecret = (gmMode !== 'open');
+                }
             }
 
             const trayLabel = isSecret ? 'GM-лоток (скрытый)' : 'общий лоток (открытый)';
@@ -126,7 +132,12 @@
                 isSecret = isGmOnly;
             } else {
                 const currentRole = window.TBState?.get('role') || 'gm';
-                isSecret = (currentRole !== 'player');
+                if (currentRole === 'player') {
+                    isSecret = false;
+                } else {
+                    const gmMode = window.TBState?.get('gmDiceMode') || 'secret';
+                    isSecret = (gmMode !== 'open');
+                }
             }
 
             const trayLabel = isSecret ? 'GM-лоток (скрытый)' : 'общий лоток (открытый)';

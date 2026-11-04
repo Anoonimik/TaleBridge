@@ -21,7 +21,8 @@
             CLUES_ARCHIVE: 'tb_clues_archive',
             AUTO_INSPECT: 'tb_auto_inspect',
             COMPACT_MODE: 'tb_compact_mode',
-            GM_AUTH: 'tb_gm_auth'
+            GM_AUTH: 'tb_gm_auth',
+            GM_DICE_MODE: 'tb_gm_dice_mode'
         },
 
         DEFAULTS: {

@@ -54,7 +54,49 @@
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.btn-gm-dice-mode {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.btn-gm-dice-mode.secret {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #c4b5fd;
+}
+
+.btn-gm-dice-mode.secret:hover {
+    background: rgba(139, 92, 246, 0.28);
+    border-color: #8b5cf6;
+    color: #ffffff;
+}
+
+.btn-gm-dice-mode.open {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.45);
+    color: #fde68a;
+}
+
+.btn-gm-dice-mode.open:hover {
+    background: rgba(245, 158, 11, 0.3);
+    border-color: #f59e0b;
+    color: #ffffff;
 }
 
 .btn-scale-toggle {

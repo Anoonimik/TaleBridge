@@ -43,9 +43,18 @@
             };
 
             const btnRollTest = document.getElementById('btnRollTest');
-            if (btnRollTest) btnRollTest.onclick = () => {
-                window.TBFeatureRollDice?.roll('1d20+5', 'Тестовая проверка d20+5');
-            };
+            if (btnRollTest) {
+                const updateTestBtnTitle = (mode) => {
+                    const isSecret = mode !== 'open';
+                    btnRollTest.title = `Тестовый бросок 1d20+5 в ${isSecret ? 'GM-лоток (скрытый)' : 'общий лоток (открытый)'}`;
+                };
+                updateTestBtnTitle(window.TBState?.get('gmDiceMode') || 'secret');
+                window.TBState?.on('gmDiceMode', updateTestBtnTitle);
+
+                btnRollTest.onclick = () => {
+                    window.TBFeatureRollDice?.roll('1d20+5', 'Тестовая проверка d20+5');
+                };
+            }
 
             if (this.btnLinkToObsidian) {
                 this.btnLinkToObsidian.onclick = () => this.linkTokenToActiveNote();

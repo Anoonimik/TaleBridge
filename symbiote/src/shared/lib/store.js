@@ -22,10 +22,12 @@
 
             const savedRole = localStorage.getItem(keys.ROLE) || 'gm';
             const savedPlayerChar = localStorage.getItem(keys.PLAYER_CHAR) || '';
+            const savedGmDiceMode = localStorage.getItem(keys.GM_DICE_MODE || 'tb_gm_dice_mode') || 'secret';
 
             this.state = {
                 connected: false,
                 role: savedRole, // 'gm' | 'player'
+                gmDiceMode: savedGmDiceMode, // 'secret' (GM tray) | 'open' (Public tray)
                 playerCharacter: savedPlayerChar,
                 playerData: null,
                 playerTab: 'character', // 'character' | 'inventory' | 'notes' | 'clues'
@@ -68,12 +70,20 @@
                 try {
                     localStorage.setItem(keys.CLUES_ARCHIVE, JSON.stringify(val));
                 } catch (e) {}
+            } else if (key === 'gmDiceMode') {
+                try {
+                    localStorage.setItem(keys.GM_DICE_MODE || 'tb_gm_dice_mode', val);
+                } catch (e) {}
             }
             this.notify(key, val);
         }
 
         setRole(role) {
             this.set('role', role);
+        }
+
+        setGmDiceMode(mode) {
+            this.set('gmDiceMode', mode);
         }
 
         setPlayerCharacter(name) {

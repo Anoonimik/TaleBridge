@@ -59,6 +59,7 @@
             const tokenHud = document.getElementById('activeTokenHud');
             const brandSub = document.querySelector('.brand-sub');
             const btnAuto = document.getElementById('btnAutoInspect');
+            const btnDiceMode = document.getElementById('btnGmDiceMode');
             const headerActiveToken = document.getElementById('headerActiveToken');
 
             // Apply body classes for CSS enforcement
@@ -78,6 +79,7 @@
                 gmContents.forEach(c => c.style.display = 'none');
                 if (tokenHud) tokenHud.style.display = 'none';
                 if (btnAuto) btnAuto.style.display = 'none';
+                if (btnDiceMode) btnDiceMode.style.display = 'none';
                 if (headerActiveToken) headerActiveToken.style.display = 'none';
 
                 // Show Player container
@@ -104,6 +106,7 @@
 
                 if (gmTabs) gmTabs.style.display = 'flex';
                 if (btnAuto) btnAuto.style.display = 'inline-flex';
+                if (btnDiceMode) btnDiceMode.style.display = 'inline-flex';
 
                 // Clear inline style.display from tab-content so CSS .tab-content.active controls flex layout
                 gmContents.forEach(c => {

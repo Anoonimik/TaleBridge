@@ -131,7 +131,8 @@
                     chip.className = 'hud-attack-chip';
                     const hitLabel = att.hit ? ` (${att.hit})` : '';
                     chip.textContent = `${att.name}${hitLabel}`;
-                    chip.title = `${att.desc || ''}\nУрон: ${att.dmg || '-'}`;
+                    const diceModeLabel = (window.TBState?.get('gmDiceMode') === 'open') ? 'Открытый' : 'Скрытый (GM)';
+                    chip.title = `${att.desc || ''}\nУрон: ${att.dmg || '-'}\nБросок: ${diceModeLabel}`;
 
                     chip.onclick = (e) => {
                         e.stopPropagation();
