@@ -9,6 +9,7 @@ import {
   taleSpireDriver,
   formatInlineText,
   parseModifier,
+  parseCreatureNote,
 } from '../../shared';
 
 interface NoteViewerProps {
@@ -19,11 +20,13 @@ interface NoteViewerProps {
 export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
   const { addCombatant } = useCombatStore();
   const { noteContent } = useRosterStore();
-  const [activeTab, setActiveTab] = useState<'sheet' | 'notes'>('sheet');
   const [showSideSelector, setShowSideSelector] = useState(false);
   const [combatAdded, setCombatAdded] = useState(false);
 
   if (!character) return null;
+
+  const rawMarkdown = noteContent?.content || character.playerNotes || '';
+  const parsed = parseCreatureNote(rawMarkdown, character.attacks || []);
 
   const handleOpenObsidian = () => {
     if (character.path) {
@@ -32,6 +35,13 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
   };
 
   const handleAddToCombat = (side: CombatSide) => {
+    const hp = character.hp || parsed.vitals.hp || 10;
+    const maxHp = character.hp_max || character.hp || parsed.vitals.hpMax || hp;
+    const ac = character.ac || parsed.vitals.ac || 10;
+    const speed = character.speed || parsed.vitals.speed || '30 фт.';
+    const stats = character.stats || parsed.stats;
+    const attacks = parsed.actions.length > 0 ? parsed.actions : character.attacks || [];
+
     addCombatant({
       name: character.name,
       side,
@@ -43,15 +53,15 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
           : side === 'neutral'
           ? 'Нейтралы'
           : 'Враги',
-      hp: character.hp || 10,
-      maxHp: character.hp_max || character.hp || 10,
-      ac: character.ac || 10,
-      speed: character.speed || '30 фт.',
+      hp,
+      maxHp,
+      ac,
+      speed,
       path: character.path || null,
       isPlayer: side === 'player',
-      stats: character.stats,
+      stats,
       dexMod: character.dexMod,
-      attacks: character.attacks || [],
+      attacks,
     });
     setShowSideSelector(false);
     setCombatAdded(true);
@@ -73,6 +83,11 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
     taleSpireDriver.rollDice(`1d20${modStr}`, `${character.name}: Проверка ${name}`);
   };
 
+  const handleRollInitiative = (bonus: string) => {
+    const b = bonus.startsWith('+') || bonus.startsWith('-') ? bonus : `+${bonus}`;
+    taleSpireDriver.rollDice(`1d20${b}`, `${character.name}: Инициатива`);
+  };
+
   let categoryBadgeColor = 'bg-rose-500/15 text-rose-300 border-rose-500/30';
   if (character.category === 'Игроки' || character.playable) {
     categoryBadgeColor = 'bg-blue-500/15 text-blue-300 border-blue-500/30';
@@ -82,7 +97,13 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
     categoryBadgeColor = 'bg-purple-500/15 text-purple-300 border-purple-500/30';
   }
 
-  const rawMarkdown = noteContent?.content || character.playerNotes || '';
+  // Active stats source: character.stats or parsed.stats
+  const activeStats = character.stats || parsed.stats;
+
+  // Initiative calculation
+  const initBonus =
+    parsed.vitals.initiativeBonus ||
+    (activeStats?.dex ? `${parseModifier(activeStats.dex) >= 0 ? '+' : ''}${parseModifier(activeStats.dex)}` : null);
 
   return (
     <div
@@ -90,17 +111,17 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
       onClick={onClose}
     >
       <div
-        className="bg-[#141622] border border-[#2d324a] rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 relative text-slate-200"
+        className="bg-[#141622] border border-[#2d324a] rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 relative text-slate-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Header */}
+        {/* Top Header Bar */}
         <div className="p-3 bg-[#10111a] border-b border-[#262a3d] flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
               className="px-2.5 py-1 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 border border-[#262a3d] text-xs font-medium cursor-pointer transition-colors shrink-0"
               onClick={onClose}
-              title="Закрыть заметку"
+              title="Закрыть карточку"
             >
               ◂ Назад
             </button>
@@ -114,6 +135,12 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
             >
               {character.category || 'Существо'}
             </span>
+
+            {(character.race || character.class) && (
+              <span className="hidden sm:inline text-xs text-slate-400 truncate">
+                {[character.race, character.class].filter(Boolean).join(' • ')}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 relative">
@@ -175,192 +202,242 @@ export const NoteViewer = ({ character, onClose }: NoteViewerProps) => {
           </div>
         </div>
 
-        {/* Navigation Tabs (Sheet vs Notes) */}
-        <div className="flex items-center gap-1 px-3 py-1.5 bg-[#141622] border-b border-[#262a3d] shrink-0">
-          <button
-            type="button"
-            className={`px-3 py-1 rounded text-xs font-semibold cursor-pointer transition-colors border ${
-              activeTab === 'sheet'
-                ? 'bg-[#1a1d2d] text-amber-300 border-amber-500/40 shadow-xs'
-                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200'
-            }`}
-            onClick={() => setActiveTab('sheet')}
-          >
-            Характеристики и атаки (5e)
-          </button>
+        {/* Unified Single-Window Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5 scrollbar-thin text-sm">
+          {/* 1. Primary Vital Stats Bar */}
+          <div className="grid grid-cols-4 gap-2 bg-[#10111a] p-3 rounded-lg border border-[#1f2233]">
+            <div>
+              <span className="text-slate-400 text-xs uppercase font-bold block">КД</span>
+              <strong className="text-slate-100 text-base font-mono">
+                {character.ac || parsed.vitals.ac || 10}
+              </strong>
+            </div>
 
-          <button
-            type="button"
-            className={`px-3 py-1 rounded text-xs font-semibold cursor-pointer transition-colors border ${
-              activeTab === 'notes'
-                ? 'bg-[#1a1d2d] text-amber-300 border-amber-500/40 shadow-xs'
-                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200'
-            }`}
-            onClick={() => setActiveTab('notes')}
-          >
-            Текст заметки Obsidian
-          </button>
-        </div>
+            <div>
+              <span className="text-slate-400 text-xs uppercase font-bold block">ХП</span>
+              <strong className="text-emerald-400 text-base font-mono">
+                {character.hp || parsed.vitals.hp || 10}
+                {character.hp_max ? ` / ${character.hp_max}` : ''}
+              </strong>
+            </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 scrollbar-thin text-sm">
-          {activeTab === 'sheet' ? (
-            <>
-              {/* Primary Vital Stats Bar */}
-              <div className="grid grid-cols-4 gap-2 bg-[#10111a] p-3 rounded-lg border border-[#1f2233]">
-                <div>
-                  <span className="text-slate-400 text-xs uppercase font-bold block">КД</span>
-                  <strong className="text-slate-100 text-base font-mono">{character.ac || 10}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-xs uppercase font-bold block">ХП</span>
-                  <strong className="text-emerald-400 text-base font-mono">
-                    {character.hp || 10}
-                    {character.hp_max ? ` / ${character.hp_max}` : ''}
-                  </strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-xs uppercase font-bold block">Скорость</span>
-                  <span className="text-slate-200 text-sm">{character.speed || '30 фт.'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-xs uppercase font-bold block">Категория</span>
-                  <span className="text-slate-200 text-sm truncate block" title={character.category || 'Существо'}>
-                    {character.category || 'Существо'}
-                  </span>
-                </div>
-              </div>
+            <div>
+              <span className="text-slate-400 text-xs uppercase font-bold block">Скорость</span>
+              <span className="text-slate-200 text-sm">
+                {character.speed || parsed.vitals.speed || '9 м'}
+              </span>
+            </div>
 
-              {/* Ability Scores Grid (if present) */}
-              {character.stats && (
-                <div className="flex flex-col gap-1.5">
-                  <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
-                    Характеристики:
-                  </h4>
-                  <div className="grid grid-cols-6 gap-1.5">
-                    {(
-                      [
-                        { key: 'str', label: 'СИЛ', name: 'Сила' },
-                        { key: 'dex', label: 'ЛОВ', name: 'Ловкость' },
-                        { key: 'con', label: 'ТЕЛ', name: 'Телосложение' },
-                        { key: 'int', label: 'ИНТ', name: 'Интеллект' },
-                        { key: 'wis', label: 'МУД', name: 'Мудрость' },
-                        { key: 'cha', label: 'ХАР', name: 'Харизма' },
-                      ] as const
-                    ).map(({ key, label, name }) => {
-                      const val = character.stats?.[key] || '10';
-                      const mod = parseModifier(val);
-                      const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
-
-                      return (
-                        <div
-                          key={key}
-                          onClick={() => handleRollStat(label, name, val)}
-                          className="bg-[#10111a] hover:bg-[#181b29] border border-[#1f2233] hover:border-amber-500/40 p-2 rounded flex flex-col items-center justify-center cursor-pointer transition-all group"
-                          title={`Бросок проверки ${name} (1d20${modStr})`}
-                        >
-                          <span className="text-xs uppercase font-bold text-slate-400 group-hover:text-amber-300">
-                            {label}
-                          </span>
-                          <span className="text-base font-bold text-slate-100 my-0.5">{val}</span>
-                          <span className="text-xs font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-1 rounded">
-                            {modStr}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+            <div>
+              <span className="text-slate-400 text-xs uppercase font-bold block">Инициатива</span>
+              {initBonus ? (
+                <button
+                  type="button"
+                  onClick={() => handleRollInitiative(initBonus)}
+                  className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                  title="Бросить инициативу в TaleSpire"
+                >
+                  <svg className="w-3 h-3 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                  </svg>
+                  <span>{initBonus}</span>
+                </button>
+              ) : (
+                <span className="text-slate-400 text-xs font-mono">+0</span>
               )}
+            </div>
+          </div>
 
-              {/* Actions & Attacks Section */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
-                  Действия и атаки ({character.attacks?.length || 0}):
-                </h4>
+          {/* 2. Ability Scores Grid (if available) */}
+          {activeStats && (
+            <div className="flex flex-col gap-1.5">
+              <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
+                Характеристики:
+              </h4>
+              <div className="grid grid-cols-6 gap-1.5">
+                {(
+                  [
+                    { key: 'str', label: 'СИЛ', name: 'Сила' },
+                    { key: 'dex', label: 'ЛОВ', name: 'Ловкость' },
+                    { key: 'con', label: 'ТЕЛ', name: 'Телосложение' },
+                    { key: 'int', label: 'ИНТ', name: 'Интеллект' },
+                    { key: 'wis', label: 'МУД', name: 'Мудрость' },
+                    { key: 'cha', label: 'ХАР', name: 'Харизма' },
+                  ] as const
+                ).map(({ key, label, name }) => {
+                  const val = activeStats[key] || '10';
+                  const mod = parseModifier(val);
+                  const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
 
-                {!character.attacks || character.attacks.length === 0 ? (
-                  <div className="text-center py-6 text-slate-500 text-xs bg-[#10111a] rounded-lg border border-[#1f2233]">
-                    Специальные действия не указаны в заметке.
-                  </div>
-                ) : (
-                  character.attacks.map((att, idx) => (
+                  return (
                     <div
-                      key={idx}
-                      className="bg-[#10111a] p-3 rounded-lg border border-[#1f2233] flex flex-col gap-2"
+                      key={key}
+                      onClick={() => handleRollStat(label, name, val)}
+                      className="bg-[#10111a] hover:bg-[#181b29] border border-[#1f2233] hover:border-amber-500/40 p-2 rounded flex flex-col items-center justify-center cursor-pointer transition-all group"
+                      title={`Бросок проверки ${name} (1d20${modStr})`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <strong className="text-amber-300 text-sm font-semibold truncate">
-                            {att.name}
-                          </strong>
-                          {att.type && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
-                              {att.type}
-                            </span>
-                          )}
-                        </div>
+                      <span className="text-xs uppercase font-bold text-slate-400 group-hover:text-amber-300">
+                        {label}
+                      </span>
+                      <span className="text-base font-bold text-slate-100 my-0.5">{val.split(' ')[0]}</span>
+                      <span className="text-xs font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-1 rounded">
+                        {modStr}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-                        {/* Interactive roll buttons */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {att.hit && (
-                            <button
-                              type="button"
-                              className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
-                              onClick={() => handleRollAttack(att.name, att.hit!)}
-                              title="Бросок атаки"
-                            >
-                              <span>Атака</span>
-                              <span className="font-mono text-xs">({att.hit})</span>
-                            </button>
-                          )}
+          {/* 3. Actions & Attacks Section */}
+          {parsed.actions.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
+                Действия и атаки ({parsed.actions.length}):
+              </h4>
 
-                          {att.dmg && (
-                            <button
-                              type="button"
-                              className="px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600/35 text-rose-300 border border-rose-500/40 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
-                              onClick={() => handleRollDamage(att.name, att.dmg!)}
-                              title="Бросок урона"
-                            >
-                              <span>Урон</span>
-                              <span className="font-mono text-xs">({att.dmg})</span>
-                            </button>
-                          )}
-                        </div>
+              <div className="flex flex-col gap-2">
+                {parsed.actions.map((att, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#10111a] p-3 rounded-lg border border-[#1f2233] flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <strong className="text-amber-300 text-sm font-semibold truncate">
+                          {att.name}
+                        </strong>
+                        {att.type && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
+                            {att.type}
+                          </span>
+                        )}
                       </div>
 
-                      {att.desc && (
-                        <div className="text-xs text-slate-300 leading-relaxed m-0 bg-[#141622] p-2.5 rounded border border-[#262a3d]">
-                          {formatInlineText(att.desc, (f, l) =>
+                      {/* Interactive roll buttons */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {att.hit && (
+                          <button
+                            type="button"
+                            className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
+                            onClick={() => handleRollAttack(att.name, att.hit!)}
+                            title="Бросок атаки"
+                          >
+                            <span>Атака</span>
+                            <span className="font-mono text-xs">({att.hit})</span>
+                          </button>
+                        )}
+
+                        {att.dmg && att.dmg !== '0' && (
+                          <button
+                            type="button"
+                            className="px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600/35 text-rose-300 border border-rose-500/40 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
+                            onClick={() => handleRollDamage(att.name, att.dmg!)}
+                            title="Бросок урона"
+                          >
+                            <span>Урон</span>
+                            <span className="font-mono text-xs">({att.dmg})</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {att.desc && (
+                      <div className="text-xs text-slate-300 leading-relaxed m-0 bg-[#141622] p-2.5 rounded border border-[#262a3d]">
+                        {formatInlineText(att.desc, (f, l) =>
+                          taleSpireDriver.rollDice(f, `${character.name}: ${l}`)
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Obsidian Callouts (Сводка для Мастера, Тактика, Лут) */}
+          {parsed.callouts.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              {parsed.callouts.map((c, idx) => {
+                let borderStyle = 'border-amber-500/60 bg-amber-500/5';
+                let titleColor = 'text-amber-400';
+
+                if (c.type === 'info' || c.type === 'note') {
+                  borderStyle = 'border-indigo-500/60 bg-indigo-500/5';
+                  titleColor = 'text-indigo-400';
+                } else if (c.type === 'tip') {
+                  borderStyle = 'border-emerald-500/60 bg-emerald-500/5';
+                  titleColor = 'text-emerald-400';
+                } else if (c.type === 'warning' || c.type === 'danger') {
+                  borderStyle = 'border-rose-500/60 bg-rose-500/5';
+                  titleColor = 'text-rose-400';
+                }
+
+                return (
+                  <div
+                    key={idx}
+                    className={`border-l-4 border rounded-r-lg p-3 flex flex-col gap-2 ${borderStyle}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold uppercase tracking-wider ${titleColor}`}>
+                        {c.title}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 text-xs text-slate-200 leading-relaxed">
+                      {c.lines.map((line, lIdx) => (
+                        <div key={lIdx} className="pl-1">
+                          {formatInlineText(line, (f, l) =>
                             taleSpireDriver.rollDice(f, `${character.name}: ${l}`)
                           )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
-            </>
-          ) : (
-            /* Obsidian Raw/Parsed Note Tab */
-            <div className="flex flex-col gap-2">
-              <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400">
-                Содержимое заметки ({character.name}.md):
-              </h4>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-              {rawMarkdown ? (
-                <div className="bg-[#10111a] p-3.5 rounded-lg border border-[#1f2233] text-sm leading-relaxed text-slate-200 whitespace-pre-wrap font-sans">
-                  {formatInlineText(rawMarkdown, (f, l) =>
-                    taleSpireDriver.rollDice(f, `${character.name}: ${l}`)
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-10 text-slate-500 text-xs bg-[#10111a] rounded-lg border border-[#1f2233]">
-                  {character.path
-                    ? 'Загрузка текста заметки из Obsidian...'
-                    : 'Файл заметки не привязан к этому существу.'}
-                </div>
-              )}
+          {/* 5. Additional Remaining Lore / Markdown */}
+          {parsed.remainingMarkdown && (
+            <div className="bg-[#10111a] p-3.5 rounded-lg border border-[#1f2233] flex flex-col gap-2 text-xs leading-relaxed text-slate-300">
+              {parsed.remainingMarkdown.split('\n\n').map((paragraph, pIdx) => {
+                const trimmed = paragraph.trim();
+                if (!trimmed) return null;
+
+                // Heading 2 or 3
+                if (trimmed.startsWith('## ') || trimmed.startsWith('### ')) {
+                  const headingText = trimmed.replace(/^#{2,3}\s+/, '');
+                  return (
+                    <h4
+                      key={pIdx}
+                      className="text-xs uppercase font-bold text-amber-300 tracking-wider pt-1 border-b border-[#1f2233] pb-1"
+                    >
+                      {headingText}
+                    </h4>
+                  );
+                }
+
+                // Regular paragraph
+                return (
+                  <p key={pIdx} className="m-0 leading-relaxed">
+                    {formatInlineText(trimmed, (f, l) =>
+                      taleSpireDriver.rollDice(f, `${character.name}: ${l}`)
+                    )}
+                  </p>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Fallback if note has no markdown text loaded yet */}
+          {!rawMarkdown && character.path && (
+            <div className="text-center py-6 text-slate-500 text-xs">
+              Загрузка текста заметки из Obsidian...
             </div>
           )}
         </div>
