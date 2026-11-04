@@ -920,7 +920,6 @@
                 }
             }
         }
-        }
 
         capitalize(str) {
             if (!str) return '';

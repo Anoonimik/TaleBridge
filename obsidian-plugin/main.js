@@ -497,8 +497,8 @@ async function scanCharacters(vault, metadataCache) {
                 category: category,
                 playable: isPlayable,
                 tags: tags,
-                hp: fm.hp || '-',
-                hp_max: fm.hp_max || fm.hp || '-',
+                hp: fm.hp !== undefined ? fm.hp : '-',
+                hp_max: fm.hp_max !== undefined ? fm.hp_max : (fm.hp !== undefined ? fm.hp : '-'),
                 ac: fm.ac || '-',
                 speed: fm.speed || '-',
                 race: fm.race || '',
@@ -1590,15 +1590,22 @@ class TaleBridgePlugin extends obsidian.Plugin {
         const inventory = parseInventory(content);
         const playerNotes = parsePlayerNotes(content);
 
-        let hp = fm.hp !== undefined ? fm.hp : 20;
-        let hpMax = fm.hp_max || fm.max_hp;
-        if (typeof hp === 'string' && hp.includes('/')) {
-            const parts = hp.split('/');
-            hp = parseInt(parts[0], 10) || 0;
-            hpMax = parseInt(parts[1], 10) || hp;
+        let rawHp = fm.hp !== undefined ? fm.hp : 20;
+        let hpMax = fm.hp_max !== undefined ? parseInt(fm.hp_max, 10) : (fm.max_hp !== undefined ? parseInt(fm.max_hp, 10) : null);
+        let hp = 0;
+
+        if (typeof rawHp === 'string' && rawHp.includes('/')) {
+            const parts = rawHp.split('/');
+            hp = parseInt(parts[0], 10);
+            if (isNaN(hp)) hp = 0;
+            if (hpMax === null || isNaN(hpMax)) {
+                hpMax = parseInt(parts[1], 10);
+                if (isNaN(hpMax)) hpMax = hp || 20;
+            }
         } else {
-            hp = parseInt(hp, 10) || 20;
-            if (!hpMax) hpMax = hp;
+            hp = parseInt(rawHp, 10);
+            if (isNaN(hp)) hp = 20;
+            if (hpMax === null || isNaN(hpMax)) hpMax = hp || 20;
         }
 
         return {

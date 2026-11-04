@@ -9,12 +9,21 @@
          * @param {HTMLElement} container 
          */
         modifyHp(data, delta, container) {
-            let cur = parseInt(data.hp, 10) || 20;
-            const max = parseInt(data.hp_max, 10) || cur;
+            let cur = parseInt(data.hp, 10);
+            if (isNaN(cur)) cur = 20;
+            const maxVal = parseInt(data.hp_max, 10);
+            const max = isNaN(maxVal) ? (cur || 20) : maxVal;
             cur = Math.min(max, Math.max(0, cur + delta));
 
             data.hp = cur;
+            data.hp_max = max;
             this.updateHpDisplay(cur, max, container);
+
+            if (window.TBWidgetPlayerCockpit) {
+                window.TBWidgetPlayerCockpit.updateHpDisplay(cur, max);
+            } else if (window.TBPlayerView) {
+                window.TBPlayerView.updateHpDisplay(cur, max);
+            }
 
             if (window.TBNetwork) {
                 window.TBNetwork.send('UPDATE_CHARACTER_HP', {
@@ -55,10 +64,10 @@
 
             // Quick modifiers
             container.querySelectorAll('.btn-hp-mod').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.onclick = () => {
                     const delta = parseInt(btn.dataset.mod, 10) || 0;
                     this.modifyHp(data, delta, container);
-                });
+                };
             });
 
             // Custom damage and heal buttons
@@ -67,17 +76,17 @@
             const customInput = container.querySelector('#hpCustomVal');
 
             if (btnDmg && customInput) {
-                btnDmg.addEventListener('click', () => {
+                btnDmg.onclick = () => {
                     const val = parseInt(customInput.value, 10) || 0;
                     if (val > 0) this.modifyHp(data, -val, container);
-                });
+                };
             }
 
             if (btnHeal && customInput) {
-                btnHeal.addEventListener('click', () => {
+                btnHeal.onclick = () => {
                     const val = parseInt(customInput.value, 10) || 0;
                     if (val > 0) this.modifyHp(data, val, container);
-                });
+                };
             }
         }
     }
