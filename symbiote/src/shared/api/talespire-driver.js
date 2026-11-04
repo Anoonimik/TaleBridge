@@ -109,14 +109,19 @@
 
                 if (!descriptors || !Array.isArray(descriptors) || descriptors.length === 0) {
                     descriptors = [{ name: name, roll: clean }];
-                } else {
-                    descriptors.forEach(d => {
-                        if (name) d.name = name;
-                    });
                 }
 
+                // Explicitly set visibility flags on each descriptor for maximum TaleSpire Symbiote API compatibility
+                descriptors.forEach(d => {
+                    if (name) d.name = name;
+                    d.hideResults = Boolean(isSecret);
+                    d.quietResults = Boolean(isSecret);
+                    d.isSecret = Boolean(isSecret);
+                    d.secret = Boolean(isSecret);
+                });
+
                 window.TBLogger?.log(`Бросок отправлен в лоток TaleSpire [${trayLabel}]: ${clean}`, 'sys');
-                const rollId = await window.TS.dice.putDiceInTray(descriptors, isSecret);
+                const rollId = await window.TS.dice.putDiceInTray(descriptors, Boolean(isSecret));
                 return rollId;
             } catch (err) {
                 window.TBLogger?.log(`Ошибка TS.dice.putDiceInTray: ${err.message}`, 'err');
@@ -167,14 +172,19 @@
 
                 if (!descriptors || !Array.isArray(descriptors) || descriptors.length === 0) {
                     descriptors = [{ name: name, roll: clean }];
-                } else {
-                    descriptors.forEach(d => {
-                        if (name) d.name = name;
-                    });
                 }
 
+                // Explicitly set visibility flags on each descriptor for maximum TaleSpire Symbiote API compatibility
+                descriptors.forEach(d => {
+                    if (name) d.name = name;
+                    d.hideResults = Boolean(isSecret);
+                    d.quietResults = Boolean(isSecret);
+                    d.isSecret = Boolean(isSecret);
+                    d.secret = Boolean(isSecret);
+                });
+
                 window.TBLogger?.log(`Бросок отправлен в лоток TaleSpire [${trayLabel}]: ${clean}. Ожидание кубика...`, 'sys');
-                const rollId = await window.TS.dice.putDiceInTray(descriptors, isSecret);
+                const rollId = await window.TS.dice.putDiceInTray(descriptors, Boolean(isSecret));
 
                 return await new Promise((resolve) => {
                     let timer = null;

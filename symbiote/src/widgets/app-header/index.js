@@ -70,38 +70,58 @@
             this.btnGmDiceMode = document.getElementById('btnGmDiceMode');
             if (!this.btnGmDiceMode) return;
 
-            const updateButton = (mode) => {
-                const isOpen = mode === 'open';
-                this.btnGmDiceMode.classList.toggle('open', isOpen);
-                this.btnGmDiceMode.classList.toggle('secret', !isOpen);
-                this.btnGmDiceMode.textContent = isOpen ? 'Броски: Общие' : 'Броски: GM';
-                this.btnGmDiceMode.title = isOpen
-                    ? 'Броски Мастера: Общие (видны всем в общем лотке стола). Нажмите для переключения в GM-лоток'
-                    : 'Броски Мастера: Скрытые (видны только вам в GM-лотке). Нажмите для переключения в общие';
-            };
-
             const initialMode = window.TBState?.get('gmDiceMode') || 'secret';
-            updateButton(initialMode);
+            this.updateDiceModeButton(initialMode);
 
-            this.btnGmDiceMode.onclick = (e) => {
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-                const current = window.TBState?.get('gmDiceMode') || 'secret';
-                const next = (current === 'open') ? 'secret' : 'open';
-                if (window.TBState) {
-                    window.TBState.set('gmDiceMode', next);
-                } else {
-                    localStorage.setItem('tb_gm_dice_mode', next);
-                }
-                updateButton(next);
-                window.TBLogger?.log(`Режим бросков мастера: ${next === 'open' ? 'Общие (открытый лоток стола)' : 'Скрытые (GM-лоток)'}`, 'sys');
-            };
+            this.btnGmDiceMode.addEventListener('click', (e) => this.toggleGmDiceMode(e));
+            this.btnGmDiceMode.onclick = (e) => this.toggleGmDiceMode(e);
 
             window.TBState?.on('gmDiceMode', (mode) => {
-                updateButton(mode);
+                this.updateDiceModeButton(mode);
+                const label = (mode === 'open') ? 'Открытый' : 'Скрытый (GM)';
+                document.querySelectorAll('.attack-chip, .hud-attack-chip').forEach(chip => {
+                    if (chip.title && chip.title.includes('Бросок:')) {
+                        chip.title = chip.title.replace(/Бросок:.*$/, `Бросок: ${label}`);
+                    }
+                });
             });
+        }
+
+        updateDiceModeButton(mode) {
+            if (!this.btnGmDiceMode) {
+                this.btnGmDiceMode = document.getElementById('btnGmDiceMode');
+            }
+            if (!this.btnGmDiceMode) return;
+
+            const isOpen = (mode === 'open');
+            this.btnGmDiceMode.classList.toggle('open', isOpen);
+            this.btnGmDiceMode.classList.toggle('secret', !isOpen);
+            this.btnGmDiceMode.textContent = isOpen ? 'Броски: Открытые' : 'Броски: Скрытые';
+            this.btnGmDiceMode.title = isOpen
+                ? 'Броски Мастера: Открытые (видны всем игрокам в общем лотке). Нажмите для переключения в Скрытые'
+                : 'Броски Мастера: Скрытые (видны только вам в GM-лотке). Нажмите для переключения в Открытые';
+        }
+
+        toggleGmDiceMode(e) {
+            if (e) {
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            }
+
+            const current = window.TBState?.get('gmDiceMode') || 'secret';
+            const next = (current === 'open') ? 'secret' : 'open';
+
+            if (window.TBState && typeof window.TBState.set === 'function') {
+                window.TBState.set('gmDiceMode', next);
+            } else {
+                try {
+                    localStorage.setItem('tb_gm_dice_mode', next);
+                } catch (err) {}
+            }
+
+            this.updateDiceModeButton(next);
+            window.TBLogger?.log(`Режим бросков мастера переключен: ${next === 'open' ? 'ОТКРЫТЫЕ (видны игрокам в общем лотке)' : 'СКРЫТЫЕ (GM-лоток)'}`, 'sys');
+            return next;
         }
 
         setupRoleToggle() {
@@ -128,4 +148,24 @@
     window.TBWidgetAppHeader = instance;
     window.TBWidgets = window.TBWidgets || {};
     window.TBWidgets.appHeader = instance;
+
+    // Global direct helpers for dice mode
+    window.TBToggleDiceMode = function(e) {
+        if (instance && typeof instance.toggleGmDiceMode === 'function') {
+            return instance.toggleGmDiceMode(e);
+        }
+        if (window.TBState && typeof window.TBState.toggleGmDiceMode === 'function') {
+            return window.TBState.toggleGmDiceMode();
+        }
+    };
+
+    window.TBSetDiceMode = function(mode) {
+        const target = mode === 'open' ? 'open' : 'secret';
+        if (window.TBState) {
+            window.TBState.set('gmDiceMode', target);
+        }
+        if (instance) {
+            instance.updateDiceModeButton(target);
+        }
+    };
 })();

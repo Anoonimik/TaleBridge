@@ -83,7 +83,13 @@
         }
 
         setGmDiceMode(mode) {
-            this.set('gmDiceMode', mode);
+            this.set('gmDiceMode', mode === 'open' ? 'open' : 'secret');
+        }
+
+        toggleGmDiceMode() {
+            const next = (this.get('gmDiceMode') === 'open') ? 'secret' : 'open';
+            this.set('gmDiceMode', next);
+            return next;
         }
 
         setPlayerCharacter(name) {

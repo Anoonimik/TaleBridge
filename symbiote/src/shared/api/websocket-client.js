@@ -233,9 +233,11 @@
                     }
                     break;
 
-                case 'ROLL_DICE':
-                    await window.TBApi?.rollDice(payload.formula || '1d20', payload.name || 'Бросок', payload.isGmOnly ?? true);
+                case 'ROLL_DICE': {
+                    const explicitSecret = (typeof payload.isGmOnly === 'boolean') ? payload.isGmOnly : null;
+                    await window.TBApi?.rollDice(payload.formula || '1d20', payload.name || 'Бросок', explicitSecret);
                     break;
+                }
 
                 case 'GOTO_BOOKMARK':
                     await window.TBApi?.gotoBookmark(payload.id, payload.name);

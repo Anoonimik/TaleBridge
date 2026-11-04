@@ -29,8 +29,10 @@
                 Авто: ВЫКЛ
             </button>
             <!-- GM Dice Visibility Toggle: Secret (GM Tray) vs Open (Public Tray) -->
-            <button id="btnGmDiceMode" type="button" class="btn-gm-dice-mode secret" title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в общие">
-                Броски: GM
+            <button id="btnGmDiceMode" type="button" class="btn-gm-dice-mode secret"
+                onclick="window.TBToggleDiceMode ? window.TBToggleDiceMode(event) : (window.TBWidgetAppHeader && window.TBWidgetAppHeader.toggleGmDiceMode(event))"
+                title="Броски Мастера: Скрытые (GM-лоток). Нажмите для переключения в Открытые">
+                Броски: Скрытые
             </button>
             <button id="btnScaleToggle" type="button" class="btn-scale-toggle" title="Переключить масштаб интерфейса (100% / 85%)">
                 Масштаб: 100%
