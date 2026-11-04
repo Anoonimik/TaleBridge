@@ -345,9 +345,9 @@
                         <div class="sheet-hero-info">
                             <h2 class="sheet-hero-name">${escape(data.name)}</h2>
                             <div class="sheet-hero-tags">
-                                <span class="tag-chip">${escape(data.race || 'Гуманоид')}</span>
-                                <span class="tag-chip">${escape(data.class || 'Искатель')}</span>
-                                ${data.level ? `<span class="tag-chip level">Ур. ${data.level}</span>` : ''}
+                                <span class="tag-chip editable" id="btnEditRace" title="Нажмите, чтобы изменить расу">${escape(data.race || 'Гуманоид')} ✎</span>
+                                <span class="tag-chip editable" id="btnEditClass" title="Нажмите, чтобы изменить класс">${escape(data.class || 'Искатель')} ✎</span>
+                                <span class="tag-chip level editable" id="btnEditLevel" title="Нажмите, чтобы изменить уровень">Ур. ${data.level || 1} ✎</span>
                             </div>
                         </div>
                     </div>
@@ -410,7 +410,10 @@
                     </div>
 
                     <!-- Ability Scores (Click to roll in TaleSpire) -->
-                    <div class="sheet-section-title">Характеристики (клик для броска)</div>
+                    <div class="sheet-section-header">
+                        <div class="sheet-section-title" style="margin: 0;">Характеристики (клик для броска)</div>
+                        <button id="btnEditStats" class="btn-edit-stats" title="Редактировать значения характеристик">✎ Изменить</button>
+                    </div>
                     <div class="ability-scores-grid">
                         ${ability ? ability.render('СИЛ', stats.str, 'Сила') : ''}
                         ${ability ? ability.render('ЛОВ', stats.dex, 'Ловкость') : ''}
@@ -665,26 +668,180 @@
             }
         }
 
-        editParam(data, paramName, paramLabel, currentVal) {
-            const promptVal = prompt(`Введите новое значение для ${paramLabel}:`, currentVal);
-            if (promptVal === null) return;
-            const cleanVal = promptVal.trim();
-            if (!cleanVal) return;
+        openParamModal(data, paramName, paramLabel, currentVal) {
+            const oldModal = document.querySelector('.action-modal-overlay');
+            if (oldModal) oldModal.remove();
 
-            data[paramName] = cleanVal;
-            if (window.TBNetwork) {
-                window.TBNetwork.send('UPDATE_CHARACTER_PARAM', {
-                    characterName: data.name,
-                    param: paramName,
-                    value: cleanVal
-                });
-            }
+            const escape = window.TBTextUtils?.escapeHtml || (s => s);
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'action-modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="action-modal" style="max-width: 320px;">
+                    <div class="action-modal-header">
+                        <h3>Изменить: ${paramLabel}</h3>
+                        <button class="btn-close-modal" id="btnModalClose">✕</button>
+                    </div>
+                    <div class="action-modal-body">
+                        <div class="modal-form-group">
+                            <label>Новое значение для ${paramLabel}</label>
+                            <input type="text" id="modalParamInput" value="${escape(currentVal)}" autofocus autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="action-modal-footer">
+                        <button class="btn-rest" id="btnModalCancel" style="border: 1px solid #374151;">Отмена</button>
+                        <button class="btn-primary" id="btnModalSave">Сохранить</button>
+                    </div>
+                </div>
+            `;
 
-            const charPane = this.container?.querySelector('#pTabCharacter');
-            if (charPane) {
-                charPane.innerHTML = this.renderCharacterSheet(data);
-                this.bindSheetEvents(data);
-            }
+            document.body.appendChild(modalOverlay);
+
+            const input = modalOverlay.querySelector('#modalParamInput');
+            input.focus();
+            input.select();
+
+            const close = () => modalOverlay.remove();
+            modalOverlay.querySelector('#btnModalClose').onclick = close;
+            modalOverlay.querySelector('#btnModalCancel').onclick = close;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) close();
+            };
+
+            const save = () => {
+                const val = input.value.trim();
+                if (!val) {
+                    input.style.borderColor = '#ef4444';
+                    return;
+                }
+                data[paramName] = val;
+                close();
+
+                if (window.TBNetwork) {
+                    window.TBNetwork.send('UPDATE_CHARACTER_PARAM', {
+                        characterName: data.name,
+                        param: paramName,
+                        value: val
+                    });
+                }
+
+                const charPane = this.container?.querySelector('#pTabCharacter');
+                if (charPane) {
+                    charPane.innerHTML = this.renderCharacterSheet(data);
+                    this.bindSheetEvents(data);
+                }
+            };
+
+            modalOverlay.querySelector('#btnModalSave').onclick = save;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') save();
+                if (e.key === 'Escape') close();
+            };
+        }
+
+        openStatsModal(data) {
+            const oldModal = document.querySelector('.action-modal-overlay');
+            if (oldModal) oldModal.remove();
+
+            const stats = data.stats || {};
+            const parseVal = (v) => {
+                const m = String(v || '10').match(/^(\d+)/);
+                return m ? parseInt(m[1], 10) : 10;
+            };
+
+            const strVal = parseVal(stats.str);
+            const dexVal = parseVal(stats.dex);
+            const conVal = parseVal(stats.con);
+            const intVal = parseVal(stats.int);
+            const wisVal = parseVal(stats.wis);
+            const chaVal = parseVal(stats.cha);
+
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'action-modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="action-modal" style="max-width: 360px;">
+                    <div class="action-modal-header">
+                        <h3>Характеристики персонажа</h3>
+                        <button class="btn-close-modal" id="btnModalClose">✕</button>
+                    </div>
+                    <div class="action-modal-body">
+                        <div class="stats-modal-grid">
+                            <div class="modal-form-group">
+                                <label>Сила (СИЛ)</label>
+                                <input type="number" id="statStr" value="${strVal}" min="1" max="30" />
+                            </div>
+                            <div class="modal-form-group">
+                                <label>Ловкость (ЛОВ)</label>
+                                <input type="number" id="statDex" value="${dexVal}" min="1" max="30" />
+                            </div>
+                            <div class="modal-form-group">
+                                <label>Телосложение (ТЕЛ)</label>
+                                <input type="number" id="statCon" value="${conVal}" min="1" max="30" />
+                            </div>
+                            <div class="modal-form-group">
+                                <label>Интеллект (ИНТ)</label>
+                                <input type="number" id="statInt" value="${intVal}" min="1" max="30" />
+                            </div>
+                            <div class="modal-form-group">
+                                <label>Мудрость (МУД)</label>
+                                <input type="number" id="statWis" value="${wisVal}" min="1" max="30" />
+                            </div>
+                            <div class="modal-form-group">
+                                <label>Харизма (ХАР)</label>
+                                <input type="number" id="statCha" value="${chaVal}" min="1" max="30" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-modal-footer">
+                        <button class="btn-rest" id="btnModalCancel" style="border: 1px solid #374151;">Отмена</button>
+                        <button class="btn-primary" id="btnModalSave">Сохранить</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modalOverlay);
+
+            const close = () => modalOverlay.remove();
+            modalOverlay.querySelector('#btnModalClose').onclick = close;
+            modalOverlay.querySelector('#btnModalCancel').onclick = close;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) close();
+            };
+
+            const formatScore = (num) => {
+                const s = parseInt(num, 10) || 10;
+                const m = Math.floor((s - 10) / 2);
+                const mStr = m >= 0 ? `+${m}` : `${m}`;
+                return `${s} (${mStr})`;
+            };
+
+            const save = () => {
+                const newStats = {
+                    str: formatScore(modalOverlay.querySelector('#statStr').value),
+                    dex: formatScore(modalOverlay.querySelector('#statDex').value),
+                    con: formatScore(modalOverlay.querySelector('#statCon').value),
+                    int: formatScore(modalOverlay.querySelector('#statInt').value),
+                    wis: formatScore(modalOverlay.querySelector('#statWis').value),
+                    cha: formatScore(modalOverlay.querySelector('#statCha').value)
+                };
+
+                data.stats = newStats;
+                close();
+
+                if (window.TBNetwork) {
+                    window.TBNetwork.send('UPDATE_CHARACTER_STATS', {
+                        characterName: data.name,
+                        stats: newStats
+                    });
+                }
+
+                const charPane = this.container?.querySelector('#pTabCharacter');
+                if (charPane) {
+                    charPane.innerHTML = this.renderCharacterSheet(data);
+                    this.bindSheetEvents(data);
+                }
+            };
+
+            modalOverlay.querySelector('#btnModalSave').onclick = save;
         }
 
         bindEvents(data) {
@@ -762,26 +919,54 @@
                 });
             });
 
-            // Editable parameters: AC, Speed, Max HP
+            // Editable parameters: AC, Speed, Max HP, Level, Race, Class, Stats
             const btnEditAc = this.container.querySelector('#btnEditAc');
             if (btnEditAc) {
-                btnEditAc.addEventListener('click', () => {
-                    this.editParam(data, 'ac', 'Класса Доспеха (КД)', data.ac || '10');
-                });
+                btnEditAc.onclick = () => {
+                    this.openParamModal(data, 'ac', 'Класс Доспеха (КД)', data.ac || '10');
+                };
             }
 
             const btnEditSpeed = this.container.querySelector('#btnEditSpeed');
             if (btnEditSpeed) {
-                btnEditSpeed.addEventListener('click', () => {
-                    this.editParam(data, 'speed', 'Скорости', data.speed || '9 м');
-                });
+                btnEditSpeed.onclick = () => {
+                    this.openParamModal(data, 'speed', 'Скорость', data.speed || '9 м');
+                };
             }
 
             const btnEditMaxHp = this.container.querySelector('#btnEditMaxHp');
             if (btnEditMaxHp) {
-                btnEditMaxHp.addEventListener('click', () => {
-                    this.editParam(data, 'hp_max', 'Максимального здоровья (ХП)', data.hp_max || data.hp || '20');
-                });
+                btnEditMaxHp.onclick = () => {
+                    this.openParamModal(data, 'hp_max', 'Максимальное здоровье (ХП)', data.hp_max || data.hp || '20');
+                };
+            }
+
+            const btnEditLevel = this.container.querySelector('#btnEditLevel');
+            if (btnEditLevel) {
+                btnEditLevel.onclick = () => {
+                    this.openParamModal(data, 'level', 'Уровень персонажа', data.level || '1');
+                };
+            }
+
+            const btnEditRace = this.container.querySelector('#btnEditRace');
+            if (btnEditRace) {
+                btnEditRace.onclick = () => {
+                    this.openParamModal(data, 'race', 'Раса персонажа', data.race || 'Гуманоид');
+                };
+            }
+
+            const btnEditClass = this.container.querySelector('#btnEditClass');
+            if (btnEditClass) {
+                btnEditClass.onclick = () => {
+                    this.openParamModal(data, 'class', 'Класс персонажа', data.class || 'Искатель');
+                };
+            }
+
+            const btnEditStats = this.container.querySelector('#btnEditStats');
+            if (btnEditStats) {
+                btnEditStats.onclick = () => {
+                    this.openStatsModal(data);
+                };
             }
 
             // Add action button

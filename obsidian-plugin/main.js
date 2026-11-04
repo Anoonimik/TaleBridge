@@ -417,6 +417,34 @@ async function updateCharacterActions(vault, file, attacks) {
     await vault.modify(file, newContent);
 }
 
+async function updateCharacterStats(vault, file, stats) {
+    const content = await vault.read(file);
+    const headerRegex = /\|\s*(?:Сила|СИЛ|STR)\s*\|\s*(?:Ловкость|ЛОВ|DEX)\s*\|\s*(?:Телосложение|ТЕЛ|CON)\s*\|\s*(?:Интеллект|ИНТ|INT)\s*\|\s*(?:Мудрость|МУД|WIS)\s*\|\s*(?:Харизма|ХАР|CHA)\s*\|/i;
+    const match = content.match(headerRegex);
+    if (match) {
+        const afterHeader = content.slice(match.index + match[0].length);
+        const lines = afterHeader.split(/\r?\n/);
+        let rowIdx = -1;
+        for (let i = 0; i < Math.min(3, lines.length); i++) {
+            if (lines[i].includes('---')) continue;
+            if (lines[i].includes('|')) {
+                rowIdx = i;
+                break;
+            }
+        }
+        if (rowIdx !== -1) {
+            const rowLine = lines[rowIdx];
+            const newRow = `| ${stats.str || '10 (+0)'} | ${stats.dex || '10 (+0)'} | ${stats.con || '10 (+0)'} | ${stats.int || '10 (+0)'} | ${stats.wis || '10 (+0)'} | ${stats.cha || '10 (+0)'} |`;
+            const rowStart = match.index + match[0].length + afterHeader.indexOf(rowLine);
+            const beforeRow = content.slice(0, rowStart);
+            const afterRow = content.slice(rowStart + rowLine.length);
+            const newContent = `${beforeRow}${newRow}${afterRow}`;
+            await vault.modify(file, newContent);
+            return;
+        }
+    }
+}
+
 function hasTag(tags, targetTags) {
     if (!tags) return false;
     const tagArray = (Array.isArray(tags) ? tags : [tags]).flatMap(t => 
@@ -1279,6 +1307,8 @@ class TaleBridgePlugin extends obsidian.Plugin {
                             else if (payload.param === 'speed') fm.speed = payload.value;
                             else if (payload.param === 'level') fm.level = payload.value;
                             else if (payload.param === 'status') fm.status = payload.value;
+                            else if (payload.param === 'race') fm.race = payload.value;
+                            else if (payload.param === 'class') fm.class = payload.value;
                         });
                         const updatedData = await this.getCharacterPlayerData(payload.characterName);
                         this.wss.broadcast({
@@ -1287,6 +1317,22 @@ class TaleBridgePlugin extends obsidian.Plugin {
                         });
                         this.debouncedScanCharacters();
                         new obsidian.Notice(`Параметр ${payload.param} обновлен: ${payload.characterName}`);
+                    }
+                }
+                break;
+
+            case 'UPDATE_CHARACTER_STATS':
+                if (payload && payload.characterName && payload.stats) {
+                    const file = this.findCharacterFile(payload.characterName);
+                    if (file) {
+                        await updateCharacterStats(this.app.vault, file, payload.stats);
+                        const updatedData = await this.getCharacterPlayerData(payload.characterName);
+                        this.wss.broadcast({
+                            type: 'PLAYER_DATA',
+                            payload: updatedData
+                        });
+                        this.debouncedScanCharacters();
+                        new obsidian.Notice(`Характеристики обновлены: ${payload.characterName}`);
                     }
                 }
                 break;

@@ -922,6 +922,42 @@
     border-color: #93c5fd;
 }
 
+.tag-chip.editable {
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.tag-chip.editable:hover {
+    border-color: var(--accent);
+    color: #fff;
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.btn-edit-stats {
+    background: transparent;
+    border: 1px solid #374151;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-edit-stats:hover {
+    border-color: var(--accent);
+    color: #fff;
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.stats-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
 /* --- TAB 2: INVENTORY --- */
 .inventory-header-panel {
     background: #161820;
