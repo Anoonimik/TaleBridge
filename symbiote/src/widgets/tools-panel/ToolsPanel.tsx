@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { useLogStore, wsBridge } from '../../shared';
-import { QuickDiceBar, BroadcastMediaModal } from '../../features';
+import { useLogStore, useAppStore, taleSpireDriver } from '../../shared';
+import { QuickDiceBar, BroadcastMediaModal, CameraBookmarksModal } from '../../features';
 
 export const ToolsPanel = () => {
   const { logs, clearLogs } = useLogStore();
+  const { bookmarks } = useAppStore();
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
-
-  const handleOpenBookmarks = () => {
-    wsBridge.send('GOTO_BOOKMARK', {});
-  };
+  const [showBookmarksModal, setShowBookmarksModal] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-3">
@@ -32,14 +30,51 @@ export const ToolsPanel = () => {
 
           <button
             type="button"
-            className="p-2 rounded bg-[#10111a] hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold cursor-pointer transition-colors text-center"
-            onClick={handleOpenBookmarks}
-            title="Переместить камеру к закладке TaleSpire"
+            className="p-2 rounded bg-[#10111a] hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold cursor-pointer transition-colors text-center flex items-center justify-center gap-1.5"
+            onClick={() => setShowBookmarksModal(true)}
+            title="Открыть список локаций и закладок камеры TaleSpire"
           >
-            Закладки камеры (TS)
+            <span>Закладки камеры (TS)</span>
+            {bookmarks.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-bold">
+                {bookmarks.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Quick Board Locations Bar (if available) */}
+      {bookmarks.length > 0 && (
+        <div className="bg-[#141622] p-2.5 rounded-lg border border-[#262a3d] flex flex-col gap-1.5 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Быстрый переход к локации ({bookmarks.length})
+            </span>
+            <button
+              type="button"
+              onClick={() => taleSpireDriver.getBookmarks()}
+              className="text-xs text-amber-400 hover:text-amber-300 cursor-pointer"
+              title="Пересканировать закладки с доски"
+            >
+              ↻
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto scrollbar-thin">
+            {bookmarks.map((bm) => (
+              <button
+                key={bm.id}
+                type="button"
+                onClick={() => taleSpireDriver.gotoBookmark(bm.id, bm.name)}
+                className="px-2 py-0.5 rounded bg-[#10111a] hover:bg-amber-500/20 text-amber-200 border border-amber-500/30 text-[11px] cursor-pointer transition-colors truncate max-w-[180px]"
+                title={`Центрировать камеру TaleSpire на «${bm.name}»`}
+              >
+                {bm.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Activity and Roll Log */}
       <div className="flex-1 overflow-hidden bg-[#141622] rounded-lg border border-[#262a3d] p-2.5 flex flex-col gap-2">
@@ -88,6 +123,11 @@ export const ToolsPanel = () => {
       <BroadcastMediaModal
         isOpen={showBroadcastModal}
         onClose={() => setShowBroadcastModal(false)}
+      />
+
+      <CameraBookmarksModal
+        isOpen={showBookmarksModal}
+        onClose={() => setShowBookmarksModal(false)}
       />
     </div>
   );

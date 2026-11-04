@@ -6,3 +6,4 @@ export * from './broadcast-media';
 export * from './gm-auth';
 export * from './roll-dice';
 export * from './save-notes';
+export * from './camera-bookmarks';

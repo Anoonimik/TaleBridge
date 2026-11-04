@@ -27,6 +27,11 @@ export interface InventoryItem {
   description?: string;
 }
 
+export interface Bookmark {
+  id: string;
+  name: string;
+}
+
 export interface Clue {
   id: string;
   title: string;

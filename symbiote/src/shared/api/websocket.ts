@@ -39,6 +39,7 @@ class WebSocketBridge {
         this.send('GET_SCENES', {});
         this.send('GET_COMBAT_STATE', {});
         this.send('GET_VAULT_IMAGES', {});
+        this.send('GET_BOOKMARKS', {});
 
         const activePlayer = useRosterStore.getState().playerCharacterName;
         if (activePlayer) {
@@ -157,6 +158,12 @@ class WebSocketBridge {
       case 'VAULT_IMAGES_LIST':
         if (Array.isArray(payload)) {
           useAppStore.getState().setVaultImages(payload);
+        }
+        break;
+
+      case 'BOOKMARKS_LIST':
+        if (Array.isArray(payload)) {
+          useAppStore.getState().setBookmarks(payload);
         }
         break;
 

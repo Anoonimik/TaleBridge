@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { Bookmark } from '../types';
 
 export type UserRole = 'gm' | 'player';
 export type AppTab = 'story' | 'characters' | 'combat' | 'tools' | 'player-cockpit';
@@ -28,6 +29,7 @@ interface AppStore {
   gmPin: string;
   vaultImages: VaultImage[];
   cinemaMedia: CinemaMediaPayload | null;
+  bookmarks: Bookmark[];
   setRole: (role: UserRole) => void;
   setActiveTab: (tab: AppTab) => void;
   setScale: (scale: string) => void;
@@ -37,6 +39,7 @@ interface AppStore {
   setGmPin: (pin: string) => void;
   setVaultImages: (images: VaultImage[]) => void;
   setCinemaMedia: (media: CinemaMediaPayload | null) => void;
+  setBookmarks: (bookmarks: Bookmark[]) => void;
 }
 
 const getInitialRole = (): UserRole => {
@@ -56,6 +59,7 @@ export const useAppStore = create<AppStore>((set) => ({
   gmPin: localStorage.getItem('tb_gm_pin') || '5',
   vaultImages: [],
   cinemaMedia: null,
+  bookmarks: [],
 
   setRole: (role) => {
     localStorage.setItem('tb_role', role);
@@ -75,4 +79,5 @@ export const useAppStore = create<AppStore>((set) => ({
   },
   setVaultImages: (vaultImages) => set({ vaultImages: Array.isArray(vaultImages) ? vaultImages : [] }),
   setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
+  setBookmarks: (bookmarks) => set({ bookmarks: Array.isArray(bookmarks) ? bookmarks : [] }),
 }));

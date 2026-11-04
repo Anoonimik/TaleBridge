@@ -1,4 +1,4 @@
-import { TaleSpireCreature } from '../types';
+import { TaleSpireCreature, Bookmark } from '../types';
 import { useRosterStore } from '../lib/useRosterStore';
 import { useAppStore } from '../lib/useAppStore';
 import { useLogStore } from '../lib/useLogStore';
@@ -91,10 +91,14 @@ class TaleSpireDriver {
       this.pollActiveToken();
     };
 
-    window.onStateChangeEvent = (msg: any) => {
+    window.onStateChangeEvent = async (msg: any) => {
       if (msg && msg.kind === 'hasInitialized') {
         useLogStore.getState().addLog('sync', 'TaleSpire Engine: API инициализировано');
         this.pollActiveToken();
+        const bms = await this.getBookmarks();
+        if (bms && bms.length > 0) {
+          useLogStore.getState().addLog('sync', `Синхронизировано ${bms.length} закладок камеры`);
+        }
       }
     };
 
@@ -102,7 +106,18 @@ class TaleSpireDriver {
       console.log('TaleSpire visibility change:', visibility);
     };
 
-    // 2. Start polling selected creatures every 400ms
+    // 2. WebSocket bridge hooks for bookmarks
+    wsBridge.subscribe('GET_BOOKMARKS', () => {
+      this.getBookmarks();
+    });
+
+    wsBridge.subscribe('GOTO_BOOKMARK', (payload: any) => {
+      if (payload) {
+        this.gotoBookmark(payload.id, payload.name);
+      }
+    });
+
+    // 3. Start polling selected creatures every 400ms
     if (this.pollInterval) clearInterval(this.pollInterval);
     this.pollInterval = setInterval(() => {
       this.pollActiveToken();
@@ -210,6 +225,92 @@ class TaleSpireDriver {
 
     // Fallback: send to Obsidian Host
     wsBridge.send('ROLL_DICE', { formula: clean, name: label, isGmOnly: isSecret });
+  }
+
+  public async getBookmarks(): Promise<Bookmark[]> {
+    if (!this.isReady() || !window.TS?.bookmarks?.getBookmarksInThisBoard) {
+      wsBridge.send('GET_BOOKMARKS', {});
+      return useAppStore.getState().bookmarks || [];
+    }
+
+    try {
+      const raw = await window.TS.bookmarks.getBookmarksInThisBoard();
+      if (raw && Array.isArray(raw)) {
+        const bms: Bookmark[] = raw.map((b: any) => ({
+          id: b.id || b,
+          name: b.name || 'Локация',
+        }));
+        useAppStore.getState().setBookmarks(bms);
+        wsBridge.send('BOOKMARKS_LIST', bms);
+        return bms;
+      }
+      return [];
+    } catch (e: any) {
+      console.error('getBookmarks error:', e);
+      return [];
+    }
+  }
+
+  public async gotoBookmark(id?: string, name?: string): Promise<void> {
+    const label = name || id || 'Локация';
+    useLogStore.getState().addLog('sync', `Камера: поиск «${label}»...`);
+
+    if (!this.isReady() || !window.TS?.bookmarks?.gotoBookmark) {
+      useLogStore.getState().addLog('sync', `Запрос камеры через Obsidian Host: ${label}`);
+      wsBridge.send('GOTO_BOOKMARK', { id, name: label });
+      return;
+    }
+
+    try {
+      let targetId = id;
+      let bookmarks = useAppStore.getState().bookmarks || [];
+
+      if (bookmarks.length === 0 || !targetId) {
+        const fresh = await this.getBookmarks();
+        if (fresh && fresh.length > 0) {
+          bookmarks = fresh;
+        }
+      }
+
+      if (!targetId && name) {
+        const clean = name.toLowerCase().replace(/^(камера|локация|сцена\s*\d+[:.]?)\s*:?\s*/i, '').trim();
+
+        // 1. Exact match
+        let found = bookmarks.find((b) => b.name.toLowerCase() === clean);
+
+        // 2. Substring match
+        if (!found) {
+          found = bookmarks.find(
+            (b) =>
+              b.name.toLowerCase().includes(clean) ||
+              clean.includes(b.name.toLowerCase())
+          );
+        }
+
+        // 3. Match by individual words (>3 chars)
+        if (!found) {
+          const words = clean.split(/[\s,«»—\-#.]+/i).filter((w) => w.length > 3);
+          found = bookmarks.find((b) => words.some((w) => b.name.toLowerCase().includes(w)));
+        }
+
+        if (found) {
+          targetId = found.id;
+          name = found.name;
+        }
+      }
+
+      if (targetId) {
+        await window.TS.bookmarks.gotoBookmark(targetId);
+        useLogStore.getState().addLog('sync', `Камера направлена к «${name || targetId}»`);
+      } else {
+        useLogStore.getState().addLog(
+          'sync',
+          `Маркер «${label}» не найден на доске. Поставьте Marker Block или закладку камеры в игре`
+        );
+      }
+    } catch (e: any) {
+      useLogStore.getState().addLog('sync', `Ошибка камеры: ${e?.message || e}`);
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStoryStore, useRosterStore, useAppStore, wsBridge, formatInlineText } from '../../shared';
+import { useStoryStore, useRosterStore, useAppStore, wsBridge, taleSpireDriver, formatInlineText } from '../../shared';
 
 export const StoryTracker = () => {
   const { scenes, activeScene, sceneHistory, goToScene, goBack } = useStoryStore();
@@ -200,9 +200,15 @@ export const StoryTracker = () => {
                     </span>
                   )}
                   {activeScene.location && (
-                    <span className="text-sm text-amber-400 font-semibold truncate">
-                      {activeScene.location}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => taleSpireDriver.gotoBookmark(undefined, activeScene.location)}
+                      className="text-xs text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded cursor-pointer font-semibold truncate flex items-center gap-1 transition-colors"
+                      title={`Навести камеру TaleSpire на локацию «${activeScene.location}»`}
+                    >
+                      <span className="text-[10px] uppercase font-bold text-amber-400">Камера:</span>
+                      <span className="truncate">{activeScene.location}</span>
+                    </button>
                   )}
                 </div>
 
