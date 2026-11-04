@@ -1,9 +1,26 @@
-import React from 'react';
-import { useAppStore, useRosterStore } from '../../shared';
+import React, { useState, useEffect } from 'react';
+import { useAppStore, useRosterStore, resolveMediaUrl, getYouTubeVideoId } from '../../shared';
 
 export const CinemaOverlay = () => {
   const { cinemaMedia, setCinemaMedia, role } = useAppStore();
   const { addClue } = useRosterStore();
+  const [isSaved, setIsSaved] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(false);
+    setImgError(false);
+  }, [cinemaMedia?.url]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && cinemaMedia?.active) {
+        setCinemaMedia(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cinemaMedia?.active, setCinemaMedia]);
 
   if (!cinemaMedia?.active) return null;
 
@@ -13,69 +30,161 @@ export const CinemaOverlay = () => {
       title: cinemaMedia.title || 'Улика',
       type: cinemaMedia.type,
       url: cinemaMedia.url,
+      text: cinemaMedia.description,
       date: new Date().toLocaleDateString(),
     });
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2500);
+  };
+
+  const ytId = getYouTubeVideoId(cinemaMedia.url);
+  const isVideo = cinemaMedia.type === 'video' || !!ytId;
+  const isAudio = cinemaMedia.type === 'audio';
+  const isText = cinemaMedia.type === 'text';
+  const isImage = cinemaMedia.type === 'image' && !ytId;
+
+  const getTypeLabel = () => {
+    if (ytId) return 'YouTube Видео';
+    if (isVideo) return 'Видеозапись';
+    if (isAudio) return 'Аудиозапись';
+    if (isText) return 'Манускрипт';
+    return 'Изображение';
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-      {/* Close button */}
-      <button
-        type="button"
-        onClick={() => setCinemaMedia(null)}
-        className="absolute top-4 right-4 text-white/70 hover:text-white text-2xl font-bold cursor-pointer w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-        title="Закрыть"
-      >
-        ✕
-      </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setCinemaMedia(null);
+        }
+      }}
+    >
+      {/* Handout Card */}
+      <div className="relative flex flex-col items-center gap-3 max-w-5xl w-full max-h-[92vh]">
+        {/* Top Header Bar */}
+        <div className="w-full flex items-center justify-between px-2 gap-3">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
+              {getTypeLabel()}
+            </span>
+            {cinemaMedia.title && (
+              <h2 className="text-white text-sm sm:text-base font-bold uppercase tracking-wider truncate drop-shadow-md">
+                {cinemaMedia.title}
+              </h2>
+            )}
+          </div>
 
-      {/* Handout content */}
-      <div className="flex flex-col items-center gap-3 max-w-4xl max-h-[90vh]">
-        {cinemaMedia.title && (
-          <h2 className="text-white text-base font-bold uppercase tracking-wider text-center drop-shadow-md">
-            {cinemaMedia.title}
-          </h2>
-        )}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              className={`px-3 py-1 rounded text-xs font-semibold cursor-pointer transition-colors border ${
+                isSaved
+                  ? 'bg-emerald-600/30 text-emerald-200 border-emerald-500/50'
+                  : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+              }`}
+              onClick={handleSaveToArchive}
+              title="Сохранить в архив улик"
+            >
+              {isSaved ? 'Сохранено в улики ✓' : 'В архив улик'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCinemaMedia(null)}
+              className="text-white/70 hover:text-white text-lg font-bold cursor-pointer w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              title="Закрыть (Esc)"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
 
-        <div className="max-w-full max-h-[75vh] flex items-center justify-center overflow-hidden rounded-lg shadow-2xl">
-          {cinemaMedia.type === 'image' && cinemaMedia.url && (
-            <img
-              src={cinemaMedia.url}
-              alt={cinemaMedia.title || 'Трансляция'}
-              className="max-w-full max-h-[75vh] object-contain rounded-lg"
-            />
+        {/* Media Container */}
+        <div className="max-w-full max-h-[76vh] flex items-center justify-center overflow-hidden rounded-xl shadow-2xl w-full">
+          {/* YouTube Video Embed */}
+          {ytId && (
+            <div className="relative w-full max-w-4xl aspect-video rounded-xl overflow-hidden border border-[#262a3d] bg-black shadow-2xl">
+              <iframe
+                src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
+                title={cinemaMedia.title || 'YouTube Видео'}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           )}
 
-          {cinemaMedia.type === 'video' && cinemaMedia.url && (
+          {/* Direct HTML Video File */}
+          {isVideo && !ytId && cinemaMedia.url && (
             <video
-              src={cinemaMedia.url}
+              src={resolveMediaUrl(cinemaMedia.url)}
               controls
               autoPlay
-              className="max-w-full max-h-[75vh] rounded-lg"
+              className="max-w-[88vw] max-h-[75vh] rounded-xl shadow-2xl bg-black border border-[#262a3d]"
             />
           )}
 
-          {cinemaMedia.type === 'audio' && cinemaMedia.url && (
-            <audio src={cinemaMedia.url} controls autoPlay className="w-80" />
+          {/* Image */}
+          {isImage && cinemaMedia.url && (
+            <div className="flex flex-col items-center">
+              {imgError ? (
+                <div className="p-8 bg-[#141622] border border-rose-500/40 text-rose-300 rounded-xl text-center text-xs">
+                  Не удалось загрузить изображение по указанному адресу:
+                  <div className="text-slate-400 mt-1 font-mono break-all">{cinemaMedia.url}</div>
+                </div>
+              ) : (
+                <img
+                  src={resolveMediaUrl(cinemaMedia.url)}
+                  alt={cinemaMedia.title || 'Трансляция'}
+                  onError={() => setImgError(true)}
+                  className="max-w-[88vw] max-h-[75vh] object-contain rounded-xl shadow-2xl border border-[#262a3d]"
+                />
+              )}
+            </div>
           )}
 
-          {cinemaMedia.type === 'text' && cinemaMedia.url && (
-            <div className="p-6 bg-[#141622] text-slate-100 rounded-lg max-w-lg leading-relaxed text-sm whitespace-pre-wrap border border-[#262a3d]">
-              {cinemaMedia.url}
+          {/* Audio */}
+          {isAudio && cinemaMedia.url && (
+            <div className="bg-[#141622] border border-[#262a3d] p-6 rounded-xl flex flex-col items-center gap-4 shadow-2xl max-w-md w-full">
+              <div className="text-slate-100 text-sm font-semibold text-center">
+                {cinemaMedia.title || 'Аудиодорожка'}
+              </div>
+              <audio src={resolveMediaUrl(cinemaMedia.url)} controls autoPlay className="w-full" />
+            </div>
+          )}
+
+          {/* Manuscript / Text */}
+          {isText && (
+            <div className="bg-[#f5ebd7] text-[#2c1d11] p-6 sm:p-8 rounded-xl max-w-2xl w-full max-h-[75vh] overflow-y-auto shadow-2xl border-4 border-[#8c6f48] font-serif leading-relaxed">
+              <div className="text-center pb-3 mb-4 border-b border-[#8c6f48]/40">
+                <span className="text-xs uppercase tracking-widest text-[#8c6f48] font-bold">
+                  ~ Послание ~
+                </span>
+              </div>
+              <div className="text-sm sm:text-base whitespace-pre-wrap font-serif">
+                {cinemaMedia.description || cinemaMedia.url}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Save to clues button for players */}
-        {role === 'player' && (
+        {/* Caption or Description (for Image / Video) */}
+        {cinemaMedia.description && !isText && (
+          <div className="max-w-2xl text-center text-slate-200 text-xs bg-black/60 backdrop-blur-xs px-4 py-2 rounded-lg border border-white/10">
+            {cinemaMedia.description}
+          </div>
+        )}
+
+        {/* Footer Dismiss Button */}
+        <div className="flex items-center justify-center gap-2 pt-1">
           <button
             type="button"
-            className="px-4 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold cursor-pointer transition-colors shadow-lg"
-            onClick={handleSaveToArchive}
+            onClick={() => setCinemaMedia(null)}
+            className="px-4 py-1 rounded bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium cursor-pointer transition-colors"
           >
-            ★ Сохранить в архив улик
+            Свернуть окно (Esc)
           </button>
-        )}
+        </div>
       </div>
     </div>
   );

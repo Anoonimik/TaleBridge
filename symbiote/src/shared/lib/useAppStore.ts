@@ -3,6 +3,21 @@ import { create } from 'zustand';
 export type UserRole = 'gm' | 'player';
 export type AppTab = 'story' | 'characters' | 'combat' | 'tools' | 'player-cockpit';
 
+export interface VaultImage {
+  name: string;
+  path: string;
+  extension?: string;
+  isPublic?: boolean;
+}
+
+export interface CinemaMediaPayload {
+  type: 'image' | 'video' | 'text' | 'audio';
+  url: string;
+  title?: string;
+  description?: string;
+  active: boolean;
+}
+
 interface AppStore {
   role: UserRole;
   activeTab: AppTab;
@@ -11,7 +26,8 @@ interface AppStore {
   connected: boolean;
   vaultName: string;
   gmPin: string;
-  cinemaMedia: { type: 'image' | 'video' | 'text' | 'audio'; url: string; title?: string; active: boolean } | null;
+  vaultImages: VaultImage[];
+  cinemaMedia: CinemaMediaPayload | null;
   setRole: (role: UserRole) => void;
   setActiveTab: (tab: AppTab) => void;
   setScale: (scale: string) => void;
@@ -19,7 +35,8 @@ interface AppStore {
   setConnected: (connected: boolean) => void;
   setVaultName: (name: string) => void;
   setGmPin: (pin: string) => void;
-  setCinemaMedia: (media: AppStore['cinemaMedia']) => void;
+  setVaultImages: (images: VaultImage[]) => void;
+  setCinemaMedia: (media: CinemaMediaPayload | null) => void;
 }
 
 const getInitialRole = (): UserRole => {
@@ -37,6 +54,7 @@ export const useAppStore = create<AppStore>((set) => ({
   connected: false,
   vaultName: 'Obsidian Vault',
   gmPin: localStorage.getItem('tb_gm_pin') || '5',
+  vaultImages: [],
   cinemaMedia: null,
 
   setRole: (role) => {
@@ -55,5 +73,6 @@ export const useAppStore = create<AppStore>((set) => ({
     localStorage.setItem('tb_gm_pin', gmPin);
     set({ gmPin });
   },
+  setVaultImages: (vaultImages) => set({ vaultImages: Array.isArray(vaultImages) ? vaultImages : [] }),
   setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
 }));

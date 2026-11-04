@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { useAppStore, wsBridge } from '../../shared';
+import React, { useState, useEffect } from 'react';
+import {
+  useAppStore,
+  wsBridge,
+  resolveMediaUrl,
+  getYouTubeVideoId,
+  getYouTubeEmbedUrl,
+  detectMediaType,
+  cleanFileNameToTitle,
+} from '../../shared';
 
 interface BroadcastMediaModalProps {
   isOpen: boolean;
@@ -7,21 +15,69 @@ interface BroadcastMediaModalProps {
 }
 
 export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProps) => {
-  const { cinemaMedia, setCinemaMedia } = useAppStore();
+  const { cinemaMedia, setCinemaMedia, vaultImages } = useAppStore();
+  const [type, setType] = useState<'image' | 'video' | 'text' | 'audio'>('image');
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
-  const [type, setType] = useState<'image' | 'video' | 'text' | 'audio'>('image');
+  const [description, setDescription] = useState('');
+  const [selectedVaultImage, setSelectedVaultImage] = useState('');
+
+  // Request latest vault images when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      wsBridge.send('GET_VAULT_IMAGES', {});
+    }
+  }, [isOpen]);
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
+  // Handle URL change with smart auto-detection
+  const handleUrlChange = (value: string) => {
+    setUrl(value);
+    setSelectedVaultImage('');
+
+    const detected = detectMediaType(value);
+    if (getYouTubeVideoId(value) || /\.(mp4|webm|mov|mkv)$/i.test(value)) {
+      if (type !== 'video') setType('video');
+    } else if (/\.(png|jpe?g|webp|gif|svg)$/i.test(value)) {
+      if (type !== 'image') setType('image');
+    } else if (/\.(mp3|ogg|wav)$/i.test(value)) {
+      if (type !== 'audio') setType('audio');
+    }
+  };
+
+  // Handle Vault Image selection
+  const handleSelectVaultImage = (path: string) => {
+    setSelectedVaultImage(path);
+    setUrl(path);
+    setType('image');
+    if (!title || title === cleanFileNameToTitle(url)) {
+      setTitle(cleanFileNameToTitle(path));
+    }
+  };
+
   const handleBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    if (type !== 'text' && !url.trim()) return;
+    if (type === 'text' && !description.trim()) return;
 
     const handout = {
       type,
-      url: url.trim(),
+      url: type === 'text' ? '' : url.trim(),
       title: title.trim() || undefined,
+      description: description.trim() || undefined,
+      content: type === 'text' ? description.trim() : undefined,
       active: true,
     };
 
@@ -33,107 +89,417 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
   const handleDismiss = () => {
     setCinemaMedia(null);
     wsBridge.send('DISMISS_HANDOUT', {});
-    onClose();
   };
 
+  const ytId = getYouTubeVideoId(url);
+  const ytEmbedPreview = getYouTubeEmbedUrl(url, false);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-[#141622] border border-[#262a3d] rounded-xl w-full max-w-sm p-4 shadow-2xl flex flex-col gap-3 text-xs">
-        <div className="flex items-center justify-between pb-2 border-b border-[#262a3d]">
-          <h3 className="font-bold text-slate-100 uppercase tracking-wider text-xs">
-            Трансляция медиа игрокам (Handout)
-          </h3>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[#141622] border border-[#262a3d] rounded-xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl text-xs overflow-hidden">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#262a3d] bg-[#10111a] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            <h3 className="font-bold text-slate-100 uppercase tracking-wider text-xs">
+              Трансляция медиа игрокам (Handout Showcase)
+            </h3>
+          </div>
           <button
             type="button"
-            className="text-slate-400 hover:text-white text-xs cursor-pointer"
+            className="text-slate-400 hover:text-white text-base font-bold cursor-pointer w-6 h-6 rounded flex items-center justify-center transition-colors"
             onClick={onClose}
+            title="Закрыть (Esc)"
           >
             ✕
           </button>
         </div>
 
-        {cinemaMedia?.active && (
-          <div className="bg-amber-950/20 border border-amber-500/30 p-2.5 rounded flex items-center justify-between">
-            <span className="text-amber-300 truncate mr-2">
-              Сейчас транслируется: <strong>{cinemaMedia.title || cinemaMedia.url}</strong>
-            </span>
-            <button
-              type="button"
-              className="px-2.5 py-1 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-xs shrink-0 font-medium cursor-pointer"
-              onClick={handleDismiss}
-            >
-              Снять
-            </button>
-          </div>
-        )}
+        {/* Scrollable Body */}
+        <div className="p-4 overflow-y-auto flex flex-col gap-3.5 scrollbar-thin">
+          {/* Active Broadcast Banner */}
+          {cinemaMedia?.active && (
+            <div className="bg-amber-950/30 border border-amber-500/40 p-2.5 rounded-lg flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 truncate">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                <span className="text-amber-200 text-xs truncate">
+                  В эфире у игроков:{' '}
+                  <strong className="text-amber-300">
+                    {cinemaMedia.title || cinemaMedia.url || 'Свиток'}
+                  </strong>{' '}
+                  <span className="text-amber-400/80">({cinemaMedia.type})</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                className="px-2.5 py-1 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded text-[11px] shrink-0 font-medium cursor-pointer transition-colors"
+                onClick={handleDismiss}
+              >
+                Снять трансляцию
+              </button>
+            </div>
+          )}
 
-        <form onSubmit={handleBroadcast} className="flex flex-col gap-2.5 text-slate-300">
+          {/* Media Type Tabs */}
           <div>
-            <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
-              Тип медиа
+            <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1.5">
+              Тип трансляции
             </label>
-            <div className="grid grid-cols-3 gap-1">
-              {(['image', 'video', 'audio'] as const).map((t) => (
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { id: 'image', label: 'Изображение' },
+                { id: 'video', label: 'Видео' },
+                { id: 'text', label: 'Манускрипт' },
+                { id: 'audio', label: 'Аудио' },
+              ].map((tab) => (
                 <button
-                  key={t}
+                  key={tab.id}
                   type="button"
-                  className={`py-1 rounded text-xs capitalize cursor-pointer border ${
-                    type === t
-                      ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/50 font-bold'
-                      : 'bg-[#10111a] text-slate-400 border-[#262a3d]'
+                  className={`py-1.5 px-2 rounded text-xs font-medium cursor-pointer border text-center transition-all ${
+                    type === tab.id
+                      ? 'bg-indigo-600/30 text-indigo-200 border-indigo-500/60 font-bold shadow-xs'
+                      : 'bg-[#10111a] text-slate-400 hover:text-slate-200 border-[#262a3d]'
                   }`}
-                  onClick={() => setType(t)}
+                  onClick={() => setType(tab.id as any)}
                 >
-                  {t === 'image' ? 'Картинка' : t === 'video' ? 'Видео' : 'Аудио'}
+                  {tab.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div>
-            <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
-              URL или путь в Vault
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="https://... или public/art.png"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
-              autoFocus
-            />
-          </div>
+          <form id="broadcastForm" onSubmit={handleBroadcast} className="flex flex-col gap-3">
+            {/* Title Input (common for all types) */}
+            <div>
+              <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
+                {type === 'text' ? 'Заголовок свитка / документа' : 'Заголовок материала (для игроков)'}
+              </label>
+              <input
+                type="text"
+                placeholder={
+                  type === 'text'
+                    ? 'Например: Письмо Калиокса или Древний указ'
+                    : type === 'video'
+                    ? 'Например: Вступительное синематик-видео'
+                    : 'Например: Карта катакомб или Портрет чародея'
+                }
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+              />
+            </div>
 
-          <div>
-            <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
-              Заголовок (опционально)
-            </label>
-            <input
-              type="text"
-              placeholder="Таинственное письмо / Карта катакомб"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
-            />
-          </div>
+            {/* --- IMAGE VIEW --- */}
+            {type === 'image' && (
+              <div className="flex flex-col gap-2.5 bg-[#10111a]/70 border border-[#262a3d] p-3 rounded-lg">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] uppercase font-bold text-slate-300">
+                      Выбор из хранилища Obsidian ({vaultImages.length} найдено)
+                    </label>
+                    <button
+                      type="button"
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
+                      onClick={() => wsBridge.send('GET_VAULT_IMAGES', {})}
+                      title="Пересканировать папку public/ и файлы хранилища"
+                    >
+                      ↻ Обновить список
+                    </button>
+                  </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#262a3d]">
-            <button
-              type="button"
-              className="px-3 py-1.5 rounded bg-[#1a1d2d] text-slate-400 hover:text-white"
-              onClick={onClose}
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
-            >
-              Транслировать
-            </button>
-          </div>
-        </form>
+                  <select
+                    value={selectedVaultImage}
+                    onChange={(e) => handleSelectVaultImage(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="">
+                      {vaultImages.length > 0
+                        ? '-- Выберите подготовленную картинку --'
+                        : '-- Нет картинок в хранилище (добавьте в public/) --'}
+                    </option>
+                    {vaultImages.map((img) => (
+                      <option key={img.path} value={img.path}>
+                        {img.isPublic ? '[public] ' : ''}
+                        {img.name} ({img.path})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Quick Public Pills */}
+                {vaultImages.filter((img) => img.isPublic).length > 0 && (
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">
+                      Быстрый выбор из public/:
+                    </span>
+                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-thin">
+                      {vaultImages
+                        .filter((img) => img.isPublic)
+                        .slice(0, 10)
+                        .map((img) => (
+                          <button
+                            key={img.path}
+                            type="button"
+                            onClick={() => handleSelectVaultImage(img.path)}
+                            className={`px-2 py-0.5 rounded text-[11px] border cursor-pointer transition-colors ${
+                              selectedVaultImage === img.path
+                                ? 'bg-indigo-600/40 text-indigo-200 border-indigo-400'
+                                : 'bg-[#141622] text-slate-400 hover:text-slate-200 border-[#262a3d]'
+                            }`}
+                          >
+                            {img.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual URL / Path Input */}
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
+                    Или прямая веб-ссылка / путь к файлу
+                  </label>
+                  <input
+                    type="text"
+                    required={type === 'image' && !url}
+                    placeholder="public/art.png или https://.../image.webp"
+                    value={url}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  />
+                </div>
+
+                {/* Caption */}
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
+                    Подпись к изображению (опционально)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Например: Схема защитного барьера лаборатории"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* --- VIDEO VIEW --- */}
+            {type === 'video' && (
+              <div className="flex flex-col gap-2.5 bg-[#10111a]/70 border border-[#262a3d] p-3 rounded-lg">
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-300 block mb-1">
+                    Ссылка на видео (YouTube или прямой файл MP4/WebM)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=... или https://youtu.be/... или file.mp4"
+                    value={url}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs font-mono"
+                    autoFocus
+                  />
+                  <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                    <span>Поддерживаются ссылки YouTube (включая Shorts) и прямые видеофайлы.</span>
+                    {ytId && (
+                      <span className="text-emerald-400 font-semibold shrink-0">
+                        YouTube распознан ({ytId}) ✓
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
+                    Описание / Подсказка к видео (опционально)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Например: Катсцена перехода на второй уровень"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* --- MANUSCRIPT / TEXT VIEW --- */}
+            {type === 'text' && (
+              <div className="flex flex-col gap-2.5 bg-[#10111a]/70 border border-[#262a3d] p-3 rounded-lg">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] uppercase font-bold text-slate-300">
+                      Текст манускрипта или записки
+                    </label>
+                    <div className="flex gap-1.5 text-[11px]">
+                      <button
+                        type="button"
+                        className="text-amber-400 hover:text-amber-300 cursor-pointer"
+                        onClick={() =>
+                          setDescription(
+                            '«Доверенным лицам Цеха.\n\nПроект Калиокса входит в завершающую стадию. Доставьте кристалл-резонатор к вентилям реактора не позднее полуночи. Нарушители будут дезинтегрированы на месте.»'
+                          )
+                        }
+                      >
+                        Пример
+                      </button>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-slate-200 cursor-pointer"
+                        onClick={() => setDescription('')}
+                      >
+                        Очистить
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    rows={6}
+                    required
+                    placeholder="Введите текст, который игроки увидят на экране в виде древнего свитка..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs leading-relaxed font-serif"
+                    autoFocus
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* --- AUDIO VIEW --- */}
+            {type === 'audio' && (
+              <div className="flex flex-col gap-2.5 bg-[#10111a]/70 border border-[#262a3d] p-3 rounded-lg">
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-300 block mb-1">
+                    Ссылка на аудиофайл (URL или путь в Vault)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="public/ambience.mp3 или https://.../horn.wav"
+                    value={url}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                    autoFocus
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* --- LIVE PREVIEW BOX --- */}
+            <div>
+              <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1.5">
+                Предпросмотр перед отправкой
+              </label>
+              <div className="bg-[#0c0d14] border border-[#262a3d] rounded-lg p-2.5 flex items-center justify-center min-h-[120px] overflow-hidden">
+                {type === 'image' && url && (
+                  <div className="flex flex-col items-center gap-1 max-w-full">
+                    <img
+                      src={resolveMediaUrl(url)}
+                      alt="Предпросмотр"
+                      className="max-h-48 max-w-full object-contain rounded border border-[#1f2233]"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    {title && <span className="text-[11px] text-slate-300 font-semibold">{title}</span>}
+                    {description && <span className="text-[10px] text-slate-400 italic">{description}</span>}
+                  </div>
+                )}
+
+                {type === 'image' && !url && (
+                  <span className="text-slate-500 text-xs text-center">
+                    Выберите файл из списка выше или введите URL для предпросмотра
+                  </span>
+                )}
+
+                {type === 'video' && ytEmbedPreview && (
+                  <div className="w-full max-w-sm aspect-video rounded overflow-hidden border border-[#262a3d] bg-black">
+                    <iframe
+                      src={ytEmbedPreview}
+                      title="Предпросмотр YouTube"
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+
+                {type === 'video' && !ytId && url && (
+                  <div className="flex flex-col items-center gap-1 w-full max-w-sm">
+                    <video
+                      src={resolveMediaUrl(url)}
+                      controls
+                      className="max-h-44 max-w-full rounded bg-black"
+                    />
+                    {title && <span className="text-[11px] text-slate-300 font-semibold">{title}</span>}
+                  </div>
+                )}
+
+                {type === 'video' && !url && (
+                  <span className="text-slate-500 text-xs text-center">
+                    Вставьте ссылку на YouTube или видеофайл для предпросмотра
+                  </span>
+                )}
+
+                {type === 'text' && description && (
+                  <div className="bg-[#f5ebd7] text-[#2c1d11] p-3.5 rounded-lg border-2 border-[#8c6f48] w-full max-w-md font-serif text-xs leading-relaxed shadow-sm">
+                    <div className="text-center pb-1 mb-2 border-b border-[#8c6f48]/40">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-[#8c6f48]">
+                        {title || '~ Манускрипт ~'}
+                      </span>
+                    </div>
+                    <div className="whitespace-pre-wrap">{description}</div>
+                  </div>
+                )}
+
+                {type === 'text' && !description && (
+                  <span className="text-slate-500 text-xs text-center">
+                    Введите текст послания для предпросмотра свитка
+                  </span>
+                )}
+
+                {type === 'audio' && url && (
+                  <div className="w-full max-w-sm flex flex-col items-center gap-2 p-2">
+                    <span className="text-xs text-slate-200 font-semibold">{title || 'Аудио'}</span>
+                    <audio src={resolveMediaUrl(url)} controls className="w-full" />
+                  </div>
+                )}
+
+                {type === 'audio' && !url && (
+                  <span className="text-slate-500 text-xs text-center">
+                    Введите ссылку на аудиодорожку для предпросмотра
+                  </span>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#262a3d] bg-[#10111a] shrink-0">
+          <button
+            type="button"
+            className="px-3 py-1.5 rounded bg-[#1a1d2d] hover:bg-[#25293d] text-slate-300 hover:text-white text-xs cursor-pointer transition-colors"
+            onClick={onClose}
+          >
+            Отмена
+          </button>
+
+          <button
+            type="submit"
+            form="broadcastForm"
+            className="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs cursor-pointer transition-colors shadow-md"
+          >
+            Транслировать игрокам ▸
+          </button>
+        </div>
       </div>
     </div>
   );

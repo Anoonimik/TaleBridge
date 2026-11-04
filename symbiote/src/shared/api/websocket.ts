@@ -38,6 +38,7 @@ class WebSocketBridge {
         this.send('GET_CHARACTERS', {});
         this.send('GET_SCENES', {});
         this.send('GET_COMBAT_STATE', {});
+        this.send('GET_VAULT_IMAGES', {});
 
         const activePlayer = useRosterStore.getState().playerCharacterName;
         if (activePlayer) {
@@ -150,6 +151,12 @@ class WebSocketBridge {
       case 'NOTE_CONTENT':
         if (payload) {
           useRosterStore.getState().setNoteContent(payload);
+        }
+        break;
+
+      case 'VAULT_IMAGES_LIST':
+        if (Array.isArray(payload)) {
+          useAppStore.getState().setVaultImages(payload);
         }
         break;
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStoryStore, useRosterStore, wsBridge, formatInlineText } from '../../shared';
+import { useStoryStore, useRosterStore, useAppStore, wsBridge, formatInlineText } from '../../shared';
 
 export const StoryTracker = () => {
   const { scenes, activeScene, sceneHistory, goToScene, goBack } = useStoryStore();
@@ -268,12 +268,32 @@ export const StoryTracker = () => {
                   Текст для зачитки игрокам:
                 </div>
                 {readAloudItems.map((text, idx) => (
-                  <blockquote
-                    key={idx}
-                    className="m-0 pl-3 text-sm text-amber-200/90 italic leading-relaxed border-l-2 border-amber-400/50"
-                  >
-                    «{formatInlineText(text)}»
-                  </blockquote>
+                  <div key={idx} className="flex flex-col gap-1.5 pl-3 border-l-2 border-amber-400/50">
+                    <blockquote className="m-0 text-sm text-amber-200/90 italic leading-relaxed">
+                      «{formatInlineText(text)}»
+                    </blockquote>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const handout = {
+                            type: 'text' as const,
+                            url: '',
+                            title: activeScene.title || 'Сюжетное послание',
+                            description: text,
+                            content: text,
+                            active: true,
+                          };
+                          useAppStore.getState().setCinemaMedia(handout);
+                          wsBridge.send('BROADCAST_HANDOUT', handout);
+                        }}
+                        className="px-2 py-0.5 rounded text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 cursor-pointer font-medium transition-colors"
+                        title="Показать этот текст игрокам на весь экран как древний свиток"
+                      >
+                        Транслировать свиток ▸
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

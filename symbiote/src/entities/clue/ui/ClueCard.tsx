@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Clue } from '../../../shared';
-import { useAppStore } from '../../../shared';
+import {
+  Clue,
+  useAppStore,
+  resolveMediaUrl,
+  getYouTubeVideoId,
+  getYouTubeThumbnailUrl,
+} from '../../../shared';
 
 interface ClueCardProps {
   clue: Clue;
@@ -38,16 +43,31 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
       type: clue.type,
       url: clue.url || '',
       title: clue.title,
+      description: clue.text,
       active: true,
     });
   };
 
+  const ytId = getYouTubeVideoId(clue.url);
+  const ytThumb = getYouTubeThumbnailUrl(clue.url);
+
   return (
     <div className="bg-[#141622] border border-[#262a3d] hover:border-[#383d57] rounded-lg p-2.5 flex flex-col gap-2 transition-all shadow-sm">
       <div className="flex items-center justify-between gap-1">
-        <strong className="text-slate-100 text-xs truncate" title={clue.title}>
-          {clue.title}
-        </strong>
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#10111a] text-slate-400 border border-[#262a3d] shrink-0">
+            {clue.type === 'image'
+              ? 'Арт'
+              : clue.type === 'video'
+              ? 'Видео'
+              : clue.type === 'text'
+              ? 'Свиток'
+              : 'Аудио'}
+          </span>
+          <strong className="text-slate-100 text-xs truncate" title={clue.title}>
+            {clue.title}
+          </strong>
+        </div>
 
         <button
           type="button"
@@ -67,13 +87,14 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
         </button>
       </div>
 
+      {/* Image Preview */}
       {clue.url && clue.type === 'image' && (
         <div
-          className="w-full h-24 rounded bg-[#10111a] overflow-hidden cursor-pointer relative group"
+          className="w-full h-28 rounded bg-[#10111a] overflow-hidden cursor-pointer relative group border border-[#1f2233]"
           onClick={handleOpenMedia}
         >
           <img
-            src={clue.url}
+            src={resolveMediaUrl(clue.url)}
             alt={clue.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
           />
@@ -83,11 +104,48 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
         </div>
       )}
 
-      {clue.text && (
-        <p className="text-xs text-slate-400 italic line-clamp-3 bg-[#10111a] p-2 rounded border border-[#1f2233]">
+      {/* YouTube / Video Preview */}
+      {clue.type === 'video' && (
+        <div
+          className="w-full h-28 rounded bg-[#10111a] overflow-hidden cursor-pointer relative group border border-[#1f2233] flex items-center justify-center"
+          onClick={handleOpenMedia}
+        >
+          {ytThumb ? (
+            <img
+              src={ytThumb}
+              alt={clue.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            />
+          ) : (
+            <div className="text-indigo-400 text-xs font-semibold">▶ Видеофайл</div>
+          )}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <span className="w-8 h-8 rounded-full bg-indigo-600/80 text-white flex items-center justify-center font-bold text-sm shadow-md group-hover:scale-110 transition-transform">
+              ▶
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Text / Manuscript Preview */}
+      {clue.type === 'text' && clue.text && (
+        <div
+          className="p-2.5 bg-[#f5ebd7] text-[#2c1d11] rounded border border-[#8c6f48]/40 font-serif text-[11px] leading-relaxed line-clamp-3 cursor-pointer"
+          onClick={handleOpenMedia}
+        >
+          {clue.text}
+        </div>
+      )}
+
+      {/* Caption for image/video */}
+      {clue.text && clue.type !== 'text' && (
+        <p className="text-[11px] text-slate-400 italic line-clamp-2 bg-[#10111a] p-1.5 rounded border border-[#1f2233] m-0">
           {clue.text}
         </p>
       )}
+
+      {/* Date */}
+      {clue.date && <div className="text-[10px] text-slate-500">{clue.date}</div>}
 
       <button
         type="button"
