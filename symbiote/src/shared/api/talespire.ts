@@ -59,14 +59,34 @@ export const parseRollResults = (rollResults: any): number | null => {
   return null;
 };
 
+export type RollResultListener = (total: number, raw?: any) => void;
+
 class TaleSpireDriver {
   private lastTokenId: string | null = null;
   private pollInterval: any = null;
+  private rollListeners: Set<RollResultListener> = new Set();
 
   constructor() {
     if (typeof window !== 'undefined') {
       setTimeout(() => this.init(), 0);
     }
+  }
+
+  public onRollResult(listener: RollResultListener): () => void {
+    this.rollListeners.add(listener);
+    return () => {
+      this.rollListeners.delete(listener);
+    };
+  }
+
+  public notifyRollListeners(total: number, raw?: any): void {
+    this.rollListeners.forEach((l) => {
+      try {
+        l(total, raw);
+      } catch (e) {
+        console.error('Error in roll listener:', e);
+      }
+    });
   }
 
   public isReady(): boolean {
@@ -87,6 +107,10 @@ class TaleSpireDriver {
         name: 'Бросок',
         raw: rollResults,
       });
+
+      if (typeof total === 'number') {
+        this.notifyRollListeners(total, rollResults);
+      }
     };
 
     window.handleCreatureStateChange = () => {
@@ -108,8 +132,14 @@ class TaleSpireDriver {
       console.log('TaleSpire visibility change:', visibility);
     };
 
-    // 2. WebSocket bridge hooks for bookmarks
+    // 2. WebSocket bridge hooks for bookmarks and dice results
     if (typeof wsBridge !== 'undefined' && wsBridge?.subscribe) {
+      wsBridge.subscribe('DICE_RESULT', (payload: any) => {
+        if (payload && typeof payload.total === 'number') {
+          this.notifyRollListeners(payload.total, payload.raw);
+        }
+      });
+
       wsBridge.subscribe('GET_BOOKMARKS', () => {
         this.getBookmarks();
       });

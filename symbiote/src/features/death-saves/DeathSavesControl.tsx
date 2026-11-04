@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { DeathSaves } from '../../shared';
+import React, { useState, useEffect } from 'react';
+import { DeathSaves, taleSpireDriver } from '../../shared';
 
 interface DeathSavesControlProps {
   hp: number;
   deathSaves: DeathSaves;
   onRollDeathSave: () => void;
+  onApplyDeathSaveRoll: (roll: number) => void;
   onUpdateDeathSaves: (successes: number, failures: number) => void;
   onResetDeathSaves: () => void;
 }
@@ -13,10 +14,12 @@ export const DeathSavesControl = ({
   hp,
   deathSaves,
   onRollDeathSave,
+  onApplyDeathSaveRoll,
   onUpdateDeathSaves,
   onResetDeathSaves,
 }: DeathSavesControlProps) => {
   const [isManualExpanded, setIsManualExpanded] = useState(false);
+  const [isWaitingForRoll, setIsWaitingForRoll] = useState(false);
 
   const isDying = hp <= 0;
   const successes = deathSaves?.successes || 0;
@@ -25,9 +28,36 @@ export const DeathSavesControl = ({
   const isStable = successes >= 3;
   const isDead = failures >= 3;
 
+  useEffect(() => {
+    if (!isWaitingForRoll) return;
+
+    // Listen for real 3D dice roll result from TaleSpire / Host
+    const unsubscribe = taleSpireDriver.onRollResult((total) => {
+      onApplyDeathSaveRoll(total);
+      setIsWaitingForRoll(false);
+    });
+
+    const timer = setTimeout(() => {
+      setIsWaitingForRoll(false);
+    }, 20000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [isWaitingForRoll, onApplyDeathSaveRoll]);
+
+  const handleStartRoll = () => {
+    setIsWaitingForRoll(true);
+    onRollDeathSave();
+  };
+
+  const handleCancelWaiting = () => {
+    setIsWaitingForRoll(false);
+  };
+
   // Toggle individual success bubble
   const handleToggleSuccess = (idx: number) => {
-    // idx is 1, 2, or 3
     if (successes === idx) {
       onUpdateDeathSaves(idx - 1, failures);
     } else {
@@ -37,7 +67,6 @@ export const DeathSavesControl = ({
 
   // Toggle individual failure bubble
   const handleToggleFailure = (idx: number) => {
-    // idx is 1, 2, or 3
     if (failures === idx) {
       onUpdateDeathSaves(successes, idx - 1);
     } else {
@@ -137,7 +166,7 @@ export const DeathSavesControl = ({
                       ? 'bg-emerald-500 border-emerald-400 text-black shadow-[0_0_8px_rgba(52,211,153,0.6)]'
                       : 'border-[#33394f] text-slate-600 hover:border-emerald-500/40'
                   }`}
-                  title={`Отметить ${num}-й успех`}
+                  title={`Отметить ${num}-й успех (клик для изменения)`}
                 >
                   {active ? '✓' : ''}
                 </button>
@@ -164,7 +193,7 @@ export const DeathSavesControl = ({
                       ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_8px_rgba(244,63,94,0.6)]'
                       : 'border-[#33394f] text-slate-600 hover:border-rose-500/40'
                   }`}
-                  title={`Отметить ${num}-й провал`}
+                  title={`Отметить ${num}-й провал (клик для изменения)`}
                 >
                   {active ? '✕' : ''}
                 </button>
@@ -176,18 +205,36 @@ export const DeathSavesControl = ({
 
       {/* Roll Action Button */}
       {!isDead && !isStable && (
-        <button
-          type="button"
-          onClick={onRollDeathSave}
-          className="w-full py-2 bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-xs rounded border border-rose-500/40 shadow-md cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
-        >
-          <span>Бросить спасбросок от смерти (1d20)</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {isWaitingForRoll ? (
+            <div className="flex-1 flex items-center justify-between gap-2 p-2 bg-amber-500/20 border border-amber-500/50 rounded text-amber-200 text-xs animate-pulse">
+              <span className="flex items-center gap-1.5 font-bold">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                <span>Бросьте 3D-кубик в лотке TaleSpire (ожидание)...</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleCancelWaiting}
+                className="px-2 py-0.5 rounded bg-[#10111a] hover:bg-[#1a1d2d] text-slate-300 text-[11px] cursor-pointer"
+              >
+                Отмена
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartRoll}
+              className="w-full py-2 bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-xs rounded border border-rose-500/40 shadow-md cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+            >
+              <span>🎲 Бросить d20 в TaleSpire</span>
+            </button>
+          )}
+        </div>
       )}
 
       {/* Rule tip */}
       <div className="text-[10px] text-slate-400 leading-tight">
-        Правило 5e: 10+ успех, 1-9 провал, 20 восстанавливает 1 ХП, 1 дает сразу 2 провала.
+        Правило 5e: 10+ успех, 1-9 провал, 20 восстанавливает 1 ХП, 1 дает сразу 2 провала. Вы также можете нажать на круги вручную.
       </div>
     </div>
   );

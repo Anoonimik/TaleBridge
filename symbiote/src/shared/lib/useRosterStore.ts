@@ -106,6 +106,7 @@ interface RosterStore {
   // 5e Character Sheet actions
   updateDeathSaves: (successes: number, failures: number) => void;
   rollDeathSave: () => void;
+  applyDeathSaveRoll: (roll: number) => void;
   resetDeathSaves: () => void;
   toggleInspiration: () => void;
   updateSpellSlots: (slots: SpellSlot[]) => void;
@@ -340,11 +341,18 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const currentSaves = playerData.deathSaves || { successes: 0, failures: 0 };
     if (currentSaves.successes >= 3 || currentSaves.failures >= 3) return;
 
-    const roll = Math.floor(Math.random() * 20) + 1;
     const charName = playerData.name || 'Персонаж';
-
     taleSpireDriver.rollDice('1d20', `Спасбросок от смерти (${charName})`);
+  },
 
+  applyDeathSaveRoll: (roll: number) => {
+    const { playerData } = get();
+    if (!playerData) return;
+
+    const currentSaves = playerData.deathSaves || { successes: 0, failures: 0 };
+    if (currentSaves.successes >= 3 || currentSaves.failures >= 3) return;
+
+    const charName = playerData.name || 'Персонаж';
     let nextSuccesses = currentSaves.successes;
     let nextFailures = currentSaves.failures;
     let outcomeText = '';
@@ -356,7 +364,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         hp: Math.max(1, (playerData.hp ?? 0) + 1),
         deathSaves: { successes: 0, failures: 0 },
       };
-      useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: ${roll} -> ${outcomeText}`);
+      useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
       set({ playerData: updated });
       saveCharMeta(charName, { deathSaves: { successes: 0, failures: 0 } });
       try {
@@ -389,7 +397,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       outcomeText += ' — ПЕРСОНАЖ ПОГИБ!';
     }
 
-    useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: ${outcomeText}`);
+    useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
 
     const newDeathSaves: DeathSaves = { successes: nextSuccesses, failures: nextFailures };
     const updated = { ...playerData, deathSaves: newDeathSaves };

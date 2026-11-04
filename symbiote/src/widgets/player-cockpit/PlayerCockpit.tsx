@@ -13,7 +13,6 @@ import {
   CluesArchive,
   PlayerNotesEditor,
   DeathSavesControl,
-  SavingThrowsBar,
   ClassResourcesManager,
   SpellcastingManager,
 } from '../../features';
@@ -31,6 +30,7 @@ export const PlayerCockpit = () => {
     updatePlayerHp,
     updateDeathSaves,
     rollDeathSave,
+    applyDeathSaveRoll,
     resetDeathSaves,
     toggleInspiration,
     updateSpellSlots,
@@ -168,6 +168,7 @@ export const PlayerCockpit = () => {
                   hp={curHp}
                   deathSaves={playerData?.deathSaves || { successes: 0, failures: 0 }}
                   onRollDeathSave={rollDeathSave}
+                  onApplyDeathSaveRoll={applyDeathSaveRoll}
                   onUpdateDeathSaves={updateDeathSaves}
                   onResetDeathSaves={resetDeathSaves}
                 />
@@ -228,51 +229,69 @@ export const PlayerCockpit = () => {
                   onApplyHpDelta={updatePlayerHp}
                 />
 
-                {/* 4. Ability Scores Grid (6 cells) */}
-                <div className="grid grid-cols-6 gap-1.5">
+                {/* 4. Ability Scores Grid (6 cells with integrated Checks & Saves) */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                   <AbilityCell
                     label="СИЛ"
                     name="Сила"
                     scoreStr={playerData?.stats?.str || '10'}
                     characterName={playerCharacterName}
+                    abilityKey="str"
+                    isProficient={playerData?.savingThrowsProficient?.includes('str')}
+                    onToggleProficiency={toggleSavingThrowProficiency}
+                    profBonus={profBonus}
                   />
                   <AbilityCell
                     label="ЛОВ"
                     name="Ловкость"
                     scoreStr={playerData?.stats?.dex || '10'}
                     characterName={playerCharacterName}
+                    abilityKey="dex"
+                    isProficient={playerData?.savingThrowsProficient?.includes('dex')}
+                    onToggleProficiency={toggleSavingThrowProficiency}
+                    profBonus={profBonus}
                   />
                   <AbilityCell
                     label="ТЕЛ"
                     name="Телосложение"
                     scoreStr={playerData?.stats?.con || '10'}
                     characterName={playerCharacterName}
+                    abilityKey="con"
+                    isProficient={playerData?.savingThrowsProficient?.includes('con')}
+                    onToggleProficiency={toggleSavingThrowProficiency}
+                    profBonus={profBonus}
                   />
                   <AbilityCell
                     label="ИНТ"
                     name="Интеллект"
                     scoreStr={playerData?.stats?.int || '10'}
                     characterName={playerCharacterName}
+                    abilityKey="int"
+                    isProficient={playerData?.savingThrowsProficient?.includes('int')}
+                    onToggleProficiency={toggleSavingThrowProficiency}
+                    profBonus={profBonus}
                   />
                   <AbilityCell
                     label="МУД"
                     name="Мудрость"
                     scoreStr={playerData?.stats?.wis || '10'}
                     characterName={playerCharacterName}
+                    abilityKey="wis"
+                    isProficient={playerData?.savingThrowsProficient?.includes('wis')}
+                    onToggleProficiency={toggleSavingThrowProficiency}
+                    profBonus={profBonus}
                   />
                   <AbilityCell
                     label="ХАР"
                     name="Харизма"
                     scoreStr={playerData?.stats?.cha || '10'}
                     characterName={playerCharacterName}
+                    abilityKey="cha"
+                    isProficient={playerData?.savingThrowsProficient?.includes('cha')}
+                    onToggleProficiency={toggleSavingThrowProficiency}
+                    profBonus={profBonus}
                   />
                 </div>
-
-                {/* 5. 5e Saving Throws Bar */}
-                <SavingThrowsBar
-                  playerData={playerData}
-                  onToggleProficiency={toggleSavingThrowProficiency}
-                />
 
                 {/* 6. Class & Expendable Resources (Inspiration, Hit Dice, Short/Long Rest) */}
                 <ClassResourcesManager
