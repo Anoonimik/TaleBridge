@@ -239,7 +239,7 @@
                     break;
 
                 case 'ROLL_DICE':
-                    await window.TBApi?.rollDice(payload.formula || '1d20', payload.name || 'Бросок');
+                    await window.TBApi?.rollDice(payload.formula || '1d20', payload.name || 'Бросок', payload.isGmOnly ?? true);
                     break;
 
                 case 'GOTO_BOOKMARK':

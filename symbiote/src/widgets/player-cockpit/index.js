@@ -446,7 +446,7 @@
                     const formula = `${die}${conMod.startsWith('+') || conMod.startsWith('-') ? conMod : '+' + conMod}`;
 
                     if (window.TBFeatureRollDice) {
-                        await window.TBFeatureRollDice.roll(formula, `${data.name}: Кость Хитов (Короткий отдых)`);
+                        await window.TBFeatureRollDice.roll(formula, `${data.name}: Кость Хитов (Короткий отдых)`, false);
                     }
                     if (window.TBApi?.sendChatMessage) {
                         window.TBApi.sendChatMessage(`${data.name} совершает Короткий отдых и бросает Кость Хитов (${formula})`);
@@ -454,29 +454,29 @@
                 });
             }
 
-            // Roll initiative
+            // Roll initiative (open player roll)
             const btnInit = this.container.querySelector('#btnRollInit');
             if (btnInit) {
                 btnInit.addEventListener('click', () => {
-                    window.TBFeatureRollDice?.rollInitiative(data.name);
+                    window.TBFeatureRollDice?.rollInitiative(data.name, false);
                 });
             }
 
-            // Roll ability checks
+            // Roll ability checks (open player roll)
             this.container.querySelectorAll('.ability-score-card').forEach(card => {
                 card.addEventListener('click', () => {
                     const mod = card.dataset.mod || '+0';
                     const name = card.dataset.name || 'Характеристика';
-                    window.TBFeatureRollDice?.rollAbilityCheck(name, mod, data.name);
+                    window.TBFeatureRollDice?.rollAbilityCheck(name, mod, data.name, false);
                 });
             });
 
-            // Roll attacks
+            // Roll attacks (open player roll)
             this.container.querySelectorAll('.btn-atk-roll.hit').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const hit = btn.dataset.hit || '+0';
                     const name = btn.dataset.name || 'Атака';
-                    window.TBFeatureRollDice?.rollAttack(hit, name, 'hit');
+                    window.TBFeatureRollDice?.rollAttack(hit, name, 'hit', false);
                 });
             });
 
@@ -484,7 +484,7 @@
                 btn.addEventListener('click', () => {
                     const dmg = btn.dataset.dmg || '1d6';
                     const name = btn.dataset.name || 'Урон';
-                    window.TBFeatureRollDice?.rollAttack(dmg, name, 'dmg');
+                    window.TBFeatureRollDice?.rollAttack(dmg, name, 'dmg', false);
                 });
             });
         }

@@ -23,14 +23,27 @@
             return str;
         }
 
-        async rollDice(formula, name = 'Бросок') {
+        async rollDice(formula, name = 'Бросок', isGmOnly = null) {
             const clean = this.cleanFormula(formula);
-            window.TBLogger?.log(`Запуск кубов: ${clean} (${name})`, 'out');
+
+            // Determine visibility:
+            // - If explicitly passed as boolean, use it.
+            // - Otherwise, based on role: 'player' -> false (open roll), 'gm' -> true (hidden GM roll).
+            let isSecret = true;
+            if (typeof isGmOnly === 'boolean') {
+                isSecret = isGmOnly;
+            } else {
+                const currentRole = window.TBState?.get('role') || 'gm';
+                isSecret = (currentRole !== 'player');
+            }
+
+            const trayLabel = isSecret ? 'GM-лоток (скрытый)' : 'общий лоток (открытый)';
+            window.TBLogger?.log(`Запуск кубов [${trayLabel}]: ${clean} (${name})`, 'out');
 
             if (!this.isReady() || !window.TS.dice || !window.TS.dice.putDiceInTray) {
                 window.TBLogger?.log(`Запрос броска в TaleSpire через Obsidian: ${clean}`, 'out');
                 if (window.TBNetwork) {
-                    window.TBNetwork.send('REQUEST_ROLL', { formula: clean, name });
+                    window.TBNetwork.send('REQUEST_ROLL', { formula: clean, name, isGmOnly: isSecret });
                 }
                 return;
             }
@@ -50,8 +63,8 @@
                     });
                 }
 
-                window.TBLogger?.log(`Бросок отправлен в лоток TaleSpire: ${clean}`, 'sys');
-                await window.TS.dice.putDiceInTray(descriptors, true);
+                window.TBLogger?.log(`Бросок отправлен в лоток TaleSpire [${trayLabel}]: ${clean}`, 'sys');
+                await window.TS.dice.putDiceInTray(descriptors, isSecret);
             } catch (err) {
                 window.TBLogger?.log(`Ошибка TS.dice.putDiceInTray: ${err.message}`, 'err');
                 console.error('TaleSpire putDiceInTray error:', err);
