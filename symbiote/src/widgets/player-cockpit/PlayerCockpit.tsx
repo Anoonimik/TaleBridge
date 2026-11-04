@@ -49,6 +49,7 @@ export const PlayerCockpit = () => {
     spendHitDice,
     toggleSavingThrowProficiency,
     toggleSkillProficiency,
+    setSkillProficiency,
     setSpellcastingAbility,
     performRest,
   } = useRosterStore();
@@ -366,6 +367,7 @@ export const PlayerCockpit = () => {
                   profBonus={profBonus}
                   characterName={playerCharacterName}
                   onToggleSkill={toggleSkillProficiency}
+                  onSetSkillProficiency={setSkillProficiency}
                 />
 
                 {/* 6. Class & Expendable Resources (Inspiration, Hit Dice, Short/Long Rest) */}
