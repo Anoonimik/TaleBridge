@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../shared';
+import { useAppStore, ModalShell, STORAGE_KEYS } from '../../shared';
 
 interface GmAuthModalProps {
   isOpen: boolean;
@@ -12,14 +12,12 @@ export const GmAuthModal = ({ isOpen, onSuccess, onCancel }: GmAuthModalProps) =
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
 
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const expected = (gmPin || '5').trim();
 
     if (!expected || pin.trim() === expected) {
-      sessionStorage.setItem('tb_gm_auth', 'true');
+      sessionStorage.setItem(STORAGE_KEYS.GM_AUTH, 'true');
       setPin('');
       setError(false);
       onSuccess();
@@ -31,20 +29,16 @@ export const GmAuthModal = ({ isOpen, onSuccess, onCancel }: GmAuthModalProps) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className={`bg-[#141622] border rounded-xl w-full max-w-xs p-4 shadow-2xl flex flex-col gap-3 transition-transform ${
-          error ? 'border-rose-500 animate-shake' : 'border-[#262a3d]'
-        }`}
-      >
-        <div className="text-center">
-          <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-            Доступ к пульту Гейм-Мастера
-          </h3>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-            Введите PIN-код для перехода в режим управления (по умолчанию: 5, настраивается в Obsidian):
-          </p>
-        </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onCancel}
+      title="Доступ к пульту Гейм-Мастера"
+      maxWidthClass="max-w-xs"
+    >
+      <div className={`p-4 flex flex-col gap-3 ${error ? 'border-t-2 border-rose-500 animate-shake' : ''}`}>
+        <p className="text-xs text-slate-400 leading-relaxed text-center">
+          Введите PIN-код для перехода в режим управления (по умолчанию: 5, настраивается в Obsidian):
+        </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
           <input
@@ -82,6 +76,6 @@ export const GmAuthModal = ({ isOpen, onSuccess, onCancel }: GmAuthModalProps) =
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 };

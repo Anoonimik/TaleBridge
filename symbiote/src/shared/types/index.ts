@@ -9,6 +9,10 @@ export interface AbilityScores {
   cha: string;
 }
 
+export type MediaType = 'image' | 'video' | 'text' | 'audio';
+
+export type DieType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
+
 export interface Attack {
   name: string;
   hit?: string;
@@ -35,7 +39,7 @@ export interface Bookmark {
 export interface Clue {
   id: string;
   title: string;
-  type: 'image' | 'video' | 'text' | 'audio';
+  type: MediaType;
   url?: string;
   text?: string;
   date?: string;
@@ -79,7 +83,7 @@ export interface ExpendableResource {
 export interface HitDice {
   current: number;
   total: number;
-  dieType: string; // 'd6', 'd8', 'd10', 'd12'
+  dieType: DieType | string;
 }
 
 export interface Currency {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExpendableResource } from '../../shared';
+import { ExpendableResource, ModalShell } from '../../shared';
 
 interface ResourceModalProps {
   isOpen: boolean;
@@ -7,12 +7,22 @@ interface ResourceModalProps {
   onSave: (resource: ExpendableResource) => void;
 }
 
+const PRESETS = [
+  { name: 'Вдохновение барда', max: 3, resetOn: 'short' as const },
+  { name: 'Ярость (Варвар)', max: 2, resetOn: 'long' as const },
+  { name: 'Второе дыхание (Воин)', max: 1, resetOn: 'short' as const },
+  { name: 'Всплеск действий (Воин)', max: 1, resetOn: 'short' as const },
+  { name: 'Ци (Монах)', max: 4, resetOn: 'short' as const },
+  { name: 'Очки чародейства', max: 3, resetOn: 'long' as const },
+  { name: 'Божественный канал', max: 1, resetOn: 'short' as const },
+  { name: 'Наложение рук (Пул)', max: 15, resetOn: 'long' as const },
+  { name: 'Стрелы / Болты', max: 20, resetOn: 'none' as const },
+];
+
 export const ResourceModal = ({ isOpen, onClose, onSave }: ResourceModalProps) => {
   const [name, setName] = useState('');
   const [max, setMax] = useState('3');
   const [resetOn, setResetOn] = useState<'short' | 'long' | 'none'>('long');
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,44 +39,19 @@ export const ResourceModal = ({ isOpen, onClose, onSave }: ResourceModalProps) =
     onClose();
   };
 
-  const presets = [
-    { name: 'Вдохновение барда', max: 3, resetOn: 'short' as const },
-    { name: 'Ярость (Варвар)', max: 2, resetOn: 'long' as const },
-    { name: 'Второе дыхание (Воин)', max: 1, resetOn: 'short' as const },
-    { name: 'Всплеск действий (Воин)', max: 1, resetOn: 'short' as const },
-    { name: 'Ци (Монах)', max: 4, resetOn: 'short' as const },
-    { name: 'Очки чародейства', max: 3, resetOn: 'long' as const },
-    { name: 'Божественный канал', max: 1, resetOn: 'short' as const },
-    { name: 'Наложение рук (Пул)', max: 15, resetOn: 'long' as const },
-    { name: 'Стрелы / Болты', max: 20, resetOn: 'none' as const },
-  ];
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Добавить расходуемый ресурс"
+      maxWidthClass="max-w-sm"
     >
-      <div className="bg-[#141622] border border-[#262a3d] rounded-xl w-full max-w-sm p-4 shadow-2xl flex flex-col gap-3 text-xs">
-        <div className="flex items-center justify-between pb-2 border-b border-[#262a3d]">
-          <h3 className="font-bold text-slate-100 uppercase tracking-wider text-xs">
-            Добавить расходуемый ресурс
-          </h3>
-          <button
-            type="button"
-            className="text-slate-400 hover:text-white text-xs cursor-pointer"
-            onClick={onClose}
-          >
-            ✕
-          </button>
-        </div>
-
+      <div className="p-4 flex flex-col gap-3">
         {/* Quick Presets */}
         <div>
           <span className="text-[10px] text-slate-400 block mb-1">Быстрые шаблоны:</span>
           <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto scrollbar-thin">
-            {presets.map((p) => (
+            {PRESETS.map((p) => (
               <button
                 key={p.name}
                 type="button"
@@ -147,6 +132,6 @@ export const ResourceModal = ({ isOpen, onClose, onSave }: ResourceModalProps) =
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 };

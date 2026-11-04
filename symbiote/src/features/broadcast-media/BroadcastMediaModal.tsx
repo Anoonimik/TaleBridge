@@ -33,6 +33,9 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
     }
   }, [isOpen]);
 
+  const ytId = useMemo(() => getYouTubeVideoId(url), [url]);
+  const ytEmbedPreview = useMemo(() => (ytId ? getYouTubeEmbedUrl(url, false) : null), [ytId, url]);
+
   if (!isOpen) return null;
 
   // Handle URL change with smart auto-detection
@@ -78,9 +81,6 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
     wsBridge.send('BROADCAST_HANDOUT', handout);
     onClose();
   };
-
-  const ytId = useMemo(() => getYouTubeVideoId(url), [url]);
-  const ytEmbedPreview = useMemo(() => (ytId ? getYouTubeEmbedUrl(url, false) : null), [ytId, url]);
 
   return (
     <div

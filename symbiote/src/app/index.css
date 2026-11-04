@@ -38,38 +38,46 @@
 }
 
 /* Custom scrollbars matching TaleBridge dark theme */
-:root, html, body, * {
-  scrollbar-width: thin;
-  scrollbar-color: #2a2e42 #0c0d14;
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: #0c0d14 !important;
 }
 
-::-webkit-scrollbar-track {
-  background: #0c0d14;
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: #262a3d !important;
+  border-radius: 4px !important;
+  border: 1px solid #141622 !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #262a3d;
-  border-radius: 4px;
-  border: 1px solid #141622;
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: #3f4663 !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3f4663;
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: #0c0d14 !important;
 }
 
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-::-webkit-scrollbar-button {
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  :root, html, body, * {
+    scrollbar-width: thin;
+    scrollbar-color: #262a3d #0c0d14;
+  }
 }
 
 .scrollbar-thin {

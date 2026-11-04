@@ -13,5 +13,6 @@ export * from './lib/media';
 export * from './lib/character-storage';
 export * from './lib/dnd-rules';
 export * from './lib/hooks';
+export * from './ui';
 export * from './api/websocket';
 export * from './api/talespire';
