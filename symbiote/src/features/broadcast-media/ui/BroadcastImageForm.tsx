@@ -44,7 +44,7 @@ export const BroadcastImageForm: React.FC<BroadcastImageFormProps> = ({
         <select
           value={selectedVaultImage}
           onChange={(e) => onSelectVaultImage(e.target.value)}
-          className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+          className="w-full px-2.5 py-1.5 bg-[#141622] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
         >
           <option value="">
             {vaultImages.length > 0

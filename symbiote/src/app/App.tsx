@@ -81,7 +81,12 @@ export const App = () => {
           className="px-3 py-2 bg-rose-950 text-rose-100 flex items-center justify-between gap-3"
         >
           <span>{lastError}</span>
-          <button type="button" aria-label="Закрыть уведомление" onClick={() => dismissError('')}>
+          <button
+            type="button"
+            aria-label="Закрыть уведомление"
+            onClick={() => dismissError('')}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
             ✕
           </button>
         </div>

@@ -1,3 +1,4 @@
+import { checkCursors } from './browser-cursors.mjs';
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -47,6 +48,7 @@ const ready = new Promise((resolve, reject) => {
       await page.goto(url);
       const dialog = page.getByRole('dialog', { name: 'Подключение к Мастеру' });
       await dialog.waitFor();
+      await checkCursors(page);
       await dialog.click({ position: { x: 1, y: 1 } });
       assert.ok(await dialog.isVisible(), 'Backdrop must not dismiss the login dialog');
       await page.keyboard.press('Escape');

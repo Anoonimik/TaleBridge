@@ -88,12 +88,17 @@ function ConcentrationSession({ character }: { character: Character }) {
             onClick={() => {
               void roll();
             }}
+            className="px-2.5 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors self-start"
           >
             {busy ? 'Ожидание кубиков…' : 'Спасбросок Телосложения'}
           </button>
         </>
       )}
-      <button type="button" onClick={drop}>
+      <button
+        type="button"
+        onClick={drop}
+        className="px-2.5 py-1 rounded bg-[#1a1d2d] hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-[#262a3d] hover:border-rose-500/40 cursor-pointer transition-colors self-start"
+      >
         Прекратить концентрацию
       </button>
       <span role="status">{error || notice}</span>
