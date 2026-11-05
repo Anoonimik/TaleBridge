@@ -17,18 +17,24 @@ function Assert-ChildPath([string]$ParentPath, [string]$TargetPath) {
     return $targetFull
 }
 
-function Install-Artifact([string]$SourcePath, [string]$ParentPath, [string]$Name, [bool]$UseJunction, [bool]$PreserveSettings) {
+function Install-Artifact([string]$SourcePath, [string]$ParentPath, [string]$Name, [string[]]$RuntimeFiles, [bool]$PreserveSettings) {
     if (-not (Test-Path -LiteralPath $SourcePath -PathType Container)) { throw "Runtime artifact missing: $SourcePath. Run npm run build first." }
     New-Item -ItemType Directory -Path $ParentPath -Force | Out-Null
     $targetPath = Assert-ChildPath $ParentPath (Join-Path $ParentPath $Name)
-    $stagePath = Assert-ChildPath $ParentPath (Join-Path $ParentPath ($Name + '.stage-' + [guid]::NewGuid().ToString('N')))
-    $backupPath = Assert-ChildPath $ParentPath (Join-Path $ParentPath ($Name + '.previous-' + [guid]::NewGuid().ToString('N')))
+    # TaleSpire watches Symbiotes recursively. Hidden staging/backups must not become extra installs.
+    $maintenanceRoot = Assert-ChildPath $ParentPath (Join-Path $ParentPath '.talebridge-install')
+    New-Item -ItemType Directory -Path $maintenanceRoot -Force | Out-Null
+    $stagePath = Assert-ChildPath $maintenanceRoot (Join-Path $maintenanceRoot ($Name + '.stage-' + [guid]::NewGuid().ToString('N')))
+    $backupPath = Assert-ChildPath $maintenanceRoot (Join-Path $maintenanceRoot ($Name + '.previous-' + [guid]::NewGuid().ToString('N')))
     $sourceFull = [IO.Path]::GetFullPath($SourcePath).TrimEnd('\', '/')
     if ($sourceFull.Equals($targetPath, [StringComparison]::OrdinalIgnoreCase) -or $sourceFull.StartsWith($targetPath + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Source and destination overlap.' }
-    if ($UseJunction) {
-        try { New-Item -ItemType Junction -Path $stagePath -Target $sourceFull | Out-Null }
-        catch { Copy-Item -LiteralPath $sourceFull -Destination $stagePath -Recurse }
-    } else { Copy-Item -LiteralPath $sourceFull -Destination $stagePath -Recurse }
+    # Copy only runtime assets, including when installing directly from a development checkout.
+    New-Item -ItemType Directory -Path $stagePath | Out-Null
+    foreach ($file in $RuntimeFiles) {
+        $runtimePath = Assert-ChildPath $sourceFull (Join-Path $sourceFull $file)
+        if (-not (Test-Path -LiteralPath $runtimePath)) { throw "Runtime artifact missing: $runtimePath" }
+        Copy-Item -LiteralPath $runtimePath -Destination $stagePath -Recurse
+    }
     if ($PreserveSettings) {
         $settingsPath = Join-Path $targetPath 'data.json'
         if (Test-Path -LiteralPath $settingsPath -PathType Leaf) { Copy-Item -LiteralPath $settingsPath -Destination (Join-Path $stagePath 'data.json') -Force }
@@ -37,12 +43,12 @@ function Install-Artifact([string]$SourcePath, [string]$ParentPath, [string]$Nam
     try {
         if (Test-Path -LiteralPath $targetPath) {
             # Renaming the directory entry also safely handles an old junction; no recursive deletion.
-            Rename-Item -LiteralPath $targetPath -NewName ([IO.Path]::GetFileName($backupPath))
+            Move-Item -LiteralPath $targetPath -Destination $backupPath
             $backedUp = $true
         }
-        Rename-Item -LiteralPath $stagePath -NewName $Name
+        Move-Item -LiteralPath $stagePath -Destination $targetPath
     } catch {
-        if ($backedUp -and -not (Test-Path -LiteralPath $targetPath)) { Rename-Item -LiteralPath $backupPath -NewName $Name }
+        if ($backedUp -and -not (Test-Path -LiteralPath $targetPath)) { Move-Item -LiteralPath $backupPath -Destination $targetPath }
         throw
     }
     Write-Host "Installed: $targetPath"
@@ -58,8 +64,9 @@ try {
     if (-not $TaleSpirePath) { $TaleSpirePath = Join-Path $env:USERPROFILE 'AppData\LocalLow\BouncyRock Entertainment\TaleSpire\Symbiotes' }
     $TaleSpirePath = [IO.Path]::GetFullPath($TaleSpirePath)
     # Always copy the plugin: data.json must never be shared through a source junction.
-    Install-Artifact (Join-Path $artifactRoot 'obsidian-plugin') (Join-Path $VaultPath '.obsidian\plugins') 'talebridge' $false $true
-    Install-Artifact (Join-Path $artifactRoot 'symbiote') $TaleSpirePath 'TaleBridge' (-not $CopyMode.IsPresent) $false
+    Install-Artifact (Join-Path $artifactRoot 'obsidian-plugin') (Join-Path $VaultPath '.obsidian\plugins') 'talebridge' @('main.js', 'manifest.json', 'styles.css', 'web') $true
+    # CopyMode remains accepted for compatibility; runtime-only copying is now always used.
+    Install-Artifact (Join-Path $artifactRoot 'symbiote') $TaleSpirePath 'TaleBridge' @('manifest.json', 'README.md', 'dist') $false
     Write-Host 'TaleBridge installed. Enable the Obsidian plugin and create access codes in its settings.'
 } catch {
     Write-Error $_

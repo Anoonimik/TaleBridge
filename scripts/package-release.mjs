@@ -1,7 +1,9 @@
 import { cp, mkdir, readFile, writeFile, rm, readdir } from "node:fs/promises";
 import path from "node:path";
+import { validateSymbiote } from "./validate-symbiote.mjs";
 const root = process.cwd();
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
+await validateSymbiote(path.join(root, "symbiote"));
 // Only generated directories inside this repository may be replaced.
 for (const relative of ["obsidian-plugin/web", "release"]) {
   const target = path.resolve(root, relative);
