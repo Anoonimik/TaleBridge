@@ -10,7 +10,7 @@ import {
 } from '../../shared';
 import { ItemCard } from '../../entities/inventory-item/ui/ItemCard';
 import { InventoryWeightGauge, AddItemForm, CoinWalletBar } from './ui';
-import { getConsumableActionInfo, evaluateLocalDiceFormula } from './lib/consumable-helper';
+import { getConsumableActionInfo } from './lib/consumable-helper';
 
 interface InventoryManagerProps {
   playerData: Character | null;
@@ -151,22 +151,12 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
       // 1. If item has dice formula (e.g. 2d4+2 for healing)
       if (action.formula) {
-        let rollResult: number;
-        if (taleSpireDriver.isReady()) {
-          try {
-            rollResult = await taleSpireDriver.rollForResult(
-              action.formula,
-              `${action.label}: ${item.name} (${charName})`,
-            );
-          } catch {
-            rollResult = evaluateLocalDiceFormula(action.formula);
-          }
-        } else {
-          rollResult = evaluateLocalDiceFormula(action.formula);
-        }
+        const rollResult = await taleSpireDriver.rollForResult(
+          action.formula, `${action.label}: ${item.name} (${charName})`,
+        );
 
         const latest = useRosterStore.getState().playerData;
-        if (!latest || latest.id !== playerData.id) return;
+        if (!latest || latest.id !== playerData.id || !latest.inventory?.some((entry) => entry.id === item.id && (entry.quantity ?? 1) > 0)) return;
         // If it's a healing potion, apply HP restoration
         if (action.isHealing) {
           const currentHp = latest.hp ?? 0;
@@ -209,6 +199,8 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
       // 2. Consume item: reduce quantity by 1
       handleUpdateQuantity(item.id, -1);
+    } catch (error) {
+      setActionNotice(error instanceof Error ? error.message : 'Не удалось использовать предмет');
     } finally {
       pendingItems.current.delete(item.id);
     }

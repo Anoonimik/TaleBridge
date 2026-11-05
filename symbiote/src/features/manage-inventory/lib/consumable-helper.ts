@@ -1,4 +1,4 @@
-import { InventoryItem } from '../../../shared';
+import type { InventoryItem } from '../../../../../packages/domain/types';
 
 export interface ConsumableActionInfo {
   isConsumable: boolean;
@@ -84,6 +84,10 @@ export function isConsumableItem(item: InventoryItem): boolean {
  */
 export function getHealingPotionFormula(item: InventoryItem): string | null {
   const fullText = `${item.name} ${item.description || ''}`;
+
+  if (!/(?:леч|исцел|heal|восстан|хит|хп|\bhp\b)/i.test(fullText)) return null;
+  const explicit = (item.description || '').match(/\b(\d+d\d+(?:\s*[+-]\s*\d+)?)\b/i);
+  if (explicit) return explicit[1].replace(/\s+/g, '');
 
   for (const potion of HEALING_POTIONS) {
     if (potion.match.test(fullText)) {

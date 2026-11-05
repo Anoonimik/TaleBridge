@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Coins, Plus, Minus, X } from 'lucide-react';
 import { Currency, ModalShell } from '../../../shared';
 
@@ -88,6 +88,10 @@ export const WalletModal: React.FC<WalletModalProps> = ({
     gp: currency.gp || 0,
     pp: currency.pp || 0,
   });
+
+  useEffect(() => {
+    if (isOpen) setExactBalances({ ...currency });
+  }, [isOpen, currency]);
 
   if (!isOpen) return null;
 
