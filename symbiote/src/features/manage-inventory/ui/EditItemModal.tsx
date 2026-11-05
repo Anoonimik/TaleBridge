@@ -1,3 +1,4 @@
+import { inventorySchema } from '../../../../../packages/protocol';
 import React, { useState, useEffect } from 'react';
 import { Package, Save } from 'lucide-react';
 import { InventoryItem, ModalShell } from '../../../shared';
@@ -11,16 +12,12 @@ export interface EditItemModalProps {
 
 const CATEGORIES = ['Снаряжение', 'Оружие', 'Броня', 'Зелья', 'Квестовое'];
 
-export const EditItemModal: React.FC<EditItemModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-  item,
-}) => {
+export const EditItemModal: React.FC<EditItemModalProps> = ({ isOpen, onClose, onSave, item }) => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Снаряжение');
-  const [quantity, setQuantity] = useState(1);
-  const [weight, setWeight] = useState(0);
+  const [quantity, setQuantity] = useState('1');
+  const [weight, setWeight] = useState('0');
+  const [error, setError] = useState('');
   const [equipped, setEquipped] = useState(false);
   const [description, setDescription] = useState('');
 
@@ -28,8 +25,9 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     if (item) {
       setName(item.name || '');
       setCategory(item.category || 'Снаряжение');
-      setQuantity(item.quantity ?? 1);
-      setWeight(item.weight ?? 0);
+      setQuantity(String(item.quantity ?? 1));
+      setError('');
+      setWeight(String(item.weight ?? 0));
       setEquipped(Boolean(item.equipped));
       setDescription(item.description || '');
     }
@@ -41,21 +39,31 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
-    onSave({
-      id: item.id,
+    const edited = {
+      ...item,
       name: name.trim(),
       category: category.trim() || undefined,
-      quantity: Math.max(1, Math.floor(Number(quantity) || 1)),
-      weight: Math.max(0, Number(weight) || 0),
+      quantity: Number(quantity),
+      weight: Number(weight),
       equipped,
       description: description.trim() || undefined,
-    });
-    onClose();
+    };
+    const parsed = inventorySchema.safeParse([edited]);
+    if (!parsed.success) {
+      setError(
+        'Проверьте поля: название и категория — до 500 символов, описание — до 4096, количество — целое от 1 до 100000, вес — от 0 до 100000.',
+      );
+      return;
+    }
+    try {
+      onSave(parsed.data[0]);
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось сохранить изменения');
+    }
   };
 
-  const allCategories = CATEGORIES.includes(category)
-    ? CATEGORIES
-    : [category, ...CATEGORIES];
+  const allCategories = CATEGORIES.includes(category) ? CATEGORIES : [category, ...CATEGORIES];
 
   return (
     <ModalShell
@@ -70,7 +78,10 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       subtitle={item.name}
       maxWidthClass="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-3.5 overflow-y-auto scrollbar-thin text-xs">
+      <form
+        onSubmit={handleSubmit}
+        className="p-4 flex flex-col gap-3.5 overflow-y-auto scrollbar-thin text-xs"
+      >
         {/* Name and Category */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
@@ -78,6 +89,8 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               Название <span className="text-rose-400">*</span>
             </label>
             <input
+              aria-label="Название предмета"
+              maxLength={500}
               type="text"
               required
               value={name}
@@ -89,10 +102,9 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-300">
-              Категория
-            </label>
+            <label className="text-[11px] font-semibold text-slate-300">Категория</label>
             <select
+              aria-label="Категория предмета"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] focus:border-indigo-500 rounded text-slate-200 focus:outline-none transition-colors cursor-pointer"
@@ -109,29 +121,31 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         {/* Quantity and Weight */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-300">
-              Количество (шт.)
-            </label>
+            <label className="text-[11px] font-semibold text-slate-300">Количество (шт.)</label>
             <input
               type="number"
+              aria-label="Количество предметов"
+              required
+              max="100000"
               min="1"
               step="1"
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+              onChange={(e) => setQuantity(e.target.value)}
               className="px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] focus:border-indigo-500 rounded text-slate-200 focus:outline-none transition-colors"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-300">
-              Вес одного (кг)
-            </label>
+            <label className="text-[11px] font-semibold text-slate-300">Вес одного (кг)</label>
             <input
               type="number"
+              aria-label="Вес одного предмета (кг)"
+              required
+              max="100000"
               min="0"
-              step="0.1"
+              step="any"
               value={weight}
-              onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
+              onChange={(e) => setWeight(e.target.value)}
               className="px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] focus:border-indigo-500 rounded text-slate-200 focus:outline-none transition-colors"
             />
           </div>
@@ -140,15 +154,14 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         {/* Equipped Checkbox / Toggle */}
         <div className="p-2.5 bg-[#10111a] border border-[#262a3d] rounded-lg flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-slate-200">
-              Экипировка
-            </span>
+            <span className="text-xs font-semibold text-slate-200">Экипировка</span>
             <span className="text-[11px] text-slate-400">
               {equipped ? 'Предмет надет или готов к бою' : 'Предмет находится в рюкзаке'}
             </span>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
+              aria-label="Предмет экипирован"
               type="checkbox"
               checked={equipped}
               onChange={(e) => setEquipped(e.target.checked)}
@@ -160,10 +173,10 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
         {/* Description / Properties / Dice Formula */}
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-semibold text-slate-300">
-            Описание / Свойства
-          </label>
+          <label className="text-[11px] font-semibold text-slate-300">Описание / Свойства</label>
           <textarea
+            aria-label="Описание предмета"
+            maxLength={4096}
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -172,6 +185,9 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
           />
         </div>
 
+        <p role="alert" className="text-rose-300">
+          {error}
+        </p>
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a3d] mt-1">
           <button

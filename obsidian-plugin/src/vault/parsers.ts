@@ -1,3 +1,4 @@
+import { inventorySchema } from '../../../packages/protocol';
 import { parse as parseYaml } from 'yaml';
 import type { Vault, MetadataCache } from 'obsidian';
 type VaultReader = Pick<Vault, 'read' | 'getMarkdownFiles'>;
@@ -68,6 +69,17 @@ export function parseInventory(content: string) {
       rest = rest.replace(/^\[\s*\]\s*/, '');
     }
 
+    if (persistedId && rest.startsWith('{')) {
+      try {
+        const parsed = inventorySchema.safeParse([{ ...JSON.parse(rest), id: persistedId }]);
+        if (parsed.success) {
+          items.push(parsed.data[0]);
+          continue;
+        }
+      } catch {
+        /* Legacy text remains readable if a manual JSON edit is malformed. */
+      }
+    }
     let description = '';
     const descMatch = rest.match(/\s+[—–-]\s+(.*)$/);
     if (descMatch) {
@@ -131,6 +143,16 @@ export function serializeInventory(items: InventoryItem[]) {
 
   const lines = ['## Инвентарь'];
   for (const it of items) {
+    if (
+      /[[\]()—–]|\s-\s|<!--/.test(it.name) ||
+      /[[\]\r\n]/.test(it.category || '') ||
+      /[\r\n]/.test(it.description || '')
+    ) {
+      lines.push(
+        `- ${it.equipped ? '[x]' : '[ ]'} ${JSON.stringify(it)} <!-- talebridge-item:${it.id} -->`,
+      );
+      continue;
+    }
     const check = it.equipped ? '[x]' : '[ ]';
     const qty = it.quantity || 1;
     const wt = it.weight !== undefined && it.weight !== null ? `, вес: ${it.weight} кг` : '';

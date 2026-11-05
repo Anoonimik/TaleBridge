@@ -139,6 +139,8 @@ export interface Character {
   dexMod?: number;
   inventory?: InventoryItem[];
   playerNotes?: string;
+  activeConcentration?: { spellId?: string; spellName: string; instanceId: string } | null;
+  concentrationChecks?: { id: string; dc: number; damage: number }[];
   conditions?: string[];
   skills?: Record<string, 'proficient' | 'expert' | 'none'>;
 }

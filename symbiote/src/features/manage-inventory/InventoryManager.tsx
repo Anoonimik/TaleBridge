@@ -1,4 +1,8 @@
 import { useShallow } from 'zustand/react/shallow';
+import { ActionModal } from '../../entities/character/ui/ActionModal';
+import { createAttackFromWeapon } from '../../shared/lib/dnd-rules';
+import type { Attack } from '../../shared/types';
+import { mergeInventoryEdit } from '../../../../packages/domain/inventory-edit';
 import React, { useState, useMemo, useRef } from 'react';
 import {
   InventoryItem,
@@ -31,10 +35,14 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
     );
 
   const pendingItems = useRef(new Set<string>());
+  const [draft, setDraft] = useState<{ attack: Attack; owner: string | undefined } | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
-  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<{
+    item: InventoryItem;
+    owner: string | undefined;
+  } | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const items = useMemo(() => playerData?.inventory || [], [playerData?.inventory]);
@@ -141,10 +149,22 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   };
 
   const handleSaveEdit = (updatedItem: InventoryItem) => {
-    const updated = (useRosterStore.getState().playerData?.inventory || []).map((it) =>
-      it.id === updatedItem.id ? updatedItem : it,
+    const latest = useRosterStore.getState().playerData;
+    if (
+      !editingItem ||
+      !latest ||
+      latest.id !== editingItem.owner ||
+      playerData?.id !== editingItem.owner
+    )
+      throw new Error('Выбран другой персонаж. Закройте окно и откройте предмет заново.');
+    const merged = mergeInventoryEdit(
+      editingItem.item,
+      latest.inventory?.find((entry) => entry.id === updatedItem.id),
+      updatedItem,
     );
-    saveInventory(updated);
+    saveInventory(
+      (latest.inventory || []).map((entry) => (entry.id === merged.id ? merged : entry)),
+    );
     setEditingItem(null);
   };
 
@@ -161,11 +181,17 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       // 1. If item has dice formula (e.g. 2d4+2 for healing)
       if (action.formula) {
         const rollResult = await taleSpireDriver.rollForResult(
-          action.formula, `${action.label}: ${item.name} (${charName})`,
+          action.formula,
+          `${action.label}: ${item.name} (${charName})`,
         );
 
         const latest = useRosterStore.getState().playerData;
-        if (!latest || latest.id !== playerData.id || !latest.inventory?.some((entry) => entry.id === item.id && (entry.quantity ?? 1) > 0)) return;
+        if (
+          !latest ||
+          latest.id !== playerData.id ||
+          !latest.inventory?.some((entry) => entry.id === item.id && (entry.quantity ?? 1) > 0)
+        )
+          return;
         // If it's a healing potion, apply HP restoration
         if (action.isHealing) {
           const currentHp = latest.hp ?? 0;
@@ -217,6 +243,17 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-2.5">
+      {draft && (
+        <ActionModal
+          isOpen
+          initialAttack={draft.attack}
+          onClose={() => setDraft(null)}
+          onSave={(attack) => {
+            const state = useRosterStore.getState();
+            if (state.playerData?.id === draft.owner) state.savePlayerAttack(attack);
+          }}
+        />
+      )}
       {/* Coin Wallet Bar */}
       <CoinWalletBar
         currency={playerData?.currency}
@@ -304,7 +341,14 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDeleteItem}
               onUseItem={handleUseConsumable}
-              onEdit={(it) => setEditingItem(it)}
+              onEdit={(it) => setEditingItem({ item: { ...it }, owner: playerData?.id })}
+              onLinkToAttack={(item) => {
+                if (playerData)
+                  setDraft({
+                    attack: createAttackFromWeapon(item, playerData),
+                    owner: playerData.id,
+                  });
+              }}
             />
           ))
         )}
@@ -313,7 +357,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       {/* Edit Item Modal */}
       <EditItemModal
         isOpen={Boolean(editingItem)}
-        item={editingItem}
+        item={editingItem?.item || null}
         onClose={() => setEditingItem(null)}
         onSave={handleSaveEdit}
       />

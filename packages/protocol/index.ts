@@ -34,7 +34,7 @@ export const inventorySchema = z
       quantity: count.min(1).optional(),
       weight: amount.optional(),
       category: line.optional(),
-      description: line.optional(),
+      description: text.optional(),
     }),
   )
   .max(1000)
@@ -44,6 +44,14 @@ export const inventorySchema = z
   );
 export const stateSchema = z.object({
   currency: z.object({ cp: count, sp: count, ep: count, gp: count, pp: count }).optional(),
+  activeConcentration: z
+    .object({ spellId: line.optional(), spellName: line, instanceId: line })
+    .nullable()
+    .optional(),
+  concentrationChecks: z
+    .array(z.object({ id: line, dc: count, damage: count }))
+    .max(100)
+    .optional(),
   temp_hp: count.optional(),
   inspiration: z.boolean().optional(),
   deathSaves: z
@@ -176,7 +184,7 @@ export const commandPayloads = {
     .refine((v) => Boolean(v.path || v.name)),
   OPEN_IN_OBSIDIAN: z.object({ path: line.optional(), name: line.optional() }),
   UPDATE_CHARACTER_HP: target
-    .safeExtend({ hp: count, maxHp: count.optional() })
+    .safeExtend({ hp: count, maxHp: count.optional(), damage: count.optional() })
     .refine((v) => v.maxHp === undefined || v.hp <= v.maxHp),
   UPDATE_CHARACTER_PARAM: target.safeExtend({
     param: z.enum(['ac', 'speed', 'level', 'status', 'race', 'class', 'hp_max']),

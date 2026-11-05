@@ -1,3 +1,4 @@
+import { concentrationDamage, breaksConcentration } from '../../packages/domain/concentration';
 import { randomUUID } from 'node:crypto';
 import type { Character, CombatState, Scene, Bookmark } from '../../packages/domain/types';
 import {
@@ -280,9 +281,28 @@ export class BridgeApplication {
       const linked = characters.find((c) => c.path === combatant.path && c.playable);
       if (!linked?.id) continue;
       const current = await this.ports.repository.get(linked.id);
-      if (current.hp === combatant.hp && current.hp_max === combatant.maxHp) continue;
+      if (
+        current.hp === combatant.hp &&
+        current.hp_max === combatant.maxHp &&
+        (current.temp_hp || 0) === (combatant.tempHp || 0) &&
+        !(current.activeConcentration && breaksConcentration(combatant.conditions))
+      )
+        continue;
       const saved = await this.ports.repository.update(linked.id, current.revision, (content) =>
-        patchFrontmatter(content, { hp: combatant.hp, hp_max: combatant.maxHp }),
+        patchFrontmatter(content, {
+          hp: combatant.hp,
+          hp_max: combatant.maxHp,
+          talebridge: {
+            ...(frontmatter(content).talebridge || {}),
+            temp_hp: combatant.tempHp || 0,
+            ...concentrationDamage(
+              { ...current, conditions: combatant.conditions },
+              combatant.hp,
+              Math.max(0, (current.hp || 0) - combatant.hp) +
+                Math.max(0, (current.temp_hp || 0) - (combatant.tempHp || 0)),
+            ),
+          },
+        }),
       );
       for (const c of this.members())
         if (c.session?.characterId === saved.id) this.send(c, 'PLAYER_DATA', saved);
@@ -375,6 +395,14 @@ export class BridgeApplication {
             switch (command.type) {
               case 'UPDATE_CHARACTER_HP':
                 return patchFrontmatter(content, {
+                  talebridge: {
+                    ...(frontmatter(content).talebridge || {}),
+                    ...concentrationDamage(
+                      current,
+                      command.payload.hp,
+                      command.payload.damage ?? Math.max(0, (current.hp || 0) - command.payload.hp),
+                    ),
+                  },
                   hp: command.payload.hp,
                   hp_max: command.payload.maxHp ?? current.hp_max,
                 });

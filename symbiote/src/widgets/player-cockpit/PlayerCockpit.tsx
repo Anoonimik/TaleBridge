@@ -26,6 +26,7 @@ import { AbilityCell } from '../../entities/character/ui/AbilityCell';
 import { AttackCard } from '../../entities/character/ui/AttackCard';
 import { ActionModal } from '../../entities/character/ui/ActionModal';
 import { PlayerConditionsBanner } from '../../entities/character/ui/PlayerConditionsBanner';
+import { ConcentrationBanner } from '../../features/manage-concentration/ui/ConcentrationBanner';
 import { ApplyDamageControl } from '../../features/apply-damage/ApplyDamageControl';
 import { InventoryManager } from '../../features/manage-inventory/InventoryManager';
 import { CluesArchive } from '../../features/archive-clues/CluesArchive';
@@ -312,6 +313,7 @@ export const PlayerCockpit = () => {
                 <PlayerConditionsBanner conditions={activeConditions} isCombatActive={inCombat} />
 
                 {/* 1. Death Saves (appears prominently when dying or if manually toggled) */}
+                <ConcentrationBanner />
                 <DeathSavesControl
                   hp={curHp}
                   deathSaves={playerData?.deathSaves || { successes: 0, failures: 0 }}
@@ -519,6 +521,7 @@ export const PlayerCockpit = () => {
                           key={idx}
                           attack={atk}
                           index={idx}
+                          characterName={playerData?.name}
                           canManage={true}
                           onEdit={handleEditAttack}
                           onDelete={deletePlayerAttack}

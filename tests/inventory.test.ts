@@ -5,6 +5,75 @@ import { parseInventory, serializeInventory } from '../obsidian-plugin/src/vault
 import { getConsumableActionInfo } from '../symbiote/src/features/manage-inventory/lib/consumable-helper';
 import { fixture } from './fixtures';
 import type { InventoryItem } from '../packages/domain/types';
+import { mergeInventoryEdit } from '../packages/domain/inventory-edit';
+
+test('editing preserves concurrent quantity changes but rejects field conflicts and deleted items', () => {
+  const original = { id: 'one', name: 'Rope', quantity: 3, weight: 1 };
+  const edited = { ...original, name: 'Silk rope' };
+  assert.deepEqual(mergeInventoryEdit(original, { ...original, quantity: 2 }, edited), {
+    ...edited,
+    quantity: 2,
+  });
+  assert.throws(() => mergeInventoryEdit(original, { ...original, name: 'Other rope' }, edited));
+  assert.throws(() => mergeInventoryEdit(original, undefined, edited));
+  assert.throws(() => mergeInventoryEdit(original, original, { ...edited, id: 'two' }));
+  assert.equal(
+    mergeInventoryEdit(
+      { id: 'x', name: 'Old' },
+      { id: 'x', name: 'Old', quantity: 5 },
+      { id: 'x', name: 'New', quantity: 1 },
+    ).quantity,
+    5,
+  );
+});
+
+test('special names and multiline descriptions roundtrip without injecting Markdown sections', () => {
+  const item = {
+    id: 'complex',
+    name: 'Sword (silver) [rare] — +1',
+    category: 'Custom [type]',
+    quantity: 2,
+    weight: 0.025,
+    equipped: true,
+    description: 'First line\n## Not a new section\n- Not another item $&',
+  };
+  const markdown = serializeInventory([item]);
+  assert.deepEqual(parseInventory(markdown), [item]);
+  assert.equal(markdown.split('\n').length, 2);
+});
+
+test('inventory edits require ownership and a fresh server revision', async () => {
+  const f = fixture();
+  try {
+    const player = await f.login('player', 'alice-code');
+    const before = await f.repo.get('alice');
+    const items = [{ id: 'one', name: 'Edited item', quantity: 1 }];
+    assert.equal(
+      (await f.send(player, 'UPDATE_INVENTORY', { characterId: 'bob', items }, before.revision))
+        .type,
+      'ERROR',
+    );
+    assert.equal(
+      (await f.send(player, 'UPDATE_INVENTORY', { characterId: 'alice', items }, before.revision))
+        .type,
+      'ACK',
+    );
+    assert.equal(
+      (
+        await f.send(
+          player,
+          'UPDATE_INVENTORY',
+          { characterId: 'alice', items: [{ ...items[0], name: 'Stale edit' }] },
+          before.revision,
+        )
+      ).type,
+      'ERROR',
+    );
+    assert.equal((await f.repo.get('alice')).inventory?.[0].name, 'Edited item');
+  } finally {
+    f.app.dispose();
+  }
+});
 
 test('inventorySchema accepts fully edited items and enforces validations', () => {
   const validEditedItems: InventoryItem[] = [
@@ -36,18 +105,10 @@ test('inventorySchema accepts fully edited items and enforces validations', () =
   assert.equal(parsed[1].description, 'Восстанавливает 2d4+2 хитов.');
 
   // Enforces positive integer quantity
-  assert.throws(() =>
-    inventorySchema.parse([
-      { id: 'it_bad', name: 'Item', quantity: 0 },
-    ]),
-  );
+  assert.throws(() => inventorySchema.parse([{ id: 'it_bad', name: 'Item', quantity: 0 }]));
 
   // Enforces non-negative weight
-  assert.throws(() =>
-    inventorySchema.parse([
-      { id: 'it_bad', name: 'Item', weight: -1 },
-    ]),
-  );
+  assert.throws(() => inventorySchema.parse([{ id: 'it_bad', name: 'Item', weight: -1 }]));
 
   // Enforces unique IDs
   assert.throws(() =>

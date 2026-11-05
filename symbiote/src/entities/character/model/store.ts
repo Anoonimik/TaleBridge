@@ -258,6 +258,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       wsBridge.send('UPDATE_CHARACTER_HP', {
         characterName: get().playerCharacterName,
         hp: newHp,
+        damage: delta < 0 ? Math.abs(delta) : 0,
         maxHp: maxHp,
       });
     }
@@ -692,6 +693,8 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         hp: maxHp,
         temp_hp: 0,
         deathSaves: resetDeathSaves,
+        activeConcentration: null,
+        concentrationChecks: [],
         hitDice: nextHitDice,
         spellSlots: resetSlots,
         resources: resetRes,
