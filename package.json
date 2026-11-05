@@ -1,0 +1,48 @@
+{
+  "name": "talebridge",
+  "version": "0.7.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "workspaces": [
+    "symbiote"
+  ],
+  "engines": {
+    "node": ">=24.12.0 <25"
+  },
+  "packageManager": "npm@12.2.2",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json && tsc -p symbiote/tsconfig.json",
+    "lint": "eslint packages obsidian-plugin/src symbiote/src scripts tests",
+    "test": "node --import ./scripts/register.mjs --test tests/*.test.ts",
+    "build:plugin": "node scripts/build-plugin.mjs",
+    "build": "npm run typecheck && npm run build:plugin && npm run build --workspace symbiote && node scripts/package-release.mjs",
+    "check": "npm run lint && npm test && npm run build",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "yaml": "2.9.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.0",
+    "esbuild": "0.28.2",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "^16.0.0",
+    "obsidian": "^1.8.7",
+    "playwright": "^1.56.0",
+    "prettier": "3.9.10",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "8.72.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  },
+  "overrides": {
+    "minimatch": "11.0.4"
+  }
+}

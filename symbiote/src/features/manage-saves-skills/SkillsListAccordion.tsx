@@ -1,11 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, Search, X, Star } from 'lucide-react';
-import {
-  Character,
-  parseModifier,
-  formatModifier,
-  taleSpireDriver,
-} from '../../shared';
+import { ChevronRight, X, Star } from 'lucide-react';
+import { Character, parseModifier, formatModifier, taleSpireDriver } from '../../shared';
 
 export interface SkillDefinition {
   id: string;
@@ -16,31 +11,141 @@ export interface SkillDefinition {
 }
 
 export const DND_SKILLS: SkillDefinition[] = [
-  { id: 'acrobatics', label: 'Акробатика', englishLabel: 'Acrobatics', ability: 'dex', abilityLabel: 'ЛОВ' },
-  { id: 'investigation', label: 'Анализ', englishLabel: 'Investigation', ability: 'int', abilityLabel: 'ИНТ' },
-  { id: 'athletics', label: 'Атлетика', englishLabel: 'Athletics', ability: 'str', abilityLabel: 'СИЛ' },
-  { id: 'perception', label: 'Внимательность', englishLabel: 'Perception', ability: 'wis', abilityLabel: 'МУД' },
-  { id: 'survival', label: 'Выживание', englishLabel: 'Survival', ability: 'wis', abilityLabel: 'МУД' },
-  { id: 'performance', label: 'Выступление', englishLabel: 'Performance', ability: 'cha', abilityLabel: 'ХАР' },
-  { id: 'intimidation', label: 'Запугивание', englishLabel: 'Intimidation', ability: 'cha', abilityLabel: 'ХАР' },
+  {
+    id: 'acrobatics',
+    label: 'Акробатика',
+    englishLabel: 'Acrobatics',
+    ability: 'dex',
+    abilityLabel: 'ЛОВ',
+  },
+  {
+    id: 'investigation',
+    label: 'Анализ',
+    englishLabel: 'Investigation',
+    ability: 'int',
+    abilityLabel: 'ИНТ',
+  },
+  {
+    id: 'athletics',
+    label: 'Атлетика',
+    englishLabel: 'Athletics',
+    ability: 'str',
+    abilityLabel: 'СИЛ',
+  },
+  {
+    id: 'perception',
+    label: 'Внимательность',
+    englishLabel: 'Perception',
+    ability: 'wis',
+    abilityLabel: 'МУД',
+  },
+  {
+    id: 'survival',
+    label: 'Выживание',
+    englishLabel: 'Survival',
+    ability: 'wis',
+    abilityLabel: 'МУД',
+  },
+  {
+    id: 'performance',
+    label: 'Выступление',
+    englishLabel: 'Performance',
+    ability: 'cha',
+    abilityLabel: 'ХАР',
+  },
+  {
+    id: 'intimidation',
+    label: 'Запугивание',
+    englishLabel: 'Intimidation',
+    ability: 'cha',
+    abilityLabel: 'ХАР',
+  },
   { id: 'history', label: 'История', englishLabel: 'History', ability: 'int', abilityLabel: 'ИНТ' },
-  { id: 'sleight_of_hand', label: 'Ловкость рук', englishLabel: 'Sleight of Hand', ability: 'dex', abilityLabel: 'ЛОВ' },
+  {
+    id: 'sleight_of_hand',
+    label: 'Ловкость рук',
+    englishLabel: 'Sleight of Hand',
+    ability: 'dex',
+    abilityLabel: 'ЛОВ',
+  },
   { id: 'arcana', label: 'Магия', englishLabel: 'Arcana', ability: 'int', abilityLabel: 'ИНТ' },
-  { id: 'medicine', label: 'Медицина', englishLabel: 'Medicine', ability: 'wis', abilityLabel: 'МУД' },
-  { id: 'deception', label: 'Обман', englishLabel: 'Deception', ability: 'cha', abilityLabel: 'ХАР' },
+  {
+    id: 'medicine',
+    label: 'Медицина',
+    englishLabel: 'Medicine',
+    ability: 'wis',
+    abilityLabel: 'МУД',
+  },
+  {
+    id: 'deception',
+    label: 'Обман',
+    englishLabel: 'Deception',
+    ability: 'cha',
+    abilityLabel: 'ХАР',
+  },
   { id: 'nature', label: 'Природа', englishLabel: 'Nature', ability: 'int', abilityLabel: 'ИНТ' },
-  { id: 'insight', label: 'Проницательность', englishLabel: 'Insight', ability: 'wis', abilityLabel: 'МУД' },
-  { id: 'religion', label: 'Религия', englishLabel: 'Religion', ability: 'int', abilityLabel: 'ИНТ' },
-  { id: 'stealth', label: 'Скрытность', englishLabel: 'Stealth', ability: 'dex', abilityLabel: 'ЛОВ' },
-  { id: 'persuasion', label: 'Убеждение', englishLabel: 'Persuasion', ability: 'cha', abilityLabel: 'ХАР' },
-  { id: 'animal_handling', label: 'Уход за животными', englishLabel: 'Animal Handling', ability: 'wis', abilityLabel: 'МУД' },
+  {
+    id: 'insight',
+    label: 'Проницательность',
+    englishLabel: 'Insight',
+    ability: 'wis',
+    abilityLabel: 'МУД',
+  },
+  {
+    id: 'religion',
+    label: 'Религия',
+    englishLabel: 'Religion',
+    ability: 'int',
+    abilityLabel: 'ИНТ',
+  },
+  {
+    id: 'stealth',
+    label: 'Скрытность',
+    englishLabel: 'Stealth',
+    ability: 'dex',
+    abilityLabel: 'ЛОВ',
+  },
+  {
+    id: 'persuasion',
+    label: 'Убеждение',
+    englishLabel: 'Persuasion',
+    ability: 'cha',
+    abilityLabel: 'ХАР',
+  },
+  {
+    id: 'animal_handling',
+    label: 'Уход за животными',
+    englishLabel: 'Animal Handling',
+    ability: 'wis',
+    abilityLabel: 'МУД',
+  },
 ];
 
 const HOMOGLYPHS_TO_RU: Record<string, string> = {
-  'a': 'а', 'b': 'в', 'c': 'с', 'e': 'е', 'h': 'н', 'k': 'к', 'm': 'м',
-  'o': 'о', 'p': 'р', 't': 'т', 'x': 'х', 'y': 'у',
-  'A': 'а', 'B': 'в', 'C': 'с', 'E': 'е', 'H': 'н', 'K': 'к', 'M': 'м',
-  'O': 'о', 'P': 'р', 'T': 'т', 'X': 'х', 'Y': 'у',
+  a: 'а',
+  b: 'в',
+  c: 'с',
+  e: 'е',
+  h: 'н',
+  k: 'к',
+  m: 'м',
+  o: 'о',
+  p: 'р',
+  t: 'т',
+  x: 'х',
+  y: 'у',
+  A: 'а',
+  B: 'в',
+  C: 'с',
+  E: 'е',
+  H: 'н',
+  K: 'к',
+  M: 'м',
+  O: 'о',
+  P: 'р',
+  T: 'т',
+  X: 'х',
+  Y: 'у',
 };
 
 function cleanSearchString(str: string): string {
@@ -62,7 +167,7 @@ function normalizeToRu(str: string): string {
 export function getSkillProficiency(
   skillId: string,
   skillLabel: string,
-  skillsData: any
+  skillsData: unknown,
 ): 'none' | 'proficient' | 'expert' {
   if (!skillsData) return 'none';
 
@@ -77,7 +182,8 @@ export function getSkillProficiency(
   }
 
   if (typeof skillsData === 'object') {
-    const val = skillsData[skillId] ?? skillsData[skillLabel] ?? skillsData[skillLabel.toLowerCase()];
+    const skills = skillsData as Record<string, unknown>;
+    const val = skills[skillId] ?? skills[skillLabel] ?? skills[skillLabel.toLowerCase()];
     if (val === 'expert' || val === 2) return 'expert';
     if (val === 'proficient' || val === 1 || val === true) return 'proficient';
     return 'none';
@@ -102,7 +208,9 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [filterQuery, setFilterQuery] = useState('');
-  const [abilityFilter, setAbilityFilter] = useState<'all' | 'str' | 'dex' | 'int' | 'wis' | 'cha' | 'proficient'>('all');
+  const [abilityFilter, setAbilityFilter] = useState<
+    'all' | 'str' | 'dex' | 'int' | 'wis' | 'cha' | 'proficient'
+  >('all');
 
   const skillsData = playerData?.skills;
 
@@ -153,7 +261,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
     const sign = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
     taleSpireDriver.rollDice(
       `1d20${modStr}`,
-      `Навык: ${skill.label} (${sign}) [${characterName || 'Персонаж'}]`
+      `Навык: ${skill.label} (${sign}) [${characterName || 'Персонаж'}]`,
     );
   };
 
@@ -296,7 +404,8 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                     У персонажа пока нет добавленных владений навыками
                   </span>
                   <span className="text-[11px] text-slate-500 max-w-sm">
-                    Нажмите «Показать все 18 навыков» и кликните по кружку ○ рядом с нужным навыком, чтобы отметить владение.
+                    Нажмите «Показать все 18 навыков» и кликните по кружку ○ рядом с нужным навыком,
+                    чтобы отметить владение.
                   </span>
                   <button
                     type="button"
@@ -308,9 +417,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                 </>
               ) : (
                 <>
-                  <span>
-                    Навык по запросу {filterQuery ? `«${filterQuery}»` : ''} не найден
-                  </span>
+                  <span>Навык по запросу {filterQuery ? `«${filterQuery}»` : ''} не найден</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -335,8 +442,8 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                   profLevel === 'expert'
                     ? 2 * profBonus
                     : profLevel === 'proficient'
-                    ? profBonus
-                    : 0;
+                      ? profBonus
+                      : 0;
                 const totalMod = baseMod + bonus;
                 const formattedMod = formatModifier(totalMod);
 
@@ -347,8 +454,8 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                       profLevel === 'expert'
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
                         : profLevel === 'proficient'
-                        ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200'
-                        : 'bg-[#141622] border-[#262a3d] text-slate-300 hover:border-slate-600'
+                          ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200'
+                          : 'bg-[#141622] border-[#262a3d] text-slate-300 hover:border-slate-600'
                     }`}
                   >
                     {/* Proficiency Cycle Button (○ None -> ● Proficient -> ★ Expert) */}
@@ -360,8 +467,8 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                         profLevel === 'expert'
                           ? 'Экспертиза (+2x мастерство). Нажмите, чтобы снять'
                           : profLevel === 'proficient'
-                          ? 'Владение (+мастерство). Нажмите для Экспертизы'
-                          : 'Нет владения. Нажмите, чтобы отметить владение'
+                            ? 'Владение (+мастерство). Нажмите для Экспертизы'
+                            : 'Нет владения. Нажмите, чтобы отметить владение'
                       }`}
                     >
                       {profLevel === 'expert' ? (
@@ -379,9 +486,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                       onClick={() => handleRollSkill(skill, totalMod)}
                       title={`Бросить проверку: ${skill.label} (${formattedMod}) в TaleSpire`}
                     >
-                      <span className="text-xs truncate font-medium">
-                        {skill.label}
-                      </span>
+                      <span className="text-xs truncate font-medium">{skill.label}</span>
                       <span className="text-[10px] text-slate-400 shrink-0 uppercase font-mono px-1 py-0.2 rounded bg-[#0c0d14]/70 border border-[#262a3d]">
                         {skill.abilityLabel}
                       </span>
@@ -395,8 +500,8 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                         profLevel === 'expert'
                           ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
                           : profLevel === 'proficient'
-                          ? 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40'
-                          : 'bg-[#10111a] hover:bg-[#1e2235] text-slate-300 border border-[#262a3d]'
+                            ? 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40'
+                            : 'bg-[#10111a] hover:bg-[#1e2235] text-slate-300 border border-[#262a3d]'
                       }`}
                       title={`Бросить d20 ${formattedMod} в TaleSpire`}
                     >

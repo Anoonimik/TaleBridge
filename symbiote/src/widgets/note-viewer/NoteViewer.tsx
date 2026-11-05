@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useMemo } from 'react';
 import {
   Character,
@@ -28,8 +29,8 @@ interface NoteViewerProps {
 }
 
 export const NoteViewer: React.FC<NoteViewerProps> = ({ character, onClose }) => {
-  const { addCombatant } = useCombatStore();
-  const { noteContent } = useRosterStore();
+  const { addCombatant } = useCombatStore(useShallow((s) => ({ addCombatant: s.addCombatant })));
+  const { noteContent } = useRosterStore(useShallow((s) => ({ noteContent: s.noteContent })));
   const [combatAdded, setCombatAdded] = useState(false);
 
   const rawMarkdown = useMemo(() => {
@@ -38,7 +39,8 @@ export const NoteViewer: React.FC<NoteViewerProps> = ({ character, onClose }) =>
   }, [noteContent?.content, character]);
 
   const parsed: ParsedCreatureNote = useMemo(() => {
-    if (!character) return { vitals: {}, stats: undefined, actions: [], callouts: [], remainingMarkdown: '' };
+    if (!character)
+      return { vitals: {}, stats: undefined, actions: [], callouts: [], remainingMarkdown: '' };
     return parseCreatureNote(rawMarkdown, character.attacks || []);
   }, [rawMarkdown, character]);
 
@@ -147,12 +149,7 @@ export const NoteViewer: React.FC<NoteViewerProps> = ({ character, onClose }) =>
           />
 
           {/* 2. Ability Scores Grid */}
-          {activeStats && (
-            <NoteAbilityGrid
-              stats={activeStats}
-              onRollStat={handleRollStat}
-            />
-          )}
+          {activeStats && <NoteAbilityGrid stats={activeStats} onRollStat={handleRollStat} />}
 
           {/* 3. Actions & Attacks Section */}
           <NoteActionsSection
@@ -163,17 +160,11 @@ export const NoteViewer: React.FC<NoteViewerProps> = ({ character, onClose }) =>
           />
 
           {/* 4. Obsidian Callouts */}
-          <NoteCalloutsSection
-            callouts={parsed.callouts}
-            characterName={character.name}
-          />
+          <NoteCalloutsSection callouts={parsed.callouts} characterName={character.name} />
 
           {/* 5. Additional Remaining Lore / Markdown */}
           {parsed.remainingMarkdown && (
-            <NoteMarkdownBody
-              markdown={parsed.remainingMarkdown}
-              characterName={character.name}
-            />
+            <NoteMarkdownBody markdown={parsed.remainingMarkdown} characterName={character.name} />
           )}
 
           {/* Fallback if note has no markdown text loaded yet */}

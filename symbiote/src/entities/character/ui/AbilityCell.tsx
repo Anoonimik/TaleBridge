@@ -1,5 +1,6 @@
 import React from 'react';
-import { taleSpireDriver, parseModifier, formatModifier } from '../../../shared';
+import { taleSpireDriver } from '../../../shared/api/talespire';
+import { parseModifier, formatModifier } from '../../../shared/lib/text-utils';
 
 interface AbilityCellProps {
   label: string;
