@@ -19,6 +19,7 @@ import {
   ClassResourcesManager,
   SpellcastingManager,
   SkillsListAccordion,
+  EditCharacterBasicsModal,
 } from '../../features';
 
 type CockpitSubTab = 'sheet' | 'spells' | 'inventory' | 'clues' | 'notes';
@@ -51,6 +52,7 @@ export const PlayerCockpit = () => {
     toggleSkillProficiency,
     setSkillProficiency,
     setSpellcastingAbility,
+    updateCharacterBasics,
     performRest,
   } = useRosterStore();
 
@@ -60,6 +62,7 @@ export const PlayerCockpit = () => {
   const [modalAttack, setModalAttack] = useState<{ attack: Attack | null; index?: number } | null>(
     null
   );
+  const [isEditBasicsOpen, setIsEditBasicsOpen] = useState(false);
 
   const pcList = useMemo(
     () => roster.filter((r) => r.playable || r.category === 'Игроки'),
@@ -144,12 +147,23 @@ export const PlayerCockpit = () => {
           </select>
 
           {playerData && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 truncate">
-              {playerData.race && <span>{playerData.race}</span>}
-              {playerData.class && (
-                <span className="text-slate-200 font-semibold">{playerData.class}</span>
-              )}
-              {playerData.level && <span>Ур. {playerData.level}</span>}
+            <div className="flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 truncate">
+                {playerData.race && <span>{playerData.race}</span>}
+                {playerData.class && (
+                  <span className="text-slate-200 font-semibold">{playerData.class}</span>
+                )}
+                {playerData.level && <span>Ур. {playerData.level}</span>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditBasicsOpen(true)}
+                className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-[#1a1d2d] hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-[#262a3d] hover:border-indigo-500/50 cursor-pointer font-medium transition-colors"
+                title="Редактировать базовые параметры, здоровье, КД и характеристики"
+              >
+                <span>⚙️</span>
+                <span className="hidden sm:inline">Параметры</span>
+              </button>
             </div>
           )}
 
@@ -243,8 +257,14 @@ export const PlayerCockpit = () => {
 
                 {/* 2. Vitals Grid (AC, Initiative, Speed, Proficiency Bonus, Passive Perception) */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 bg-[#141622] p-2 rounded-lg border border-[#262a3d] text-center">
-                  <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d]">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">КД</span>
+                  <div
+                    onClick={() => setIsEditBasicsOpen(true)}
+                    className="flex flex-col items-center justify-center p-1 bg-[#10111a] hover:bg-indigo-500/20 rounded border border-[#262a3d] hover:border-indigo-500/40 cursor-pointer transition-colors group"
+                    title="Нажмите, чтобы изменить КД и базовые параметры"
+                  >
+                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-indigo-300">
+                      КД ✏️
+                    </span>
                     <span className="text-sm font-bold text-indigo-300 font-mono">
                       {playerData?.ac ?? 10}
                     </span>
@@ -264,8 +284,14 @@ export const PlayerCockpit = () => {
                     </span>
                   </button>
 
-                  <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d]">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Скорость</span>
+                  <div
+                    onClick={() => setIsEditBasicsOpen(true)}
+                    className="flex flex-col items-center justify-center p-1 bg-[#10111a] hover:bg-indigo-500/20 rounded border border-[#262a3d] hover:border-indigo-500/40 cursor-pointer transition-colors group"
+                    title="Нажмите, чтобы изменить скорость и базовые параметры"
+                  >
+                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-indigo-300">
+                      Скорость ✏️
+                    </span>
                     <span className="text-xs font-bold text-slate-200">
                       {playerData?.speed || '9 м'}
                     </span>
@@ -298,67 +324,83 @@ export const PlayerCockpit = () => {
                 />
 
                 {/* 4. Ability Scores Grid (6 cells with integrated Checks & Saves) */}
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  <AbilityCell
-                    label="СИЛ"
-                    name="Сила"
-                    scoreStr={playerData?.stats?.str || '10'}
-                    characterName={playerCharacterName}
-                    abilityKey="str"
-                    isProficient={playerData?.savingThrowsProficient?.includes('str')}
-                    onToggleProficiency={toggleSavingThrowProficiency}
-                    profBonus={profBonus}
-                  />
-                  <AbilityCell
-                    label="ЛОВ"
-                    name="Ловкость"
-                    scoreStr={playerData?.stats?.dex || '10'}
-                    characterName={playerCharacterName}
-                    abilityKey="dex"
-                    isProficient={playerData?.savingThrowsProficient?.includes('dex')}
-                    onToggleProficiency={toggleSavingThrowProficiency}
-                    profBonus={profBonus}
-                  />
-                  <AbilityCell
-                    label="ТЕЛ"
-                    name="Телосложение"
-                    scoreStr={playerData?.stats?.con || '10'}
-                    characterName={playerCharacterName}
-                    abilityKey="con"
-                    isProficient={playerData?.savingThrowsProficient?.includes('con')}
-                    onToggleProficiency={toggleSavingThrowProficiency}
-                    profBonus={profBonus}
-                  />
-                  <AbilityCell
-                    label="ИНТ"
-                    name="Интеллект"
-                    scoreStr={playerData?.stats?.int || '10'}
-                    characterName={playerCharacterName}
-                    abilityKey="int"
-                    isProficient={playerData?.savingThrowsProficient?.includes('int')}
-                    onToggleProficiency={toggleSavingThrowProficiency}
-                    profBonus={profBonus}
-                  />
-                  <AbilityCell
-                    label="МУД"
-                    name="Мудрость"
-                    scoreStr={playerData?.stats?.wis || '10'}
-                    characterName={playerCharacterName}
-                    abilityKey="wis"
-                    isProficient={playerData?.savingThrowsProficient?.includes('wis')}
-                    onToggleProficiency={toggleSavingThrowProficiency}
-                    profBonus={profBonus}
-                  />
-                  <AbilityCell
-                    label="ХАР"
-                    name="Харизма"
-                    scoreStr={playerData?.stats?.cha || '10'}
-                    characterName={playerCharacterName}
-                    abilityKey="cha"
-                    isProficient={playerData?.savingThrowsProficient?.includes('cha')}
-                    onToggleProficiency={toggleSavingThrowProficiency}
-                    profBonus={profBonus}
-                  />
+                <div>
+                  <div className="flex items-center justify-between text-xs text-slate-400 mb-1 px-0.5">
+                    <span className="font-bold uppercase tracking-wider text-[11px] text-slate-300">
+                      Характеристики и спасброски
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditBasicsOpen(true)}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer flex items-center gap-1 font-medium"
+                      title="Редактировать значения 6 характеристик (1 - 30)"
+                    >
+                      <span>✏️</span>
+                      <span>Изменить</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                    <AbilityCell
+                      label="СИЛ"
+                      name="Сила"
+                      scoreStr={playerData?.stats?.str || '10'}
+                      characterName={playerCharacterName}
+                      abilityKey="str"
+                      isProficient={playerData?.savingThrowsProficient?.includes('str')}
+                      onToggleProficiency={toggleSavingThrowProficiency}
+                      profBonus={profBonus}
+                    />
+                    <AbilityCell
+                      label="ЛОВ"
+                      name="Ловкость"
+                      scoreStr={playerData?.stats?.dex || '10'}
+                      characterName={playerCharacterName}
+                      abilityKey="dex"
+                      isProficient={playerData?.savingThrowsProficient?.includes('dex')}
+                      onToggleProficiency={toggleSavingThrowProficiency}
+                      profBonus={profBonus}
+                    />
+                    <AbilityCell
+                      label="ТЕЛ"
+                      name="Телосложение"
+                      scoreStr={playerData?.stats?.con || '10'}
+                      characterName={playerCharacterName}
+                      abilityKey="con"
+                      isProficient={playerData?.savingThrowsProficient?.includes('con')}
+                      onToggleProficiency={toggleSavingThrowProficiency}
+                      profBonus={profBonus}
+                    />
+                    <AbilityCell
+                      label="ИНТ"
+                      name="Интеллект"
+                      scoreStr={playerData?.stats?.int || '10'}
+                      characterName={playerCharacterName}
+                      abilityKey="int"
+                      isProficient={playerData?.savingThrowsProficient?.includes('int')}
+                      onToggleProficiency={toggleSavingThrowProficiency}
+                      profBonus={profBonus}
+                    />
+                    <AbilityCell
+                      label="МУД"
+                      name="Мудрость"
+                      scoreStr={playerData?.stats?.wis || '10'}
+                      characterName={playerCharacterName}
+                      abilityKey="wis"
+                      isProficient={playerData?.savingThrowsProficient?.includes('wis')}
+                      onToggleProficiency={toggleSavingThrowProficiency}
+                      profBonus={profBonus}
+                    />
+                    <AbilityCell
+                      label="ХАР"
+                      name="Харизма"
+                      scoreStr={playerData?.stats?.cha || '10'}
+                      characterName={playerCharacterName}
+                      abilityKey="cha"
+                      isProficient={playerData?.savingThrowsProficient?.includes('cha')}
+                      onToggleProficiency={toggleSavingThrowProficiency}
+                      profBonus={profBonus}
+                    />
+                  </div>
                 </div>
 
                 {/* 5. Classic 18 Skills Accordion (Collapsible under Ability Scores) */}
@@ -450,6 +492,14 @@ export const PlayerCockpit = () => {
           onSave={handleSaveAttack}
         />
       )}
+
+      {/* Edit Character Basics Modal */}
+      <EditCharacterBasicsModal
+        isOpen={isEditBasicsOpen}
+        onClose={() => setIsEditBasicsOpen(false)}
+        playerData={playerData}
+        onSave={updateCharacterBasics}
+      />
     </div>
   );
 };

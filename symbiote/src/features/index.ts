@@ -11,3 +11,4 @@ export * from './death-saves';
 export * from './manage-saves-skills';
 export * from './manage-resources';
 export * from './manage-spells';
+export * from './manage-character-basics';

@@ -94,6 +94,18 @@ export interface Currency {
   pp: number;
 }
 
+export interface CharacterBasicsUpdate {
+  race?: string;
+  class?: string;
+  level?: number;
+  hp?: number;
+  hp_max?: number;
+  temp_hp?: number;
+  ac?: number;
+  speed?: string;
+  stats?: AbilityScores;
+}
+
 export interface Character {
   name: string;
   path?: string;

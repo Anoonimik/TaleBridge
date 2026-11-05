@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import {
   Character,
+  CharacterBasicsUpdate,
+  AbilityScores,
   Clue,
   TaleSpireCreature,
   Attack,
@@ -66,6 +68,7 @@ interface RosterStore {
   toggleSkillProficiency: (skillId: string) => void;
   setSkillProficiency: (skillId: string, level: 'none' | 'proficient' | 'expert') => void;
   setSpellcastingAbility: (ability: 'int' | 'wis' | 'cha') => void;
+  updateCharacterBasics: (updates: CharacterBasicsUpdate) => void;
   performRest: (type: 'short' | 'long') => void;
 }
 
@@ -514,6 +517,101 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const updated = { ...playerData, spellcastingAbility: ability };
     set({ playerData: updated });
     persistPlayerData(updated);
+  },
+
+  updateCharacterBasics: (updates) => {
+    const { playerData, playerCharacterName, roster } = get();
+    if (!playerData) return;
+
+    const charName = playerCharacterName || playerData.name;
+    const oldHp = playerData.hp ?? 20;
+    const oldHpMax = playerData.hp_max ?? 20;
+
+    // Calculate dexMod if stats changed
+    const newStats: AbilityScores | null = updates.stats
+      ? { ...(playerData.stats || { str: '10', dex: '10', con: '10', int: '10', wis: '10', cha: '10' }), ...updates.stats }
+      : playerData.stats ?? null;
+    const newDexMod = newStats?.dex ? parseModifier(newStats.dex) : playerData.dexMod;
+
+    const updated: Character = {
+      ...playerData,
+      ...updates,
+      stats: newStats,
+      dexMod: newDexMod,
+    };
+
+    // If level changed and hitDice exists, adjust total hitDice
+    if (updates.level !== undefined && updates.level !== playerData.level && updated.hitDice) {
+      updated.hitDice = {
+        ...updated.hitDice,
+        total: updates.level,
+        current: Math.min(updated.hitDice.current, updates.level),
+      };
+    }
+
+    // Update in store and localStorage
+    set({ playerData: updated });
+    persistPlayerData(updated);
+
+    // Update roster if character exists there
+    if (charName && roster.length > 0) {
+      const lower = charName.toLowerCase();
+      const updatedRoster = roster.map((r) =>
+        r.name && r.name.toLowerCase() === lower ? { ...r, ...updated } : r
+      );
+      set({ roster: updatedRoster });
+    }
+
+    // Send updates to Obsidian plugin
+    if (charName) {
+      // 1. HP / HP_MAX
+      const hpChanged = updates.hp !== undefined && updates.hp !== oldHp;
+      const hpMaxChanged = updates.hp_max !== undefined && updates.hp_max !== oldHpMax;
+      if (hpChanged || hpMaxChanged) {
+        wsBridge.send('UPDATE_CHARACTER_HP', {
+          characterName: charName,
+          hp: updated.hp ?? 20,
+          maxHp: updated.hp_max ?? 20,
+        });
+      }
+
+      // 2. Frontmatter parameters: ac, speed, level, race, class, status
+      const paramKeys: (keyof CharacterBasicsUpdate)[] = ['ac', 'speed', 'level', 'race', 'class'];
+      paramKeys.forEach((key) => {
+        if (updates[key] !== undefined && updates[key] !== (playerData as any)[key]) {
+          wsBridge.send('UPDATE_CHARACTER_PARAM', {
+            characterName: charName,
+            param: key,
+            value: updates[key],
+          });
+        }
+      });
+
+      // 3. Ability scores
+      if (updates.stats) {
+        const formattedStats: Record<string, string> = {};
+        const abilities: (keyof AbilityScores)[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+        abilities.forEach((ab) => {
+          const raw = updates.stats![ab] || playerData.stats?.[ab] || '10';
+          const num = parseInt(raw, 10) || 10;
+          const mod = Math.floor((num - 10) / 2);
+          const sign = mod >= 0 ? `+${mod}` : `${mod}`;
+          formattedStats[ab] = `${num} (${sign})`;
+        });
+
+        wsBridge.send('UPDATE_CHARACTER_STATS', {
+          characterName: charName,
+          stats: formattedStats,
+        });
+      }
+
+      useLogStore
+        .getState()
+        .addLog(
+          'action',
+          `[Параметры] Базовые данные персонажа «${charName}» обновлены (КД: ${updated.ac ?? 10}, Ур. ${updated.level ?? 1}, ХП: ${updated.hp ?? 20}/${updated.hp_max ?? 20}).`
+        );
+    }
   },
 
   performRest: (type) => {
