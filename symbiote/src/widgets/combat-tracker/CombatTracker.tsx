@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Crosshair } from 'lucide-react';
 import { Combatant, taleSpireDriver, useRosterStore } from '../../shared';
 import { useCombatStore } from '../../shared';
 import { CombatantCard } from '../../entities';
@@ -101,6 +102,22 @@ export const CombatTracker = () => {
               <span className="font-bold text-amber-400 text-sm uppercase tracking-wider">
                 Раунд {round}
               </span>
+              {combatants[turnIndex]?.talespireId && (
+                <button
+                  type="button"
+                  className="px-2 py-0.5 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/50 rounded text-xs cursor-pointer font-medium flex items-center gap-1 transition-colors"
+                  onClick={() => {
+                    const activeCombatant = combatants[turnIndex];
+                    if (activeCombatant?.talespireId) {
+                      taleSpireDriver.focusCreature(activeCombatant.talespireId);
+                    }
+                  }}
+                  title={`Сфокусировать камеру на миниатюре [${combatants[turnIndex]?.name}]`}
+                >
+                  <Crosshair className="w-3 h-3 shrink-0" />
+                  <span className="hidden sm:inline">Фокус</span>
+                </button>
+              )}
             </div>
           ) : (
             <span className="text-slate-400 text-sm font-semibold">Бой не начат</span>

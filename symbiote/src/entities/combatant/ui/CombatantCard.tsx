@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import { Dices, FileText, X } from 'lucide-react';
+import { Dices, FileText, X, Crosshair, Link2 } from 'lucide-react';
 import {
   Combatant,
   COMBAT_SIDES,
   useCombatStore,
   useRosterStore,
+  useLogStore,
+  taleSpireDriver,
   wsBridge,
 } from '../../../shared';
 import { CombatantHpPanel } from './CombatantHpPanel';
@@ -30,6 +32,7 @@ export const CombatantCard = ({
     rollSingleInitiative,
     removeCombatant,
     toggleCondition,
+    setCombatantTalespireId,
   } = useCombatStore();
   const { setSelectedCharacter, roster } = useRosterStore();
 
@@ -62,6 +65,41 @@ export const CombatantCard = ({
     }
   };
 
+  const handleLinkMiniature = async () => {
+    const selectedId = await taleSpireDriver.getSelectedCreatureId();
+    if (!selectedId) {
+      useLogStore.getState().addLog('sync', 'Миниатюра не выбрана в TaleSpire. Выделите токен на доске');
+      return;
+    }
+
+    setCombatantTalespireId(combatant.id, selectedId);
+    useLogStore.getState().addLog('sync', `Миниатюра [${selectedId}] привязана к «${combatant.name}»`);
+
+    const char = roster.find((r) => r.name.toLowerCase() === combatant.name.toLowerCase());
+    if (char?.path || combatant.path) {
+      const notePath = char?.path || combatant.path;
+      wsBridge.send('OPEN_NOTE', { path: notePath, name: combatant.name });
+    }
+    wsBridge.send('LINK_CREATURE_TO_NOTE', {
+      creature: {
+        id: selectedId,
+        name: combatant.name,
+        hpMax: combatant.maxHp,
+      },
+    });
+  };
+
+  const handleFocusMiniature = async () => {
+    if (combatant.talespireId) {
+      await taleSpireDriver.focusCreature(combatant.talespireId);
+    }
+  };
+
+  const handleUnlinkMiniature = () => {
+    setCombatantTalespireId(combatant.id, null);
+    useLogStore.getState().addLog('sync', `Миниатюра отвязана от «${combatant.name}»`);
+  };
+
   return (
     <div
       className={`rounded-lg border p-2.5 flex flex-col gap-2 transition-all relative ${
@@ -72,7 +110,7 @@ export const CombatantCard = ({
     >
       {/* Top row: Side badge, Name, Initiative, Note & Delete */}
       <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
           <button
             type="button"
             className={`text-xs px-2 py-0.5 rounded font-bold border cursor-pointer uppercase transition-colors shrink-0 ${sideMeta.bg} ${sideMeta.text} ${sideMeta.border}`}
@@ -88,6 +126,38 @@ export const CombatantCard = ({
           >
             {combatant.name}
           </span>
+
+          {combatant.talespireId ? (
+            <div className="inline-flex items-center gap-1 shrink-0 bg-cyan-950/60 border border-cyan-800/50 rounded px-1.5 py-0.5 text-[10px]">
+              <span className="text-cyan-300 font-medium">3D Миниатюра</span>
+              <button
+                type="button"
+                className="p-0.5 rounded hover:bg-cyan-800/50 text-cyan-400 hover:text-cyan-200 cursor-pointer transition-colors"
+                onClick={handleFocusMiniature}
+                title={`Сфокусировать камеру в TaleSpire (${combatant.talespireId})`}
+              >
+                <Crosshair className="w-3 h-3 shrink-0" />
+              </button>
+              <button
+                type="button"
+                className="p-0.5 rounded hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 cursor-pointer transition-colors"
+                onClick={handleUnlinkMiniature}
+                title="Отвязать миниатюру"
+              >
+                <X className="w-2.5 h-2.5 shrink-0" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[#10111a] hover:bg-[#1a1d2d] text-slate-400 hover:text-cyan-300 border border-[#262a3d] hover:border-cyan-700/50 cursor-pointer transition-colors shrink-0 font-medium"
+              onClick={handleLinkMiniature}
+              title="Привязать выбранную фигурку на доске TaleSpire"
+            >
+              <Link2 className="w-2.5 h-2.5 shrink-0" />
+              <span>Привязать миниатюру</span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">

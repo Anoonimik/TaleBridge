@@ -148,11 +148,129 @@ class TaleSpireDriver {
           this.gotoBookmark(payload.id, payload.name);
         }
       });
+
+      wsBridge.subscribe('FOCUS_CREATURE', (payload: any) => {
+        if (payload?.id) {
+          this.focusCreature(payload.id);
+        }
+      });
     }
 
     // 3. Creature selection is handled by handleCreatureStateChange callback above.
     // We do an initial check on first init only.
     this.pollActiveToken();
+  }
+
+  public async getSelectedCreatureId(): Promise<string | null> {
+    if (!this.isReady() || !window.TS?.creatures?.getSelectedCreatures) {
+      return null;
+    }
+
+    try {
+      const selected = await window.TS.creatures.getSelectedCreatures();
+      if (!selected || !Array.isArray(selected) || selected.length === 0) {
+        return null;
+      }
+
+      const firstItem = selected[0];
+      if (!firstItem) return null;
+
+      if (typeof firstItem === 'string') {
+        return firstItem;
+      }
+
+      if (typeof firstItem === 'object' && firstItem.id) {
+        return firstItem.id;
+      }
+
+      if (window.TS?.creatures?.getMoreInfo) {
+        try {
+          const infos = await window.TS.creatures.getMoreInfo([firstItem]);
+          const creatureInfo = Array.isArray(infos) ? infos[0] : infos;
+          if (creatureInfo?.id) {
+            return creatureInfo.id;
+          }
+        } catch {
+          // ignore fallback
+        }
+      }
+
+      return (firstItem as any)?.id || String(firstItem) || null;
+    } catch (e) {
+      console.warn('[TaleSpire] getSelectedCreatureId error:', e);
+      return null;
+    }
+  }
+
+  public async focusCreature(id: string): Promise<void> {
+    if (!id) return;
+    useLogStore.getState().addLog('sync', `Фокусировка на миниатюре [${id}]...`);
+
+    if (typeof wsBridge !== 'undefined' && wsBridge?.send) {
+      wsBridge.send('FOCUS_CREATURE', { id });
+    }
+
+    if (!this.isReady()) {
+      return;
+    }
+
+    try {
+      const ts = window.TS as any;
+      let focused = false;
+
+      // 1. TaleSpire camera namespace methods
+      if (ts.camera) {
+        if (typeof ts.camera.focusCreature === 'function') {
+          await ts.camera.focusCreature(id);
+          focused = true;
+        } else if (typeof ts.camera.focus === 'function') {
+          await ts.camera.focus(id);
+          focused = true;
+        } else if (typeof ts.camera.centerOnCreature === 'function') {
+          await ts.camera.centerOnCreature(id);
+          focused = true;
+        } else if (typeof ts.camera.lookAtCreature === 'function') {
+          await ts.camera.lookAtCreature(id);
+          focused = true;
+        }
+      }
+
+      // 2. TaleSpire creatures namespace methods
+      if (!focused && ts.creatures) {
+        if (typeof ts.creatures.focus === 'function') {
+          await ts.creatures.focus(id);
+          focused = true;
+        } else if (typeof ts.creatures.select === 'function') {
+          await ts.creatures.select(id);
+          focused = true;
+        } else if (typeof ts.creatures.setSelectedCreatures === 'function') {
+          await ts.creatures.setSelectedCreatures([id]);
+          focused = true;
+        } else if (typeof ts.creatures.focusCreature === 'function') {
+          await ts.creatures.focusCreature(id);
+          focused = true;
+        }
+      }
+
+      // 3. Fallback to bookmark matching if bookmark with creature id exists
+      if (!focused && ts.bookmarks?.gotoBookmark) {
+        const bookmarks = useAppStore.getState().bookmarks || [];
+        const match = bookmarks.find((b) => b.id === id);
+        if (match) {
+          await window.TS.bookmarks.gotoBookmark(match.id);
+          focused = true;
+        }
+      }
+
+      if (focused) {
+        useLogStore.getState().addLog('sync', `Камера сфокусирована на миниатюре [${id}]`);
+      } else {
+        useLogStore.getState().addLog('sync', `Запрос фокуса миниатюры [${id}] отправлен в TaleSpire`);
+      }
+    } catch (e: any) {
+      console.warn('[TaleSpire] focusCreature error:', e);
+      useLogStore.getState().addLog('sync', `Ошибка фокусировки на миниатюре: ${e?.message || e}`);
+    }
   }
 
   public async pollActiveToken(): Promise<void> {

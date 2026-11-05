@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Combatant, CombatSide } from '../types';
 import { wsBridge } from '../api/websocket';
 import { taleSpireDriver } from '../api/talespire';
+import { useLogStore } from './useLogStore';
 import { sideToCategory, categoryToSide } from './dnd-rules';
 import { parseModifier, formatModifier } from './text-utils';
 
@@ -28,6 +29,7 @@ interface CombatStore {
   clearCombat: () => void;
   syncWithObsidian: () => void;
   setFromSync: (state: { active: boolean; round: number; turnIndex: number; combatants: Combatant[] }) => void;
+  setCombatantTalespireId: (id: string, talespireId: string | null) => void;
 }
 
 export const useCombatStore = create<CombatStore>((set, get) => ({
@@ -39,6 +41,13 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   startCombat: () => {
     set({ active: true, round: 1, turnIndex: 0 });
     get().sortByInitiative();
+    const activeCombatant = get().combatants[0];
+    if (activeCombatant) {
+      useLogStore.getState().addLog('combat', `[Ход] Ход переходит к: ${activeCombatant.name}`);
+      if (activeCombatant.talespireId) {
+        taleSpireDriver.focusCreature(activeCombatant.talespireId);
+      }
+    }
     get().syncWithObsidian();
   },
 
@@ -50,24 +59,56 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   nextTurn: () => {
     const { turnIndex, combatants, round } = get();
     if (combatants.length === 0) return;
-    if (turnIndex + 1 >= combatants.length) {
-      set({ turnIndex: 0, round: round + 1 });
-    } else {
-      set({ turnIndex: turnIndex + 1 });
+    const nextTurnIndex = turnIndex + 1 >= combatants.length ? 0 : turnIndex + 1;
+    const nextRound = turnIndex + 1 >= combatants.length ? round + 1 : round;
+
+    set({ turnIndex: nextTurnIndex, round: nextRound });
+
+    const activeCombatant = combatants[nextTurnIndex];
+    if (activeCombatant) {
+      useLogStore.getState().addLog('combat', `[Ход] Ход переходит к: ${activeCombatant.name}`);
+      if (activeCombatant.talespireId) {
+        taleSpireDriver.focusCreature(activeCombatant.talespireId);
+      }
     }
+
     get().syncWithObsidian();
   },
 
   prevTurn: () => {
     const { turnIndex, combatants, round } = get();
     if (combatants.length === 0) return;
+    let prevTurnIndex = turnIndex;
+    let prevRound = round;
+
     if (turnIndex - 1 < 0) {
       if (round > 1) {
-        set({ turnIndex: combatants.length - 1, round: round - 1 });
+        prevTurnIndex = combatants.length - 1;
+        prevRound = round - 1;
       }
     } else {
-      set({ turnIndex: turnIndex - 1 });
+      prevTurnIndex = turnIndex - 1;
     }
+
+    set({ turnIndex: prevTurnIndex, round: prevRound });
+
+    const activeCombatant = combatants[prevTurnIndex];
+    if (activeCombatant) {
+      useLogStore.getState().addLog('combat', `[Ход] Ход переходит к: ${activeCombatant.name}`);
+      if (activeCombatant.talespireId) {
+        taleSpireDriver.focusCreature(activeCombatant.talespireId);
+      }
+    }
+
+    get().syncWithObsidian();
+  },
+
+  setCombatantTalespireId: (id, talespireId) => {
+    set((state) => ({
+      combatants: state.combatants.map((c) =>
+        c.id === id ? { ...c, talespireId } : c
+      ),
+    }));
     get().syncWithObsidian();
   },
 
