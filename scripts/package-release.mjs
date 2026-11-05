@@ -35,7 +35,7 @@ for (const component of ["obsidian-plugin", "symbiote"]) {
 for (const file of ["LICENSE", "README.md", "install.ps1", "install.bat"])
   await cp(file, `release/${file}`);
 await mkdir("release/docs", { recursive: true });
-for (const file of ["GM_GUIDE.md", "PLAYER_GUIDE.md"])
+for (const file of ["GM_GUIDE.md", "PLAYER_GUIDE.md", "OBSIDIAN_TEMPLATES.md"])
   await cp(`docs/${file}`, `release/docs/${file}`);
 await cp("examples", "release/examples", { recursive: true });
 const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
