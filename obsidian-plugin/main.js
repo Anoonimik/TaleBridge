@@ -31251,7 +31251,7 @@ var SessionManager = class {
     if (payload.token) {
       const previous = this.sessions.get(secretHash(payload.token));
       if (previous && previous.expires > this.now() && previous.role === payload.role)
-        return { ...previous, driver: previous.role === "gm" && Boolean(payload.driver) };
+        return { ...previous, driver: Boolean(payload.driver) };
     }
     const rate = this.attempts.get(peer) || { count: 0, until: this.now() + 6e4 };
     if (++rate.count > 5)
@@ -31267,7 +31267,7 @@ var SessionManager = class {
       characterId,
       token: newCode(),
       expires: this.now() + 8 * 60 * 60 * 1e3,
-      driver: payload.role === "gm" && Boolean(payload.driver)
+      driver: Boolean(payload.driver)
     };
     this.sessions.set(secretHash(session.token), session);
     return session;
@@ -32102,7 +32102,7 @@ var BridgeApplication = class {
         client.session = void 0;
         return;
       case "REGISTER_DRIVER":
-        this.gm(client);
+        this.requireSession(client);
         client.session.driver = command.payload.ready;
         return;
       case "PING":
@@ -32283,7 +32283,7 @@ ${command.payload.notes}`
           throw new ProtocolError("RATE_LIMIT", "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u043C\u043D\u043E\u0433\u043E \u043E\u0436\u0438\u0434\u0430\u044E\u0449\u0438\u0445 \u0431\u0440\u043E\u0441\u043A\u043E\u0432");
         if (this.rolls.has(command.payload.rollId))
           throw new ProtocolError("CONFLICT", "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0431\u0440\u043E\u0441\u043A\u0430 \u0443\u0436\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F");
-        const driver = this.driver(), secret = client.session?.role === "gm" && Boolean(command.payload.isGmOnly);
+        const driver = client.session?.driver ? client : this.driver(), secret = client.session?.role === "gm" && Boolean(command.payload.isGmOnly);
         const timer = setTimeout(() => {
           this.rolls.delete(command.payload.rollId);
           this.send(client, "ROLL_ERROR", {
