@@ -31088,6 +31088,15 @@ var import_websocket_server = __toESM(require_websocket_server(), 1);
 // obsidian-plugin/src/server/transport.ts
 function allowedOrigin(origin, host, options) {
   if (!origin || origin === "null") return options.allowWebview;
+  if (options.allowWebview) {
+    try {
+      const local = new URL(origin);
+      if (local.protocol === "http:" && local.hostname === "localhost" && local.port && local.origin === origin)
+        return true;
+    } catch {
+      return false;
+    }
+  }
   return Boolean(host && [`http://${host}`, `https://${host}`].includes(origin)) || options.allowedOrigins.includes(origin);
 }
 var BridgeServer = class extends import_node_events.EventEmitter {

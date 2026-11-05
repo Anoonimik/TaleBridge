@@ -28,6 +28,18 @@ export function allowedOrigin(
   options: Pick<TransportOptions, 'allowedOrigins' | 'allowWebview'>,
 ): boolean {
   if (!origin || origin === 'null') return options.allowWebview;
+  // TaleSpire serves local Symbiotes from its own localhost HTTP server.
+  // Its port is independent from the Obsidian bridge and changes between runs.
+  if (options.allowWebview) {
+    try {
+      const local = new URL(origin);
+      if (local.protocol === 'http:' && local.hostname === 'localhost' &&
+          local.port && local.origin === origin)
+        return true;
+    } catch {
+      return false;
+    }
+  }
   return (
     Boolean(host && [`http://${host}`, `https://${host}`].includes(origin)) ||
     options.allowedOrigins.includes(origin)
