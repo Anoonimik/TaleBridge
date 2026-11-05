@@ -1,14 +1,9 @@
-import React, { useMemo } from 'react';
-import { Dices, FileText, X, Crosshair, Link2 } from 'lucide-react';
-import {
-  Combatant,
-  COMBAT_SIDES,
-  useCombatStore,
-  useRosterStore,
-  useLogStore,
-  taleSpireDriver,
-  wsBridge,
-} from '../../../shared';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '../../../shared/lib/useAppStore';
+import { taleSpireDriver } from '../../../shared/api/talespire';
+import React, { useMemo, useState, useRef } from 'react';
+import { Dices, FileText, X } from 'lucide-react';
+import { Combatant, COMBAT_SIDES, useCombatStore, useRosterStore, wsBridge } from '../../../shared';
 import { CombatantHpPanel } from './CombatantHpPanel';
 import { CombatantConditionsList } from './CombatantConditionsList';
 import { CombatantAttackRow } from './CombatantAttackRow';
@@ -26,19 +21,49 @@ export const CombatantCard = ({
   onOpenConditions,
   onOpenSideMenu,
 }: CombatantCardProps) => {
+  const bookmarks = useAppStore((state) => state.bookmarks);
+  const isGm = useAppStore((state) => state.role === 'gm');
+  const [linkError, setLinkError] = useState('');
+  const [linking, setLinking] = useState(false);
+  const linkPending = useRef(false);
+  const linkMiniature = async () => {
+    if (!isGm || linkPending.current) return;
+    linkPending.current = true;
+    setLinking(true);
+    setLinkError('');
+    try {
+      const id = await taleSpireDriver.getSelectedCreatureId();
+      if (useAppStore.getState().role === 'gm')
+        useCombatStore.getState().setMiniature(combatant.id, id);
+    } catch (error) {
+      setLinkError(error instanceof Error ? error.message : 'Ошибка привязки');
+    } finally {
+      linkPending.current = false;
+      setLinking(false);
+    }
+  };
   const {
     updateCombatantHp,
     setInitiative,
     rollSingleInitiative,
     removeCombatant,
     toggleCondition,
-    setCombatantTalespireId,
-  } = useCombatStore();
-  const { setSelectedCharacter, roster } = useRosterStore();
+  } = useCombatStore(
+    useShallow((s) => ({
+      updateCombatantHp: s.updateCombatantHp,
+      setInitiative: s.setInitiative,
+      rollSingleInitiative: s.rollSingleInitiative,
+      removeCombatant: s.removeCombatant,
+      toggleCondition: s.toggleCondition,
+    })),
+  );
+  const { setSelectedCharacter, roster } = useRosterStore(
+    useShallow((s) => ({ setSelectedCharacter: s.setSelectedCharacter, roster: s.roster })),
+  );
 
   const conditions = useMemo(
     () => (Array.isArray(combatant.conditions) ? combatant.conditions : []),
-    [combatant.conditions]
+    [combatant.conditions],
   );
 
   const attacks = useMemo(() => {
@@ -50,54 +75,17 @@ export const CombatantCard = ({
 
   const sideMeta = useMemo(
     () => COMBAT_SIDES.find((s) => s.id === combatant.side) || COMBAT_SIDES[3],
-    [combatant.side]
+    [combatant.side],
   );
 
   const handleOpenNote = () => {
-    const found = roster.find(
-      (r) => r.name.toLowerCase() === combatant.name.toLowerCase()
-    );
+    const found = roster.find((r) => r.name.toLowerCase() === combatant.name.toLowerCase());
     if (found) {
       setSelectedCharacter(found);
       if (found.path) {
         wsBridge.send('GET_NOTE', { path: found.path, name: found.name });
       }
     }
-  };
-
-  const handleLinkMiniature = async () => {
-    const selectedId = await taleSpireDriver.getSelectedCreatureId();
-    if (!selectedId) {
-      useLogStore.getState().addLog('sync', 'Миниатюра не выбрана в TaleSpire. Выделите токен на доске');
-      return;
-    }
-
-    setCombatantTalespireId(combatant.id, selectedId);
-    useLogStore.getState().addLog('sync', `Миниатюра [${selectedId}] привязана к «${combatant.name}»`);
-
-    const char = roster.find((r) => r.name.toLowerCase() === combatant.name.toLowerCase());
-    if (char?.path || combatant.path) {
-      const notePath = char?.path || combatant.path;
-      wsBridge.send('OPEN_NOTE', { path: notePath, name: combatant.name });
-    }
-    wsBridge.send('LINK_CREATURE_TO_NOTE', {
-      creature: {
-        id: selectedId,
-        name: combatant.name,
-        hpMax: combatant.maxHp,
-      },
-    });
-  };
-
-  const handleFocusMiniature = async () => {
-    if (combatant.talespireId) {
-      await taleSpireDriver.focusCreature(combatant.talespireId);
-    }
-  };
-
-  const handleUnlinkMiniature = () => {
-    setCombatantTalespireId(combatant.id, null);
-    useLogStore.getState().addLog('sync', `Миниатюра отвязана от «${combatant.name}»`);
   };
 
   return (
@@ -108,9 +96,72 @@ export const CombatantCard = ({
           : 'bg-[#141622] border-[#262a3d] hover:border-[#383d57]'
       }`}
     >
+      {isGm && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            type="button"
+            disabled={linking}
+            onClick={() => {
+              void linkMiniature();
+            }}
+          >
+            {linking
+              ? 'Привязка…'
+              : combatant.talespireId
+                ? 'Перепривязать миниатюру'
+                : 'Привязать выбранную миниатюру'}
+          </button>
+          {combatant.talespireId && (
+            <button
+              type="button"
+              onClick={() => useCombatStore.getState().setMiniature(combatant.id, null)}
+            >
+              Отвязать миниатюру
+            </button>
+          )}
+          <label>
+            Камера при ходе
+            <select
+              aria-label={`Закладка камеры: ${combatant.name}`}
+              value={combatant.cameraBookmarkId || ''}
+              onChange={(event) =>
+                useCombatStore
+                  .getState()
+                  .setCameraBookmark(combatant.id, event.target.value || null)
+              }
+            >
+              <option value="">Не перемещать</option>
+              {bookmarks.map((bookmark) => (
+                <option key={bookmark.id} value={bookmark.id}>
+                  {bookmark.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              void taleSpireDriver.getBookmarks();
+            }}
+          >
+            Обновить закладки
+          </button>
+          {combatant.cameraBookmarkId && (
+            <button
+              type="button"
+              onClick={() => {
+                void taleSpireDriver.gotoBookmark(combatant.cameraBookmarkId!);
+              }}
+            >
+              К закладке
+            </button>
+          )}
+          <p role="alert">{linkError}</p>
+        </div>
+      )}
       {/* Top row: Side badge, Name, Initiative, Note & Delete */}
       <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             type="button"
             className={`text-xs px-2 py-0.5 rounded font-bold border cursor-pointer uppercase transition-colors shrink-0 ${sideMeta.bg} ${sideMeta.text} ${sideMeta.border}`}
@@ -120,44 +171,9 @@ export const CombatantCard = ({
             {sideMeta.label} ▾
           </button>
 
-          <span
-            className="font-semibold text-slate-100 text-sm truncate"
-            title={combatant.name}
-          >
+          <span className="font-semibold text-slate-100 text-sm truncate" title={combatant.name}>
             {combatant.name}
           </span>
-
-          {combatant.talespireId ? (
-            <div className="inline-flex items-center gap-1 shrink-0 bg-cyan-950/60 border border-cyan-800/50 rounded px-1.5 py-0.5 text-[10px]">
-              <span className="text-cyan-300 font-medium">3D Миниатюра</span>
-              <button
-                type="button"
-                className="p-0.5 rounded hover:bg-cyan-800/50 text-cyan-400 hover:text-cyan-200 cursor-pointer transition-colors"
-                onClick={handleFocusMiniature}
-                title={`Сфокусировать камеру в TaleSpire (${combatant.talespireId})`}
-              >
-                <Crosshair className="w-3 h-3 shrink-0" />
-              </button>
-              <button
-                type="button"
-                className="p-0.5 rounded hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 cursor-pointer transition-colors"
-                onClick={handleUnlinkMiniature}
-                title="Отвязать миниатюру"
-              >
-                <X className="w-2.5 h-2.5 shrink-0" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[#10111a] hover:bg-[#1a1d2d] text-slate-400 hover:text-cyan-300 border border-[#262a3d] hover:border-cyan-700/50 cursor-pointer transition-colors shrink-0 font-medium"
-              onClick={handleLinkMiniature}
-              title="Привязать выбранную фигурку на доске TaleSpire"
-            >
-              <Link2 className="w-2.5 h-2.5 shrink-0" />
-              <span>Привязать миниатюру</span>
-            </button>
-          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -217,11 +233,7 @@ export const CombatantCard = ({
       />
 
       {/* Actions & Attacks list */}
-      <CombatantAttackRow
-        combatantName={combatant.name}
-        attacks={attacks}
-        isActive={isActive}
-      />
+      <CombatantAttackRow combatantName={combatant.name} attacks={attacks} isActive={isActive} />
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import React from 'react';
-import { ParsedCallout, formatInlineText, taleSpireDriver } from '../../../shared';
+import { ParsedCallout } from '../../../shared/lib/note-parser';
+import { formatInlineText } from '../../../shared/lib/format-text';
+import { taleSpireDriver } from '../../../shared/api/talespire';
 
 interface NoteCalloutsSectionProps {
   callouts: ParsedCallout[];
@@ -44,7 +46,7 @@ export const NoteCalloutsSection: React.FC<NoteCalloutsSectionProps> = ({
               {c.lines.map((line: string, lIdx: number) => (
                 <div key={lIdx} className="pl-1">
                   {formatInlineText(line, (formula, label) =>
-                    taleSpireDriver.rollDice(formula, `${characterName}: ${label}`)
+                    taleSpireDriver.rollDice(formula, `${characterName}: ${label}`),
                   )}
                 </div>
               ))}

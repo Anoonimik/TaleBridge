@@ -1,13 +1,11 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect } from 'react';
-import { Crosshair } from 'lucide-react';
 import { Combatant, taleSpireDriver, useRosterStore } from '../../shared';
-import { useCombatStore } from '../../shared';
-import { CombatantCard } from '../../entities';
-import {
-  CombatRosterDropdown,
-  CombatSideMenu,
-  ConditionsPickerModal,
-} from '../../features';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { CombatantCard } from '../../entities/combatant/ui/CombatantCard';
+import { CombatRosterDropdown } from '../../features/manage-combat/CombatRosterDropdown';
+import { CombatSideMenu } from '../../features/manage-combat/CombatSideMenu';
+import { ConditionsPickerModal } from '../../features/manage-combat/ConditionsPickerModal';
 
 export const CombatTracker = () => {
   const {
@@ -22,9 +20,23 @@ export const CombatTracker = () => {
     rollAllInitiatives,
     sortByInitiative,
     clearCombat,
-  } = useCombatStore();
+  } = useCombatStore(
+    useShallow((s) => ({
+      active: s.active,
+      round: s.round,
+      turnIndex: s.turnIndex,
+      combatants: s.combatants,
+      startCombat: s.startCombat,
+      endCombat: s.endCombat,
+      nextTurn: s.nextTurn,
+      prevTurn: s.prevTurn,
+      rollAllInitiatives: s.rollAllInitiatives,
+      sortByInitiative: s.sortByInitiative,
+      clearCombat: s.clearCombat,
+    })),
+  );
 
-  const { roster } = useRosterStore();
+  const { roster } = useRosterStore(useShallow((s) => ({ roster: s.roster })));
 
   const [showRosterDropdown, setShowRosterDropdown] = useState(false);
   const [conditionsCombatantId, setConditionsCombatantId] = useState<string | null>(null);
@@ -55,7 +67,8 @@ export const CombatTracker = () => {
         const attacks =
           curCombatant.attacks && curCombatant.attacks.length > 0
             ? curCombatant.attacks
-            : roster.find((r) => r.name.toLowerCase() === curCombatant.name.toLowerCase())?.attacks || [];
+            : roster.find((r) => r.name.toLowerCase() === curCombatant.name.toLowerCase())
+                ?.attacks || [];
 
         const atk = attacks[num - 1];
         if (atk) {
@@ -63,7 +76,7 @@ export const CombatTracker = () => {
           if (e.shiftKey && atk.dmg) {
             taleSpireDriver.rollDice(
               atk.dmg,
-              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`
+              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`,
             );
           } else if (atk.hit) {
             const bonus =
@@ -72,7 +85,7 @@ export const CombatTracker = () => {
           } else if (atk.dmg) {
             taleSpireDriver.rollDice(
               atk.dmg,
-              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`
+              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`,
             );
           }
         }
@@ -102,22 +115,6 @@ export const CombatTracker = () => {
               <span className="font-bold text-amber-400 text-sm uppercase tracking-wider">
                 Раунд {round}
               </span>
-              {combatants[turnIndex]?.talespireId && (
-                <button
-                  type="button"
-                  className="px-2 py-0.5 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/50 rounded text-xs cursor-pointer font-medium flex items-center gap-1 transition-colors"
-                  onClick={() => {
-                    const activeCombatant = combatants[turnIndex];
-                    if (activeCombatant?.talespireId) {
-                      taleSpireDriver.focusCreature(activeCombatant.talespireId);
-                    }
-                  }}
-                  title={`Сфокусировать камеру на миниатюре [${combatants[turnIndex]?.name}]`}
-                >
-                  <Crosshair className="w-3 h-3 shrink-0" />
-                  <span className="hidden sm:inline">Фокус</span>
-                </button>
-              )}
             </div>
           ) : (
             <span className="text-slate-400 text-sm font-semibold">Бой не начат</span>

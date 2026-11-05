@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { PlayerCombatHud, PlayerCockpit } from '../../widgets';
-import { OfflineBanner, ConnectionModal } from '../../features';
+import { PlayerCombatHud } from '../../widgets/player-combat-hud/PlayerCombatHud';
+import { PlayerCockpit } from '../../widgets/player-cockpit/PlayerCockpit';
+import { OfflineBanner } from '../../features/manage-connection/ui/OfflineBanner';
+import { ConnectionModal } from '../../features/manage-connection/ui/ConnectionModal';
 
 export const PlayerScreen = () => {
   const [showConnModal, setShowConnModal] = useState(false);
@@ -13,10 +15,7 @@ export const PlayerScreen = () => {
         <PlayerCockpit />
       </div>
 
-      <ConnectionModal
-        isOpen={showConnModal}
-        onClose={() => setShowConnModal(false)}
-      />
+      <ConnectionModal isOpen={showConnModal} onClose={() => setShowConnModal(false)} />
     </div>
   );
 };

@@ -59,9 +59,13 @@ export const SpellRow: React.FC<SpellRowProps> = ({
             type="button"
             onClick={() => onCast(spell)}
             className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold cursor-pointer transition-colors shadow-xs active:scale-95"
-            title={`Сотворить «${spell.name}» (автоматически расходует ячейку)`}
+            title={
+              (spell.level || 0) === 0
+                ? `Сотворить заговор «${spell.name}»`
+                : `Каст «${spell.name}» (выбор круга ячейки и усиление)`
+            }
           >
-            Сотворить
+            Каст
           </button>
 
           {/* Edit Button */}
@@ -103,12 +107,7 @@ export const SpellRow: React.FC<SpellRowProps> = ({
         {spell.dmg && (
           <button
             type="button"
-            onClick={() =>
-              taleSpireDriver.rollDice(
-                spell.dmg!,
-                `${spell.name} (${playerName})`
-              )
-            }
+            onClick={() => taleSpireDriver.rollDice(spell.dmg!, `${spell.name} (${playerName})`)}
             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-600/40 font-mono font-bold cursor-pointer transition-colors"
             title="Бросить урон / эффект в TaleSpire"
           >

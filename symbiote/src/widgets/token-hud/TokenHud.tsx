@@ -1,11 +1,23 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState } from 'react';
-import { useRosterStore, useAppStore, wsBridge, taleSpireDriver, getHpColorClass } from '../../shared';
-import { CombatTokenDropdown } from '../../features';
+import { useRosterStore } from '../../entities/character/model/store';
+import { useAppStore } from '../../shared/lib/useAppStore';
+import { wsBridge } from '../../shared/api/websocket';
+import { taleSpireDriver } from '../../shared/api/talespire';
+import { getHpColorClass } from '../../shared/lib/dnd-rules';
+import { CombatTokenDropdown } from '../../features/manage-combat/CombatTokenDropdown';
 import { TokenLinkDropdown } from './TokenLinkDropdown';
 
 export const TokenHud = () => {
-  const { selectedToken, setSelectedToken, setSelectedCharacter, roster } = useRosterStore();
-  const { role } = useAppStore();
+  const { selectedToken, setSelectedToken, setSelectedCharacter, roster } = useRosterStore(
+    useShallow((s) => ({
+      selectedToken: s.selectedToken,
+      setSelectedToken: s.setSelectedToken,
+      setSelectedCharacter: s.setSelectedCharacter,
+      roster: s.roster,
+    })),
+  );
+  const { role } = useAppStore(useShallow((s) => ({ role: s.role })));
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showLinkMenu, setShowLinkMenu] = useState(false);
 
@@ -13,9 +25,15 @@ export const TokenHud = () => {
   if (!selectedToken || role === 'player') return null;
 
   const matchInRoster = roster.find((r) => {
-    if (selectedToken.name && r.name.toLowerCase() === selectedToken.name.toLowerCase()) return true;
+    if (selectedToken.name && r.name.toLowerCase() === selectedToken.name.toLowerCase())
+      return true;
     if (selectedToken.id && r.talespire_id === selectedToken.id) return true;
-    if (r.talespire_name && selectedToken.name && r.talespire_name.toLowerCase() === selectedToken.name.toLowerCase()) return true;
+    if (
+      r.talespire_name &&
+      selectedToken.name &&
+      r.talespire_name.toLowerCase() === selectedToken.name.toLowerCase()
+    )
+      return true;
     return false;
   });
 
@@ -42,7 +60,10 @@ export const TokenHud = () => {
 
   const handleAttackRoll = (name: string, hit: string) => {
     const bonus = hit.startsWith('+') || hit.startsWith('-') ? hit : `+${hit}`;
-    taleSpireDriver.rollDice(`1d20${bonus}`, `${matchInRoster?.name || selectedToken.name}: ${name} (Атака)`);
+    taleSpireDriver.rollDice(
+      `1d20${bonus}`,
+      `${matchInRoster?.name || selectedToken.name}: ${name} (Атака)`,
+    );
   };
 
   const handleDamageRoll = (name: string, dmg: string) => {
@@ -80,7 +101,7 @@ export const TokenHud = () => {
           )}
         </div>
 
-        {curHp !== undefined && (
+        {curHp !== undefined &&
           (() => {
             const hpStyle = getHpColorClass(curHp, maxHp);
             return (
@@ -97,8 +118,8 @@ export const TokenHud = () => {
                       curHp <= maxHp * 0.25
                         ? 'bg-rose-500'
                         : curHp <= maxHp * 0.5
-                        ? 'bg-amber-500'
-                        : 'bg-emerald-500'
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
                     }`}
                     style={{
                       width: `${Math.min(100, Math.max(0, (curHp / (maxHp || 1)) * 100))}%`,
@@ -107,8 +128,7 @@ export const TokenHud = () => {
                 </div>
               </div>
             );
-          })()
-        )}
+          })()}
 
         {matchInRoster?.ac && (
           <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 shrink-0">
@@ -120,8 +140,14 @@ export const TokenHud = () => {
         {matchInRoster?.attacks && matchInRoster.attacks.length > 0 && (
           <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-[#262a3d]">
             {matchInRoster.attacks.slice(0, 3).map((atk, idx) => (
-              <div key={idx} className="flex items-center gap-0.5 bg-[#141622] rounded border border-[#262a3d] px-1.5 py-0.5">
-                <span className="text-slate-300 text-[11px] font-medium mr-1 truncate max-w-[90px]" title={atk.name}>
+              <div
+                key={idx}
+                className="flex items-center gap-0.5 bg-[#141622] rounded border border-[#262a3d] px-1.5 py-0.5"
+              >
+                <span
+                  className="text-slate-300 text-[11px] font-medium mr-1 truncate max-w-[90px]"
+                  title={atk.name}
+                >
                   {atk.name}
                 </span>
                 {atk.hit && (

@@ -1,10 +1,10 @@
+import { useShallow } from 'zustand/react/shallow';
 import React from 'react';
 import {
   Clue,
   useAppStore,
   useConfirmDelete,
   resolveMediaUrl,
-  getYouTubeVideoId,
   getYouTubeThumbnailUrl,
 } from '../../../shared';
 
@@ -14,7 +14,7 @@ interface ClueCardProps {
 }
 
 export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
-  const { setCinemaMedia } = useAppStore();
+  const { setCinemaMedia } = useAppStore(useShallow((s) => ({ setCinemaMedia: s.setCinemaMedia })));
   const { isConfirming: isConfirmingDelete, handleDelete } = useConfirmDelete({
     onDelete: () => onDelete(clue.id),
   });
@@ -29,7 +29,6 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
     });
   };
 
-  const ytId = getYouTubeVideoId(clue.url);
   const ytThumb = getYouTubeThumbnailUrl(clue.url);
 
   return (
@@ -40,10 +39,10 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
             {clue.type === 'image'
               ? 'Арт'
               : clue.type === 'video'
-              ? 'Видео'
-              : clue.type === 'text'
-              ? 'Свиток'
-              : 'Аудио'}
+                ? 'Видео'
+                : clue.type === 'text'
+                  ? 'Свиток'
+                  : 'Аудио'}
           </span>
           <strong className="text-slate-100 text-xs truncate" title={clue.title}>
             {clue.title}

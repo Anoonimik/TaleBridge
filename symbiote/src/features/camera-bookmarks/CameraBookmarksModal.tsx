@@ -1,5 +1,9 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAppStore, taleSpireDriver, wsBridge, ModalShell } from '../../shared';
+import { useAppStore } from '../../shared/lib/useAppStore';
+import { taleSpireDriver } from '../../shared/api/talespire';
+import { wsBridge } from '../../shared/api/websocket';
+import { ModalShell } from '../../shared/ui/ModalShell';
 
 interface CameraBookmarksModalProps {
   isOpen: boolean;
@@ -7,7 +11,7 @@ interface CameraBookmarksModalProps {
 }
 
 export const CameraBookmarksModal = ({ isOpen, onClose }: CameraBookmarksModalProps) => {
-  const { bookmarks } = useAppStore();
+  const { bookmarks } = useAppStore(useShallow((s) => ({ bookmarks: s.bookmarks })));
   const [search, setSearch] = useState('');
   const [activeBookmarkId, setActiveBookmarkId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -36,11 +40,8 @@ export const CameraBookmarksModal = ({ isOpen, onClose }: CameraBookmarksModalPr
   };
 
   const filteredBookmarks = useMemo(
-    () =>
-      bookmarks.filter((bm) =>
-        bm.name.toLowerCase().includes(search.toLowerCase().trim())
-      ),
-    [bookmarks, search]
+    () => bookmarks.filter((bm) => bm.name.toLowerCase().includes(search.toLowerCase().trim())),
+    [bookmarks, search],
   );
 
   return (

@@ -1,6 +1,10 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState } from 'react';
 import { Character, CombatSide } from '../../../shared';
-import { useCombatStore, useRosterStore, useAppStore, wsBridge } from '../../../shared';
+import { useCombatStore } from '../../combatant/model/store';
+import { useRosterStore } from '../model/store';
+import { useAppStore } from '../../../shared/lib/useAppStore';
+import { wsBridge } from '../../../shared/api/websocket';
 
 interface CharacterCardProps {
   character: Character;
@@ -8,9 +12,11 @@ interface CharacterCardProps {
 }
 
 export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => {
-  const { addCombatant } = useCombatStore();
-  const { pinnedNames, togglePinCharacter } = useRosterStore();
-  const { setActiveTab } = useAppStore();
+  const { addCombatant } = useCombatStore(useShallow((s) => ({ addCombatant: s.addCombatant })));
+  const { pinnedNames, togglePinCharacter } = useRosterStore(
+    useShallow((s) => ({ pinnedNames: s.pinnedNames, togglePinCharacter: s.togglePinCharacter })),
+  );
+  const { setActiveTab } = useAppStore(useShallow((s) => ({ setActiveTab: s.setActiveTab })));
   const [showSideSelector, setShowSideSelector] = useState(false);
 
   const isPinned = pinnedNames.includes(character.name);
@@ -25,10 +31,10 @@ export const CharacterCard = ({ character, onOpenNote }: CharacterCardProps) => 
         side === 'player'
           ? 'Игроки'
           : side === 'ally'
-          ? 'Союзники'
-          : side === 'neutral'
-          ? 'Нейтралы'
-          : 'Враги',
+            ? 'Союзники'
+            : side === 'neutral'
+              ? 'Нейтралы'
+              : 'Враги',
       hp,
       maxHp,
       ac: character.ac || 10,

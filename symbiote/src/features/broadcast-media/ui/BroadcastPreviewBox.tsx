@@ -1,5 +1,5 @@
 import React from 'react';
-import { resolveMediaUrl } from '../../../shared';
+import { resolveMediaUrl } from '../../../shared/lib/media';
 
 interface BroadcastPreviewBoxProps {
   type: 'image' | 'video' | 'text' | 'audio';
@@ -35,7 +35,9 @@ export const BroadcastPreviewBox: React.FC<BroadcastPreviewBoxProps> = ({
               }}
             />
             {title && <span className="text-[11px] text-slate-300 font-semibold">{title}</span>}
-            {description && <span className="text-[10px] text-slate-400 italic">{description}</span>}
+            {description && (
+              <span className="text-[10px] text-slate-400 italic">{description}</span>
+            )}
           </div>
         )}
 

@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { useAppStore, useCombatStore, useRosterStore, wsBridge } from '../../shared';
-import { GmAuthModal, ConnectionModal } from '../../features';
+import { useShallow } from 'zustand/react/shallow';
+import React, { useState, useEffect } from 'react';
+import { useAppStore } from '../../shared/lib/useAppStore';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { useRosterStore } from '../../entities/character/model/store';
+import { wsBridge } from '../../shared/api/websocket';
+import { GmAuthModal } from '../../features/gm-auth/GmAuthModal';
+import { ConnectionModal } from '../../features/manage-connection/ui/ConnectionModal';
 
 export const AppHeader = () => {
   const {
@@ -12,43 +17,49 @@ export const AppHeader = () => {
     setScale,
     connected,
     vaultName,
-    gmPin,
+
     diceSecret,
     setDiceSecret,
     cinemaMedia,
     stopBroadcast,
-  } = useAppStore();
-  const { combatants, active: combatActive } = useCombatStore();
-  const { roster } = useRosterStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      role: s.role,
+      activeTab: s.activeTab,
+      setRole: s.setRole,
+      setActiveTab: s.setActiveTab,
+      scale: s.scale,
+      setScale: s.setScale,
+      connected: s.connected,
+      vaultName: s.vaultName,
+      diceSecret: s.diceSecret,
+      setDiceSecret: s.setDiceSecret,
+      cinemaMedia: s.cinemaMedia,
+      stopBroadcast: s.stopBroadcast,
+    })),
+  );
+  const { combatants, active: combatActive } = useCombatStore(
+    useShallow((s) => ({ combatants: s.combatants, active: s.active })),
+  );
+  const { roster } = useRosterStore(useShallow((s) => ({ roster: s.roster })));
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(!connected);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  useEffect(() => {
+    if (connected) setShowConnectionModal(false);
+  }, [connected]);
 
   const isGm = role === 'gm';
 
   const handleRoleToggle = () => {
-    if (isGm) {
-      sessionStorage.removeItem('tb_gm_auth');
-      setRole('player');
-    } else {
-      const expected = (gmPin || '').trim();
-      if (!expected) {
-        sessionStorage.setItem('tb_gm_auth', 'true');
-        setRole('gm');
-        return;
-      }
-      if (sessionStorage.getItem('tb_gm_auth') === 'true') {
-        setRole('gm');
-      } else {
-        setShowAuthModal(true);
-      }
-    }
+    if (isGm) void wsBridge.logout();
+    else setShowAuthModal(true);
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     wsBridge.send('GET_CHARACTERS', {});
-    wsBridge.send('GET_SCENES', {});
+    if (isGm) wsBridge.send('GET_SCENES', {});
     wsBridge.send('GET_COMBAT_STATE', {});
     setTimeout(() => setIsRefreshing(false), 700);
   };
@@ -239,10 +250,7 @@ export const AppHeader = () => {
         onCancel={() => setShowAuthModal(false)}
       />
 
-      <ConnectionModal
-        isOpen={showConnectionModal}
-        onClose={() => setShowConnectionModal(false)}
-      />
+      <ConnectionModal isOpen={showConnectionModal} onClose={() => setShowConnectionModal(false)} />
     </>
   );
 };
