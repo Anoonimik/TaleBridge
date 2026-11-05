@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { ChevronRight, Search, X, Star } from 'lucide-react';
 import {
   Character,
   parseModifier,
@@ -164,13 +165,11 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => setIsOpen((prev) => !prev)}
         >
-          <span
-            className={`text-xs text-slate-400 transform transition-transform duration-200 inline-block ${
+          <ChevronRight
+            className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 inline-block ${
               isOpen ? 'rotate-90 text-amber-300' : ''
             }`}
-          >
-            ▶
-          </span>
+          />
           <span className="text-xs font-bold text-slate-200 tracking-wider uppercase">
             Навыки (18)
           </span>
@@ -212,13 +211,14 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                 setIsOpen(true);
                 setAbilityFilter('proficient');
               }}
-              className={`px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1 ${
+              className={`px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1.5 ${
                 abilityFilter === 'proficient'
                   ? 'bg-indigo-600/40 text-indigo-200 font-bold'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <span>★ Владения</span>
+              <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+              <span>Владения</span>
               <span className="text-[10px] opacity-80">({proficientCount + expertCount})</span>
             </button>
           </div>
@@ -254,7 +254,7 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white cursor-pointer"
                   title="Очистить"
                 >
-                  ✕
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -365,11 +365,11 @@ export const SkillsListAccordion: React.FC<SkillsListAccordionProps> = ({
                       }`}
                     >
                       {profLevel === 'expert' ? (
-                        <span className="text-amber-400 font-bold text-sm">★</span>
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                       ) : profLevel === 'proficient' ? (
-                        <span className="text-indigo-400 font-bold text-sm">●</span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block shadow-xs shadow-indigo-500/50" />
                       ) : (
-                        <span className="text-slate-500 hover:text-slate-300 text-sm">○</span>
+                        <span className="w-2.5 h-2.5 rounded-full border border-slate-500 inline-block hover:border-slate-300 transition-colors" />
                       )}
                     </button>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Dices, X, Check } from 'lucide-react';
 import { DeathSaves, taleSpireDriver } from '../../shared';
 
 interface DeathSavesControlProps {
@@ -140,7 +141,7 @@ export const DeathSavesControl = ({
               className="text-slate-500 hover:text-slate-300 text-xs cursor-pointer ml-1"
               onClick={() => setIsManualExpanded(false)}
             >
-              ✕
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -168,7 +169,7 @@ export const DeathSavesControl = ({
                   }`}
                   title={`Отметить ${num}-й успех (клик для изменения)`}
                 >
-                  {active ? '✓' : ''}
+                  {active ? <Check className="w-4 h-4 stroke-[3]" /> : ''}
                 </button>
               );
             })}
@@ -195,7 +196,7 @@ export const DeathSavesControl = ({
                   }`}
                   title={`Отметить ${num}-й провал (клик для изменения)`}
                 >
-                  {active ? '✕' : ''}
+                  {active ? <X className="w-4 h-4 stroke-[3]" /> : ''}
                 </button>
               );
             })}
@@ -226,7 +227,8 @@ export const DeathSavesControl = ({
               onClick={handleStartRoll}
               className="w-full py-2 bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-xs rounded border border-rose-500/40 shadow-md cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
             >
-              <span>🎲 Бросить d20 в TaleSpire</span>
+              <Dices className="w-4 h-4 text-rose-200 shrink-0" />
+              <span>Бросить d20 в TaleSpire</span>
             </button>
           )}
         </div>

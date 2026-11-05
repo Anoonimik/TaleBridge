@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Dices, FileText, X } from 'lucide-react';
 import {
   Combatant,
   COMBAT_SIDES,
@@ -104,7 +105,7 @@ export const CombatantCard = ({
               onClick={() => rollSingleInitiative(combatant.id)}
               title={`Бросить инициативу в TaleSpire (1d20${(combatant.dexMod ?? 0) >= 0 ? '+' : ''}${combatant.dexMod ?? 0})`}
             >
-              🎲
+              <Dices className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             </button>
           </div>
 
@@ -114,7 +115,7 @@ export const CombatantCard = ({
             onClick={handleOpenNote}
             title="Открыть заметку существа"
           >
-            ☰
+            <FileText className="w-3.5 h-3.5 text-slate-300 shrink-0" />
           </button>
 
           <button
@@ -123,7 +124,7 @@ export const CombatantCard = ({
             onClick={() => removeCombatant(combatant.id)}
             title="Удалить из боя"
           >
-            ✕
+            <X className="w-3.5 h-3.5 shrink-0" />
           </button>
         </div>
       </div>

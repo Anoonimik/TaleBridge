@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
+  Sliders,
+  Shield,
+  Footprints,
+  Dices,
+  Sparkles,
+  Eye,
+  Pencil,
+  Activity,
+  Target,
+  Link2,
+} from 'lucide-react';
+import {
   Attack,
   useRosterStore,
   useCombatStore,
@@ -158,10 +170,10 @@ export const PlayerCockpit = () => {
               <button
                 type="button"
                 onClick={() => setIsEditBasicsOpen(true)}
-                className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-[#1a1d2d] hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-[#262a3d] hover:border-indigo-500/50 cursor-pointer font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded bg-[#1a1d2d] hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-[#262a3d] hover:border-indigo-500/50 cursor-pointer font-medium transition-colors"
                 title="Редактировать базовые параметры, здоровье, КД и характеристики"
               >
-                <span>⚙️</span>
+                <Sliders className="w-3 h-3 text-indigo-400 shrink-0" />
                 <span className="hidden sm:inline">Параметры</span>
               </button>
             </div>
@@ -175,7 +187,8 @@ export const PlayerCockpit = () => {
                 className="hidden md:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-medium"
                 title={`Токен TaleSpire "${selectedToken.name}" привязан к персонажу`}
               >
-                🎯 TS ✓
+                <Target className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>TS ✓</span>
               </span>
             ) : (
               <button
@@ -187,10 +200,10 @@ export const PlayerCockpit = () => {
                   }
                   wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken });
                 }}
-                className="hidden sm:inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-medium transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-medium transition-colors"
                 title={`Привязать выбранный токен "${selectedToken.name}" к ${playerData.name} в Obsidian`}
               >
-                <span>🔗</span>
+                <Link2 className="w-3 h-3 text-indigo-300 shrink-0" />
                 <span>Привязать токен «{selectedToken.name}»</span>
               </button>
             )
@@ -262,9 +275,10 @@ export const PlayerCockpit = () => {
                     className="flex flex-col items-center justify-center p-1 bg-[#10111a] hover:bg-indigo-500/20 rounded border border-[#262a3d] hover:border-indigo-500/40 cursor-pointer transition-colors group"
                     title="Нажмите, чтобы изменить КД и базовые параметры"
                   >
-                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-indigo-300">
-                      КД ✏️
-                    </span>
+                    <div className="flex items-center gap-1 text-slate-400 group-hover:text-indigo-300">
+                      <Shield className="w-3 h-3 text-indigo-400 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold">КД</span>
+                    </div>
                     <span className="text-sm font-bold text-indigo-300 font-mono">
                       {playerData?.ac ?? 10}
                     </span>
@@ -276,9 +290,10 @@ export const PlayerCockpit = () => {
                     className="flex flex-col items-center justify-center p-1 bg-[#10111a] hover:bg-amber-500/20 rounded border border-[#262a3d] hover:border-amber-500/40 cursor-pointer transition-colors group"
                     title="Бросить инициативу в TaleSpire"
                   >
-                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-amber-300">
-                      Инициатива
-                    </span>
+                    <div className="flex items-center gap-1 text-slate-400 group-hover:text-amber-300">
+                      <Dices className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold">Инициатива</span>
+                    </div>
                     <span className="text-sm font-bold text-amber-300 font-mono">
                       {formatModifier(dexMod)}
                     </span>
@@ -289,27 +304,30 @@ export const PlayerCockpit = () => {
                     className="flex flex-col items-center justify-center p-1 bg-[#10111a] hover:bg-indigo-500/20 rounded border border-[#262a3d] hover:border-indigo-500/40 cursor-pointer transition-colors group"
                     title="Нажмите, чтобы изменить скорость и базовые параметры"
                   >
-                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-indigo-300">
-                      Скорость ✏️
-                    </span>
+                    <div className="flex items-center gap-1 text-slate-400 group-hover:text-indigo-300">
+                      <Footprints className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold">Скорость</span>
+                    </div>
                     <span className="text-xs font-bold text-slate-200">
                       {playerData?.speed || '9 м'}
                     </span>
                   </div>
 
                   <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d]">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">
-                      Мастерство
-                    </span>
+                    <div className="flex items-center gap-1 text-slate-400">
+                      <Sparkles className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold">Мастерство</span>
+                    </div>
                     <span className="text-sm font-bold text-slate-200 font-mono">
                       +{profBonus}
                     </span>
                   </div>
 
                   <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d] col-span-2 sm:col-span-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">
-                      Пасс. внимат.
-                    </span>
+                    <div className="flex items-center gap-1 text-slate-400">
+                      <Eye className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold">Пасс. внимат.</span>
+                    </div>
                     <span className="text-sm font-bold text-emerald-300 font-mono">
                       {passivePerception}
                     </span>
@@ -326,16 +344,17 @@ export const PlayerCockpit = () => {
                 {/* 4. Ability Scores Grid (6 cells with integrated Checks & Saves) */}
                 <div>
                   <div className="flex items-center justify-between text-xs text-slate-400 mb-1 px-0.5">
-                    <span className="font-bold uppercase tracking-wider text-[11px] text-slate-300">
-                      Характеристики и спасброски
-                    </span>
+                    <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-slate-300">
+                      <Activity className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span>Характеристики и спасброски</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsEditBasicsOpen(true)}
                       className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer flex items-center gap-1 font-medium"
                       title="Редактировать значения 6 характеристик (1 - 30)"
                     >
-                      <span>✏️</span>
+                      <Pencil className="w-3 h-3 shrink-0" />
                       <span>Изменить</span>
                     </button>
                   </div>

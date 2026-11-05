@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Info, AlertTriangle } from 'lucide-react';
 import { CONDITIONS, ConditionMeta } from '../../../shared';
 
 interface PlayerConditionsBannerProps {
@@ -50,7 +51,7 @@ export const PlayerConditionsBanner: React.FC<PlayerConditionsBannerProps> = ({
       {/* Header bar */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+          <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 animate-pulse" />
           <h4 className="text-xs font-bold text-rose-300 uppercase tracking-wider">
             Активные состояния ({matchedConditions.length})
           </h4>
@@ -91,7 +92,7 @@ export const PlayerConditionsBanner: React.FC<PlayerConditionsBannerProps> = ({
                 style={{ backgroundColor: meta.color }}
               />
               <span className="font-semibold">{meta.label}</span>
-              <span className="text-[10px] text-slate-400">ℹ️</span>
+              <Info className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
           );
         })}

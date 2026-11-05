@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
+  UserCog,
+  X,
+  User,
+  Shield,
+  Activity,
+  Save,
+  Plus,
+  Minus,
+} from 'lucide-react';
+import {
   Character,
   CharacterBasicsUpdate,
   AbilityScores,
@@ -194,8 +204,10 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
       >
         {/* Modal Header */}
         <div className="px-4 py-3 bg-[#10111a] border-b border-[#262a3d] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-amber-400 font-bold text-base">✏️</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+              <UserCog className="w-4 h-4 text-indigo-400" />
+            </div>
             <div>
               <h3 className="text-sm font-bold text-slate-100">
                 Параметры персонажа
@@ -208,10 +220,10 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800/50 cursor-pointer transition-colors"
+            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/50 cursor-pointer transition-colors"
             title="Закрыть"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -221,9 +233,10 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
             {/* Section 1: Core Profile */}
             <div className="bg-[#10111a]/70 border border-[#262a3d] rounded-lg p-3 space-y-2.5">
               <div className="flex items-center justify-between border-b border-[#262a3d]/60 pb-1.5">
-                <span className="font-bold uppercase tracking-wider text-[11px] text-amber-300">
-                  1. Раса, Класс и Уровень
-                </span>
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-amber-300">
+                  <User className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span>1. Раса, Класс и Уровень</span>
+                </div>
                 <span className="text-[11px] text-indigo-300 font-medium font-mono">
                   Мастерство: +{profBonus}
                 </span>
@@ -309,9 +322,10 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
             {/* Section 2: Vitals & Defense */}
             <div className="bg-[#10111a]/70 border border-[#262a3d] rounded-lg p-3 space-y-2.5">
               <div className="flex items-center justify-between border-b border-[#262a3d]/60 pb-1.5">
-                <span className="font-bold uppercase tracking-wider text-[11px] text-amber-300">
-                  2. Здоровье, Защита и Скорость
-                </span>
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-amber-300">
+                  <Shield className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span>2. Здоровье, Защита и Скорость</span>
+                </div>
                 <span className="text-[11px] text-slate-400">
                   Текущие ХП: {hp} / {hpMax}
                 </span>
@@ -401,9 +415,10 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
             {/* Section 3: 6 Ability Scores */}
             <div className="bg-[#10111a]/70 border border-[#262a3d] rounded-lg p-3 space-y-2.5">
               <div className="flex items-center justify-between border-b border-[#262a3d]/60 pb-1.5">
-                <span className="font-bold uppercase tracking-wider text-[11px] text-amber-300">
-                  3. Шесть характеристик (1 - 30)
-                </span>
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-amber-300">
+                  <Activity className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span>3. Шесть характеристик (1 - 30)</span>
+                </div>
                 <span className="text-[10px] text-slate-500">
                   Модификатор: (Значение - 10) / 2
                 </span>
@@ -497,7 +512,7 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
               type="submit"
               className="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs cursor-pointer font-bold shadow-md shadow-indigo-600/20 transition-colors flex items-center gap-1.5"
             >
-              <span>💾</span>
+              <Save className="w-3.5 h-3.5 shrink-0" />
               <span>Сохранить параметры</span>
             </button>
           </div>
