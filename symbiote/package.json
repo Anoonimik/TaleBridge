@@ -2,7 +2,7 @@
   "name": "symbiote",
   "version": "0.7.0",
   "type": "module",
-  "description": "Official bridge between TaleSpire and Obsidian for D&D 5e Game Masters and Players.",
+  "description": "Companion bridge between TaleSpire and Obsidian for D&D 5e games",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

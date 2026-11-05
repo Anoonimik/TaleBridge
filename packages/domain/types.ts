@@ -47,7 +47,7 @@ export interface Clue {
 
 export interface DeathSaves {
   successes: number; // 0..3
-  failures: number;  // 0..3
+  failures: number; // 0..3
 }
 
 export interface SpellSlot {

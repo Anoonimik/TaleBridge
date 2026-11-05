@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-05",
+  "branch": "codex/full-refactor",
+  "node": "v24.22.1",
+  "tests": {
+    "passed": 46,
+    "failed": 0,
+    "skipped": 0,
+    "platform": "win32"
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "typescript": "passed",
+  "cleanInstall": "npm ci passed",
+  "productionBuild": "passed",
+  "npmAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "browser": {
+    "results": [
+      {
+        "width": 375,
+        "authenticated": true,
+        "notesRoundTrip": true,
+        "keyboardDialog": true,
+        "pageErrors": []
+      },
+      {
+        "width": 768,
+        "authenticated": true,
+        "notesRoundTrip": true,
+        "keyboardDialog": true,
+        "pageErrors": []
+      },
+      {
+        "width": 1440,
+        "authenticated": true,
+        "notesRoundTrip": true,
+        "keyboardDialog": true,
+        "pageErrors": []
+      }
+    ],
+    "gmScene": true
+  },
+  "benchmark": {
+    "synthetic": true,
+    "note": "In-memory index, excludes disk, YAML and TaleSpire WebView costs.",
+    "result": [
+      {
+        "characters": 100,
+        "coldMs": 0.183,
+        "warm20Ms": 0.039,
+        "fullScans": 1,
+        "warmParsed": 0,
+        "singleEditParsed": 1
+      },
+      {
+        "characters": 1000,
+        "coldMs": 0.306,
+        "warm20Ms": 0.089,
+        "fullScans": 1,
+        "warmParsed": 0,
+        "singleEditParsed": 1
+      },
+      {
+        "characters": 5000,
+        "coldMs": 2.028,
+        "warm20Ms": 0.915,
+        "fullScans": 1,
+        "warmParsed": 0,
+        "singleEditParsed": 1
+      }
+    ]
+  },
+  "assets": [
+    {
+      "name": "DialogLayer-DSLlXLhu.js",
+      "bytes": 152439
+    },
+    {
+      "name": "GmScreen-B-PfgsNh.js",
+      "bytes": 76820
+    },
+    {
+      "name": "index-BsgZI6Ie.js",
+      "bytes": 269782
+    },
+    {
+      "name": "PlayerScreen-C_-r_jEZ.js",
+      "bytes": 139439
+    },
+    {
+      "name": "rolldown-runtime-WkwZ5CU-.js",
+      "bytes": 599
+    },
+    {
+      "name": "x-vbSiMPuU.js",
+      "bytes": 3650
+    }
+  ],
+  "pluginSha256": "d34bdf351dc690c8bfd2393301abb2ae1ee9621f3a0e0f2ad900081630add621",
+  "manualAcceptance": [
+    "Real Obsidian and TaleSpire session",
+    "Secret dice visibility",
+    "Production TLS proxy and firewall",
+    "Full WCAG manual acceptance",
+    "Real vault/WebView profiling"
+  ]
+}

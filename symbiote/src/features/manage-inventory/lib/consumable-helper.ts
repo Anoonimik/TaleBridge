@@ -14,7 +14,11 @@ const HEALING_POTIONS = [
   { match: /(?:высш|supreme)/i, formula: '10d4+20', name: 'Высшее зелье лечения' },
   { match: /(?:отличн|superior)/i, formula: '8d4+8', name: 'Отличное зелье лечения' },
   { match: /(?:больш(?:ое|его)?|greater)/i, formula: '4d4+4', name: 'Большое зелье лечения' },
-  { match: /(?:зелье(?:\s+исцеления|\s+лечения)?|potion(?:\s+of\s+healing)?|лечебн|исцелен)/i, formula: '2d4+2', name: 'Зелье лечения' },
+  {
+    match: /(?:зелье(?:\s+исцеления|\s+лечения)?|potion(?:\s+of\s+healing)?|лечебн|исцелен)/i,
+    formula: '2d4+2',
+    name: 'Зелье лечения',
+  },
 ];
 
 /**
@@ -25,7 +29,13 @@ export function isConsumableItem(item: InventoryItem): boolean {
 
   // 1. Category check
   const cat = (item.category || '').toLowerCase();
-  if (cat === 'зелья' || cat === 'зелье' || cat === 'снадобья' || cat === 'свитки' || cat === 'расходники') {
+  if (
+    cat === 'зелья' ||
+    cat === 'зелье' ||
+    cat === 'снадобья' ||
+    cat === 'свитки' ||
+    cat === 'расходники'
+  ) {
     return true;
   }
 
@@ -56,7 +66,13 @@ export function isConsumableItem(item: InventoryItem): boolean {
 
   // 3. Description check for dice formula (e.g. "2d4+2")
   const desc = (item.description || '').toLowerCase();
-  if (/\b\d+d\d+(?:\s*[+-]\s*\d+)?\b/i.test(desc) && (desc.includes('хит') || desc.includes('хп') || desc.includes('восстанав') || desc.includes('леч'))) {
+  if (
+    /\b\d+d\d+(?:\s*[+-]\s*\d+)?\b/i.test(desc) &&
+    (desc.includes('хит') ||
+      desc.includes('хп') ||
+      desc.includes('восстанав') ||
+      desc.includes('леч'))
+  ) {
     return true;
   }
 
@@ -137,7 +153,11 @@ export function getConsumableActionInfo(item: InventoryItem): ConsumableActionIn
   }
 
   const name = item.name.toLowerCase();
-  const isDrinkable = name.includes('зелье') || name.includes('potion') || name.includes('эликсир') || name.includes('настойка');
+  const isDrinkable =
+    name.includes('зелье') ||
+    name.includes('potion') ||
+    name.includes('эликсир') ||
+    name.includes('настойка');
 
   // Check for non-healing dice formula (e.g. damage scroll)
   const desc = item.description || '';

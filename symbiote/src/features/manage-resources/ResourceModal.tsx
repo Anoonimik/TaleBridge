@@ -105,7 +105,9 @@ export const ResourceModal = ({ isOpen, onClose, onSave }: ResourceModalProps) =
               </label>
               <select
                 value={resetOn}
-                onChange={(e) => setResetOn(e.target.value as NonNullable<ExpendableResource['resetOn']>)}
+                onChange={(e) =>
+                  setResetOn(e.target.value as NonNullable<ExpendableResource['resetOn']>)
+                }
                 className="w-full px-2 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
               >
                 <option value="short">Короткий отдых</option>

@@ -12,7 +12,6 @@ import {
   ExpendableResource,
   HitDice,
   Currency,
-  Currency,
 } from '../../../shared/types';
 import { STORAGE_KEYS } from '../../../shared/config/constants';
 import { wsBridge } from '../../../shared/api/websocket';
@@ -30,8 +29,6 @@ import {
 } from '../../../shared/lib/character-storage';
 
 interface RosterStore {
-  updateCurrency: (currency:Currency) => void;
-  adjustCurrency: (type:keyof Currency,delta:number) => void;
   roster: Character[];
   playerCharacterId: string;
   charactersById: Record<string, Character>;
@@ -82,8 +79,6 @@ interface RosterStore {
 }
 
 export const useRosterStore = create<RosterStore>((set, get) => ({
-  updateCurrency: (currency) => {const current=get().playerData;if(!current)return;const updated={...current,currency};set({playerData:updated});persistPlayerData(updated);},
-  adjustCurrency: (type,delta) => {const current=get().playerData;if(!current)return;const currency={cp:0,sp:0,ep:0,gp:0,pp:0,...current.currency};get().updateCurrency({...currency,[type]:Math.max(0,Math.trunc(currency[type]+delta))});},
   roster: [],
   selectedToken: null,
   selectedCharacter: null,
@@ -95,7 +90,11 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   cluesArchive: getStoredArray<Clue>(STORAGE_KEYS.CLUES_ARCHIVE),
   pinnedNames: getStoredArray<string>(STORAGE_KEYS.PINNED_ROSTER),
 
-  setRoster: (roster) => set({ roster: Array.isArray(roster) ? roster : [], charactersById: Object.fromEntries(roster.filter(c => c.id).map(c => [c.id!,c])) }),
+  setRoster: (roster) =>
+    set({
+      roster: Array.isArray(roster) ? roster : [],
+      charactersById: Object.fromEntries(roster.filter((c) => c.id).map((c) => [c.id!, c])),
+    }),
   setSelectedToken: (selectedToken) => set({ selectedToken }),
   setSelectedCharacter: (selectedCharacter) => {
     set({ selectedCharacter, noteContent: null });
@@ -109,33 +108,44 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   setNoteContent: (noteContent) => set({ noteContent }),
 
   setPlayerCharacterName: (name) => {
-    try {
-      localStorage.setItem(storageKey(STORAGE_KEYS.PLAYER_CHARACTER), name);
-    } catch {
-      // storage unavailable
-    }
-    const selected = get().roster.find(c => c.name === name);
-    set({playerCharacterId: selected?.id || ''});
-    const prev = get().playerData;
-    if (prev && prev.name !== name) {
-      set({ playerCharacterName: name, playerData: null });
-      persistPlayerData(null);
-    } else {
-      set({ playerCharacterName: name });
-    }
-    if (name) {
-      wsBridge.send('GET_PLAYER_DATA', { characterName: name });
-    }
+    const roster = get().roster;
+    const selected =
+      roster.find((c) => c.id === name) ||
+      roster.find((c) => c.id === get().playerCharacterId && c.name === name) ||
+      (roster.filter((c) => c.name === name).length === 1
+        ? roster.find((c) => c.name === name)
+        : undefined);
+    if (!selected) return;
+    const changed = get().playerCharacterId !== selected.id;
+    set({
+      playerCharacterName: selected.name,
+      playerCharacterId: selected.id || '',
+      ...(changed ? { playerData: null } : {}),
+    });
+    if (changed) persistPlayerData(null);
+    wsBridge.send('GET_PLAYER_DATA', { characterId: selected.id });
   },
 
   setPlayerData: (incoming) => {
     if (incoming && get().playerCharacterId && incoming.id !== get().playerCharacterId) return;
-    if (incoming && !get().playerCharacterId && get().playerCharacterName && incoming.name !== get().playerCharacterName) return;
+    if (
+      incoming &&
+      !get().playerCharacterId &&
+      get().playerCharacterName &&
+      incoming.name !== get().playerCharacterName
+    )
+      return;
     if (incoming) {
       const meta = getStoredCharMeta(incoming.name);
       const merged = mergeCharWithMeta(incoming, incoming.revision ? null : meta);
       persistPlayerData(merged);
-      set({ playerData: merged, playerCharacterId: merged.id || get().playerCharacterId, charactersById: merged.id ? {...get().charactersById,[merged.id]:merged} : get().charactersById });
+      set({
+        playerData: merged,
+        playerCharacterId: merged.id || get().playerCharacterId,
+        charactersById: merged.id
+          ? { ...get().charactersById, [merged.id]: merged }
+          : get().charactersById,
+      });
     } else {
       persistPlayerData(null);
       set({ playerData: null });
@@ -210,7 +220,11 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (!playerData) return;
 
     const currentAttacks = playerData.attacks ? [...playerData.attacks] : [];
-    if (typeof attackIndex === 'number' && attackIndex >= 0 && attackIndex < currentAttacks.length) {
+    if (
+      typeof attackIndex === 'number' &&
+      attackIndex >= 0 &&
+      attackIndex < currentAttacks.length
+    ) {
       currentAttacks[attackIndex] = attack;
     } else {
       currentAttacks.push(attack);
@@ -265,7 +279,8 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const current = get().playerData;
     if (!current || (current.hp ?? 0) > 0) return;
     const result = await taleSpireDriver.rollForResult('1d20', 'Спасбросок от смерти');
-    if (get().playerData?.id === current.id && (get().playerData?.hp ?? 0) <= 0) get().applyDeathSaveRoll(result);
+    if (get().playerData?.id === current.id && (get().playerData?.hp ?? 0) <= 0)
+      get().applyDeathSaveRoll(result);
   },
 
   applyDeathSaveRoll: (roll: number) => {
@@ -278,7 +293,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
 
     let nextSuccesses = currentSaves.successes;
     let nextFailures = currentSaves.failures;
-    let outcomeText = '';
+    let outcomeText: string;
 
     if (roll === 20) {
       outcomeText = `Натуральная 20! Персонаж приходит в сознание с 1 ХП!`;
@@ -287,7 +302,9 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         hp: Math.max(1, (playerData.hp ?? 0) + 1),
         deathSaves: { successes: 0, failures: 0 },
       };
-      useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
+      useLogStore
+        .getState()
+        .addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
       set({ playerData: updated });
       persistPlayerData(updated);
       if (get().playerCharacterName) {
@@ -315,7 +332,9 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       outcomeText += ' — ПЕРСОНАЖ ПОГИБ!';
     }
 
-    useLogStore.getState().addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
+    useLogStore
+      .getState()
+      .addLog('roll', `[Спасбросок от смерти]: Выпало ${roll} -> ${outcomeText}`);
 
     const newDeathSaves: DeathSaves = { successes: nextSuccesses, failures: nextFailures };
     const updated = { ...playerData, deathSaves: newDeathSaves };
@@ -339,12 +358,14 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const updated = { ...playerData, inspiration: nextInspiration };
     set({ playerData: updated });
     persistPlayerData(updated);
-    useLogStore.getState().addLog(
-      'action',
-      nextInspiration
-        ? `[Вдохновение]: ${playerData.name} получил Вдохновение!`
-        : `[Вдохновение]: ${playerData.name} использовал/снял Вдохновение.`
-    );
+    useLogStore
+      .getState()
+      .addLog(
+        'action',
+        nextInspiration
+          ? `[Вдохновение]: ${playerData.name} получил Вдохновение!`
+          : `[Вдохновение]: ${playerData.name} использовал/снял Вдохновение.`,
+      );
   },
 
   updateSpellSlots: (slots) => {
@@ -449,7 +470,10 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (hitDice.current <= 0) {
       useLogStore
         .getState()
-        .addLog('roll', `[Кость хитов]: Нет доступных костей хитов для траты (${playerData.name}).`);
+        .addLog(
+          'roll',
+          `[Кость хитов]: Нет доступных костей хитов для траты (${playerData.name}).`,
+        );
       return;
     }
 
@@ -462,7 +486,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
 
     taleSpireDriver.rollDice(
       rollFormula,
-      `Кость хитов (${playerData.name}: осталось ${nextCurrent}/${hitDice.total})`
+      `Кость хитов (${playerData.name}: осталось ${nextCurrent}/${hitDice.total})`,
     );
 
     const updated = { ...playerData, hitDice: updatedHitDice };
@@ -488,11 +512,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const currentSkills = playerData.skills || {};
     const currentLevel = currentSkills[skillId] || 'none';
     const nextLevel: 'none' | 'proficient' | 'expert' =
-      currentLevel === 'none'
-        ? 'proficient'
-        : currentLevel === 'proficient'
-        ? 'expert'
-        : 'none';
+      currentLevel === 'none' ? 'proficient' : currentLevel === 'proficient' ? 'expert' : 'none';
     const updatedSkills = { ...currentSkills, [skillId]: nextLevel };
     const updated = { ...playerData, skills: updatedSkills };
     set({ playerData: updated });
@@ -531,8 +551,18 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
 
     // Calculate dexMod if stats changed
     const newStats: AbilityScores | null = updates.stats
-      ? { ...(playerData.stats || { str: '10', dex: '10', con: '10', int: '10', wis: '10', cha: '10' }), ...updates.stats }
-      : playerData.stats ?? null;
+      ? {
+          ...(playerData.stats || {
+            str: '10',
+            dex: '10',
+            con: '10',
+            int: '10',
+            wis: '10',
+            cha: '10',
+          }),
+          ...updates.stats,
+        }
+      : (playerData.stats ?? null);
     const newDexMod = newStats?.dex ? parseModifier(newStats.dex) : playerData.dexMod;
 
     const updated: Character = {
@@ -559,7 +589,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (charName && roster.length > 0) {
       const lower = charName.toLowerCase();
       const updatedRoster = roster.map((r) =>
-        r.name && r.name.toLowerCase() === lower ? { ...r, ...updated } : r
+        r.name && r.name.toLowerCase() === lower ? { ...r, ...updated } : r,
       );
       set({ roster: updatedRoster });
     }
@@ -611,7 +641,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         .getState()
         .addLog(
           'action',
-          `[Параметры] Базовые данные персонажа «${charName}» обновлены (КД: ${updated.ac ?? 10}, Ур. ${updated.level ?? 1}, ХП: ${updated.hp ?? 20}/${updated.hp_max ?? 20}).`
+          `[Параметры] Базовые данные персонажа «${charName}» обновлены (КД: ${updated.ac ?? 10}, Ур. ${updated.level ?? 1}, ХП: ${updated.hp ?? 20}/${updated.hp_max ?? 20}).`,
         );
     }
   },
@@ -625,7 +655,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     if (type === 'short') {
       const currentRes = playerData.resources || [];
       const updatedRes = currentRes.map((r) =>
-        r.resetOn === 'short' ? { ...r, current: r.max } : r
+        r.resetOn === 'short' ? { ...r, current: r.max } : r,
       );
       const updated = { ...playerData, resources: updatedRes };
       set({ playerData: updated });
@@ -634,7 +664,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         .getState()
         .addLog(
           'action',
-          `[Короткий отдых] 1 час завершен. Ресурсы с перезарядкой «КД» восстановлены (${charName}).`
+          `[Короткий отдых] 1 час завершен. Ресурсы с перезарядкой «КД» восстановлены (${charName}).`,
         );
     } else {
       const maxHp = playerData.hp_max ?? playerData.hp ?? 20;
@@ -682,7 +712,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         .getState()
         .addLog(
           'action',
-          `[Длинный отдых] 8 часов завершены. ХП (${maxHp}/${maxHp}), ячейки заклинаний, кости хитов (+${regainedHitDiceCount}) и ресурсы полностью восстановлены (${charName}).`
+          `[Длинный отдых] 8 часов завершены. ХП (${maxHp}/${maxHp}), ячейки заклинаний, кости хитов (+${regainedHitDiceCount}) и ресурсы полностью восстановлены (${charName}).`,
         );
     }
   },
@@ -716,7 +746,9 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const charName = playerData.name || 'Персонаж';
     useLogStore
       .getState()
-      .addLog('action', `[Кошелек] ${charName}: ${coinNames[type]} ${sign} (баланс: ${nextVal} ${coinNames[type]})`);
+      .addLog(
+        'action',
+        `[Кошелек] ${charName}: ${coinNames[type]} ${sign} (баланс: ${nextVal} ${coinNames[type]})`,
+      );
   },
-
 }));

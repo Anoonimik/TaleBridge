@@ -1,22 +1,41 @@
+import { useShallow } from 'zustand/react/shallow';
 import { wsBridge } from '../../shared/api/websocket';
 import React, { useState, useRef, useEffect } from 'react';
-import { useCombatStore, useRosterStore, CONDITIONS, COMBAT_SIDES } from '../../shared';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { useRosterStore } from '../../entities/character/model/store';
+import { CONDITIONS, COMBAT_SIDES } from '../../shared/config/constants';
 
 export const PlayerCombatHud = () => {
-  const { active: combatActive, round, turnIndex, combatants } = useCombatStore();
-  const { playerCharacterName } = useRosterStore();
+  const {
+    active: combatActive,
+    round,
+    turnIndex,
+    combatants,
+  } = useCombatStore(
+    useShallow((s) => ({
+      active: s.active,
+      round: s.round,
+      turnIndex: s.turnIndex,
+      combatants: s.combatants,
+    })),
+  );
+  const { playerCharacterName } = useRosterStore(
+    useShallow((s) => ({ playerCharacterName: s.playerCharacterName })),
+  );
   const [showQueue, setShowQueue] = useState(true);
   const queueRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLDivElement>(null);
 
-  const finishTurn = () => { wsBridge.send('END_PLAYER_TURN'); };
+  const finishTurn = () => {
+    wsBridge.send('END_PLAYER_TURN');
+  };
   const currentCombatant = combatants[turnIndex];
   const isMyTurn =
     Boolean(currentCombatant?.name && playerCharacterName) &&
     currentCombatant.name.toLowerCase() === playerCharacterName.toLowerCase();
 
   const myIndex = combatants.findIndex(
-    (c) => playerCharacterName && c.name.toLowerCase() === playerCharacterName.toLowerCase()
+    (c) => playerCharacterName && c.name.toLowerCase() === playerCharacterName.toLowerCase(),
   );
   const myCombatant = myIndex !== -1 ? combatants[myIndex] : null;
   const myConditions = Array.isArray(myCombatant?.conditions) ? myCombatant.conditions : [];
@@ -155,8 +174,8 @@ export const PlayerCombatHud = () => {
                     isActive
                       ? 'bg-amber-500/25 border-amber-500 text-amber-200 font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-500'
                       : hasActed
-                      ? 'opacity-40 bg-[#10111a] border-[#1d2030] text-slate-500 hover:opacity-75'
-                      : 'bg-[#141622] border-[#262a3d] text-slate-300 hover:border-[#383d57]'
+                        ? 'opacity-40 bg-[#10111a] border-[#1d2030] text-slate-500 hover:opacity-75'
+                        : 'bg-[#141622] border-[#262a3d] text-slate-300 hover:border-[#383d57]'
                   } ${isMe && !isActive ? 'ring-1 ring-blue-500/60 border-blue-500/40' : ''}`}
                 >
                   <span className="text-[10px] text-slate-400 font-mono">#{idx + 1}</span>

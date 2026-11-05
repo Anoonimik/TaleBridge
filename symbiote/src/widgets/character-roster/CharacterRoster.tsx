@@ -1,9 +1,16 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState } from 'react';
 import { Character, useRosterStore, wsBridge } from '../../shared';
-import { CharacterCard } from '../../entities';
+import { CharacterCard } from '../../entities/character/ui/CharacterCard';
 
 export const CharacterRoster = () => {
-  const { roster, pinnedNames, setSelectedCharacter } = useRosterStore();
+  const { roster, pinnedNames, setSelectedCharacter } = useRosterStore(
+    useShallow((s) => ({
+      roster: s.roster,
+      pinnedNames: s.pinnedNames,
+      setSelectedCharacter: s.setSelectedCharacter,
+    })),
+  );
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
 
@@ -93,11 +100,7 @@ export const CharacterRoster = () => {
           </div>
         ) : (
           filtered.map((char) => (
-            <CharacterCard
-              key={char.name}
-              character={char}
-              onOpenNote={handleOpenNote}
-            />
+            <CharacterCard key={char.name} character={char} onOpenNote={handleOpenNote} />
           ))
         )}
       </div>

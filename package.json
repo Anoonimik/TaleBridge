@@ -18,7 +18,7 @@
     "build:plugin": "node scripts/build-plugin.mjs",
     "build": "npm run typecheck && npm run build:plugin && npm run build --workspace symbiote && node scripts/package-release.mjs",
     "check": "npm run lint && npm test && npm run build",
-    "test:browser": "node tests/browser.cjs"
+    "test:browser": "node tests/browser.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0",
@@ -38,5 +38,11 @@
     "prettier": "3.9.10",
     "typescript": "~6.0.2",
     "typescript-eslint": "8.72.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  },
+  "overrides": {
+    "minimatch": "11.0.4"
   }
 }

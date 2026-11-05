@@ -1,12 +1,7 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useMemo } from 'react';
 import { Dices, FileText, X } from 'lucide-react';
-import {
-  Combatant,
-  COMBAT_SIDES,
-  useCombatStore,
-  useRosterStore,
-  wsBridge,
-} from '../../../shared';
+import { Combatant, COMBAT_SIDES, useCombatStore, useRosterStore, wsBridge } from '../../../shared';
 import { CombatantHpPanel } from './CombatantHpPanel';
 import { CombatantConditionsList } from './CombatantConditionsList';
 import { CombatantAttackRow } from './CombatantAttackRow';
@@ -30,12 +25,22 @@ export const CombatantCard = ({
     rollSingleInitiative,
     removeCombatant,
     toggleCondition,
-  } = useCombatStore();
-  const { setSelectedCharacter, roster } = useRosterStore();
+  } = useCombatStore(
+    useShallow((s) => ({
+      updateCombatantHp: s.updateCombatantHp,
+      setInitiative: s.setInitiative,
+      rollSingleInitiative: s.rollSingleInitiative,
+      removeCombatant: s.removeCombatant,
+      toggleCondition: s.toggleCondition,
+    })),
+  );
+  const { setSelectedCharacter, roster } = useRosterStore(
+    useShallow((s) => ({ setSelectedCharacter: s.setSelectedCharacter, roster: s.roster })),
+  );
 
   const conditions = useMemo(
     () => (Array.isArray(combatant.conditions) ? combatant.conditions : []),
-    [combatant.conditions]
+    [combatant.conditions],
   );
 
   const attacks = useMemo(() => {
@@ -47,13 +52,11 @@ export const CombatantCard = ({
 
   const sideMeta = useMemo(
     () => COMBAT_SIDES.find((s) => s.id === combatant.side) || COMBAT_SIDES[3],
-    [combatant.side]
+    [combatant.side],
   );
 
   const handleOpenNote = () => {
-    const found = roster.find(
-      (r) => r.name.toLowerCase() === combatant.name.toLowerCase()
-    );
+    const found = roster.find((r) => r.name.toLowerCase() === combatant.name.toLowerCase());
     if (found) {
       setSelectedCharacter(found);
       if (found.path) {
@@ -82,10 +85,7 @@ export const CombatantCard = ({
             {sideMeta.label} ▾
           </button>
 
-          <span
-            className="font-semibold text-slate-100 text-sm truncate"
-            title={combatant.name}
-          >
+          <span className="font-semibold text-slate-100 text-sm truncate" title={combatant.name}>
             {combatant.name}
           </span>
         </div>
@@ -147,11 +147,7 @@ export const CombatantCard = ({
       />
 
       {/* Actions & Attacks list */}
-      <CombatantAttackRow
-        combatantName={combatant.name}
-        attacks={attacks}
-        isActive={isActive}
-      />
+      <CombatantAttackRow combatantName={combatant.name} attacks={attacks} isActive={isActive} />
     </div>
   );
 };

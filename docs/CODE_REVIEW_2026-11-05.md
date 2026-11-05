@@ -1,5 +1,7 @@
 # TaleBridge — отчет о код-ревью
 
+> Исторический документ для `9f3b052`. Реализация и актуальные проверки: [REFACTORING_STATUS.md](REFACTORING_STATUS.md). Диагностика в `docs/audit` описывает дефекты исходной версии; запускайте ее только на исходном коммите.
+
 Дата: 5 ноября 2026 года. Репозиторий: `F:\TaleBridge`.
 Проверенная версия: `main`, коммит `9f3b05257abaf9b9c65d930f6ac92aa6aa012e5e`.
 
@@ -56,7 +58,7 @@
 
 ### R01 · P1 · PIN передается клиентам, серверной авторизации нет
 
-Места: [main.js:1036](../obsidian-plugin/main.js#L1036), [main.js:1179](../obsidian-plugin/main.js#L1179), [GmAuthModal.tsx:15](../symbiote/src/features/gm-auth/GmAuthModal.tsx#L15).
+Места: [main.js:1036](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1036), [main.js:1179](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1179), [GmAuthModal.tsx:15](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/features/gm-auth/GmAuthModal.tsx#L15).
 
 `HANDSHAKE_ACK` возвращает `gmPin` любому соединению. Сравнение PIN и отметка авторизации находятся в браузере; сервер не проверяет роль, токен сессии и принадлежность персонажа перед `UPDATE_*`, `SYNC_COMBAT_STATE`, `BROADCAST_HANDOUT`. Заглушечный клиент без учетных данных изменил HP чужого персонажа, включая отрицательное значение. Подключение обслуживается на `0.0.0.0`.
 
@@ -64,7 +66,7 @@
 
 ### R02 · P1 · HTTP отдает произвольные файлы vault
 
-Место: [main.js:1539](../obsidian-plugin/main.js#L1539).
+Место: [main.js:1539](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1539).
 
 `/vault-file?path=...` сначала ищет файл по прямому пути в vault. Ограничения на `public/`, тип файла или список опубликованных материалов нет. Код отдает и `.md`, и другие `TFile`, а не только изображения. Проверка прочитала подставной `private/secret.md` без авторизации. Это раскрытие файлов внутри vault; выход за пределы vault этим ревью не доказан.
 
@@ -72,7 +74,7 @@
 
 ### R03 · P1 · Буфер обмена хоста доступен без авторизации
 
-Место: [main.js:1489](../obsidian-plugin/main.js#L1489).
+Место: [main.js:1489](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1489).
 
 HTTP `/clipboard` читает системный clipboard компьютера GM, `/clipboard-write` записывает его. Они доступны без сессии; CORS разрешен для любого origin. Следовательно, сетевой клиент может получать приватное содержимое или подменять вставляемый текст. Доступ из произвольного сайта также зависит от ограничений браузера на private-network запросы; прямой HTTP-клиент таких ограничений не имеет.
 
@@ -80,7 +82,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R04 · P1 · Скрытые сцены и заметки доступны игрокам на уровне протокола
 
-Места: [main.js:1113](../obsidian-plugin/main.js#L1113), [main.js:1127](../obsidian-plugin/main.js#L1127), [main.js:1133](../obsidian-plugin/main.js#L1133), [main.js:1276](../obsidian-plugin/main.js#L1276).
+Места: [main.js:1113](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1113), [main.js:1127](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1127), [main.js:1133](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1133), [main.js:1276](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1276).
 
 `SCENES_LIST` со всем содержимым сцены, включая `nudge`, механику и `raw`, рассылается всем клиентам. `GET_NOTE` принимает произвольный путь/имя; `GET_PLAYER_DATA` — имя любого персонажа; `PLAYER_NOTES_SYNC` передается через общий broadcast. Скрытие экранов GM в интерфейсе не обеспечивает заявленную приватность журнала и сюжетных материалов.
 
@@ -88,7 +90,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R05 · P1 · Обновление одного персонажа подменяет данные другого
 
-Места: [main.js:1305](../obsidian-plugin/main.js#L1305), [websocket.ts:225](../symbiote/src/shared/api/websocket.ts#L225), [useRosterStore.ts:127](../symbiote/src/shared/lib/useRosterStore.ts#L127).
+Места: [main.js:1305](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1305), [websocket.ts:225](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/websocket.ts#L225), [useRosterStore.ts:127](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useRosterStore.ts#L127).
 
 Сервер broadcast-ит `PLAYER_DATA` после редактирования характеристик/параметров. Любой клиент принимает этот пакет в `playerData`, не сравнивая персонажа с `playerCharacterName`. Воспроизведено: выбран Alice, приходит Bob — выбор остается Alice, отображаемые данные становятся Bob. Следующая команда может отправить данные Bob от имени Alice.
 
@@ -96,7 +98,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R06 · P1 · Сохранение атак удаляет произвольный текст между блоками
 
-Место: [main.js:375](../obsidian-plugin/main.js#L375).
+Место: [main.js:375](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L375).
 
 `updateCharacterActions` заменяет непрерывный диапазон от первого до последнего `dnd-action`, включая любые абзацы и разделы между ними. Проверка с двумя блоками и промежуточным `KEEP THIS TEXT` подтвердила удаление текста. Сейчас команда клиента дополнительно не совпадает с серверной (R10), но сам серверный обработчик доступен и дефект проявится после подключения этой команды.
 
@@ -104,7 +106,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R07 · P1 · Неатомарная запись и интерпретация `$` повреждают заметки
 
-Место: [main.js:347](../obsidian-plugin/main.js#L347).
+Место: [main.js:347](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L347).
 
 Последовательность `vault.read` → преобразование → `vault.modify` не сериализует параллельные изменения. Одновременное сохранение инвентаря и журнала воспроизвело потерю первого изменения. Кроме того, пользовательский текст вставляется строкой в `String.replace`; `$&` интерпретируется как исходное совпадение вместо буквального текста.
 
@@ -112,7 +114,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R08 · P1 · «Сохранено» показывается даже при потере сетевой команды
 
-Места: [websocket.ts:158](../symbiote/src/shared/api/websocket.ts#L158), [PlayerNotesEditor.tsx:18](../symbiote/src/features/save-notes/PlayerNotesEditor.tsx#L18).
+Места: [websocket.ts:158](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/websocket.ts#L158), [PlayerNotesEditor.tsx:18](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/features/save-notes/PlayerNotesEditor.tsx#L18).
 
 `send()` молча отбрасывает команду, если WebSocket закрыт. Редактор журнала сразу устанавливает статус `saved`, не ожидая `PLAYER_NOTES_UPDATED`; повторной доставки нет. При возврате серверных данных локальная версия может быть заменена. Debounce-таймер редактора также не сбрасывается при смене персонажа/размонтировании и продолжает работать со старым замыканием.
 
@@ -120,7 +122,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R09 · P1 · Переустановка удаляет пользовательские настройки плагина
 
-Место: [install.ps1:82](../install.ps1#L82).
+Место: [install.ps1:82](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/install.ps1#L82).
 
 Если установленный плагин является обычной директорией, установщик после `rmdir` рекурсивно удаляет ее целиком. В этой директории Obsidian хранит `data.json`, а копия из исходников его не восстанавливает. При Junction пользовательские данные, наоборот, оказываются в каталоге исходников. Параметр `-CopyMode` объявлен, но нигде не используется. Отказ копирования и частичный результат не оформлены как надежная транзакция установки.
 
@@ -128,19 +130,19 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R10 · P2 · Атаки не сохраняются из-за разных имен команд
 
-Места: [useRosterStore.ts:195](../symbiote/src/shared/lib/useRosterStore.ts#L195), [main.js:1300](../obsidian-plugin/main.js#L1300).
+Места: [useRosterStore.ts:195](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useRosterStore.ts#L195), [main.js:1300](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1300).
 
 Клиент отправляет `UPDATE_CHARACTER_ATTACKS`, сервер обрабатывает только `UPDATE_CHARACTER_ACTIONS`. Изменение видно локально, но не записывается. Исправить общий контракт команд и добавить проверку клиент → сервер → перечитывание документа. Проверка `F02`.
 
 ### R11 · P2 · WebSocket-операции clipboard падают с ReferenceError
 
-Место: [main.js:1415](../obsidian-plugin/main.js#L1415).
+Место: [main.js:1415](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1415).
 
 Обработчик извлекает `type` и `payload` из `parsed`, но далее обращается к необъявленной `data`. Чтение и запись завершаются `ReferenceError`. Даже замена переменной требует учесть, что request ID находится внутри `payload`. Исправлять после закрытия сетевого доступа к clipboard по R03. Проверки `F01-*`.
 
 ### R12 · P2 · Команды браузерного fallback и некоторые команды хоста не доходят до исполнителя
 
-Места: [talespire.ts:254](../symbiote/src/shared/api/talespire.ts#L254), [main.js:1190](../obsidian-plugin/main.js#L1190), [talespire.ts:134](../symbiote/src/shared/api/talespire.ts#L134).
+Места: [talespire.ts:254](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/talespire.ts#L254), [main.js:1190](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1190), [talespire.ts:134](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/talespire.ts#L134).
 
 Клиент отправляет `ROLL_DICE`, `DICE_RESULT`, `GET_BOOKMARKS`, `GOTO_BOOKMARK` серверу, но соответствующих веток маршрутизации у него нет. `BOOKMARKS_LIST` сохраняется на сервере без доставки браузеру. Клиент также не подписан на входящий `ROLL_DICE`, который генерируют кнопки плагина Obsidian. Работоспособность прямого TaleSpire API не исправляет эти отсутствующие маршруты.
 
@@ -148,13 +150,13 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R13 · P2 · Медиа всегда запрашивается с компьютера игрока и порта 30123
 
-Место: [media.ts:4](../symbiote/src/shared/lib/media.ts#L4).
+Место: [media.ts:4](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/media.ts#L4).
 
 `resolveMediaUrl` использует `127.0.0.1` и `DEFAULT_WS_PORT`, игнорируя настройки подключения к GM. На другом компьютере и при другом порте локальные картинки vault не загрузятся. Исправить единый объект endpoint для HTTP/WS и построение URL через него. Проверка `F04`.
 
 ### R14 · P2 · Часть данных персонажа теряется или остается только в одном браузере
 
-Места: [character-storage.ts:11](../symbiote/src/shared/lib/character-storage.ts#L11), [useRosterStore.ts:483](../symbiote/src/shared/lib/useRosterStore.ts#L483), [main.js:1708](../obsidian-plugin/main.js#L1708).
+Места: [character-storage.ts:11](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/character-storage.ts#L11), [useRosterStore.ts:483](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useRosterStore.ts#L483), [main.js:1708](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1708).
 
 `skills` не включены в `StoredCharMeta`, не восстанавливаются merge-функцией и не отправляются на сервер. После `PLAYER_DATA` владение навыком исчезает — воспроизведено. `temp_hp` тоже не сохраняется серверным контрактом и отдельными метаданными. Заклинания, ресурсы, вдохновение и часть прочих данных существуют только в localStorage: смена устройства их не переносит. Ключи построены по имени персонажа без ID кампании/сервера и версии схемы.
 
@@ -162,7 +164,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R15 · P1 · Собственный WebSocket-парсер нарушает RFC и не ограничивает ресурсы
 
-Места: [main.js:42](../obsidian-plugin/main.js#L42), [main.js:160](../obsidian-plugin/main.js#L160).
+Места: [main.js:42](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L42), [main.js:160](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L160).
 
 Приняты незамаскированные клиентские кадры, фрагмент сообщения передается как целое сообщение, а Pong теряет payload Ping. Нет явных ограничений длины сообщения, суммарного буфера, частоты запросов, числа соединений и очереди отправки; входные данные накапливаются через `Buffer.concat`. Масштабный DoS не запускался, но отсутствуют основные механизмы ограничения потребления памяти и работы vault.
 
@@ -170,7 +172,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R16 · P1 · Входные сообщения не валидируются, ошибки async-обработчика остаются необработанными
 
-Места: [main.js:1065](../obsidian-plugin/main.js#L1065), [main.js:1179](../obsidian-plugin/main.js#L1179).
+Места: [main.js:1065](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1065), [main.js:1179](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1179).
 
 Обработчик ловит только ошибку `JSON.parse`. Валидный JSON `null` ломает деструктуризацию, неверный тип `characterName` — операции со строкой; отдельные числа и структуры записываются без проверки. Возвращаемый Promise `handleIncomingMessage` не ожидается и не получает `.catch()`. Конкретная реакция на unhandled rejection зависит от окружения Obsidian; отсутствие общего error boundary и контролируемого ответа установлено по коду.
 
@@ -178,13 +180,13 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R17 · P2 · Формула броска молча обрезается
 
-Место: [text-utils.ts:1](../symbiote/src/shared/lib/text-utils.ts#L1).
+Место: [text-utils.ts:1](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/text-utils.ts#L1).
 
 `cleanFormula('2d6+1d4+3')` возвращает `2d6`: регулярное выражение извлекает только первый поддержанный фрагмент и отбрасывает остальной урон. Исправить полноценный разбор поддерживаемой грамматики либо явную ошибку для неподдерживаемого выражения; не менять смысл молча. Проверка `F08`.
 
 ### R18 · P2 · Результат броска не связан с конкретным действием
 
-Места: [useCombatStore.ts:172](../symbiote/src/shared/lib/useCombatStore.ts#L172), [DeathSavesControl.tsx:33](../symbiote/src/features/death-saves/DeathSavesControl.tsx#L33).
+Места: [useCombatStore.ts:172](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useCombatStore.ts#L172), [DeathSavesControl.tsx:33](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/features/death-saves/DeathSavesControl.tsx#L33).
 
 Одиночная инициатива записывает случайное число из `Math.random`, одновременно запуская независимый бросок в TaleSpire; результат физического броска в инициативу не попадает. Спасбросок от смерти, наоборот, принимает первый общий результат без проверки request ID, формулы и инициатора. Посторонний бросок может завершить ожидание.
 
@@ -192,25 +194,25 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R19 · P2 · Удаление участника может пропустить активный ход
 
-Место: [useCombatStore.ts:116](../symbiote/src/shared/lib/useCombatStore.ts#L116).
+Место: [useCombatStore.ts:116](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useCombatStore.ts#L116).
 
 Активный ход хранится индексом. Для `[A,B,C]` с ходом B удаление A оставляет индекс 1 и делает активным C. Пересортировка по инициативе также не сохраняет идентичность активного участника. Исправить хранение `activeCombatantId` и явно определить переход при удалении активного участника. Проверка `F06` подтверждает сценарий удаления.
 
 ### R20 · P2 · Активная сцена остается устаревшей после обновления
 
-Места: [useStoryStore.ts:19](../symbiote/src/shared/lib/useStoryStore.ts#L19), [main.js:719](../obsidian-plugin/main.js#L719).
+Места: [useStoryStore.ts:19](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useStoryStore.ts#L19), [main.js:719](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L719).
 
 Если сцена с тем же ID остается в списке, `setScenes` не заменяет объект `activeScene`. Новый текст не отображается в активной сцене. Дополнительно ID вида `scene-N` меняются при вставке сцен перед текущей; это делает историю и идентификацию нестабильными. Исправить стабильные ID и хранить выбранный ID с вычислением актуального объекта. Проверка устаревшего объекта — `F05`.
 
 ### R21 · P2 · Документация обещает браузерный интерфейс по адресу, где возвращается JSON
 
-Места: [PLAYER_GUIDE.md:33](PLAYER_GUIDE.md#L33), [main.js:21](../obsidian-plugin/main.js#L21), [main.js:1489](../obsidian-plugin/main.js#L1489).
+Места: [PLAYER_GUIDE.md:33](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/docs/PLAYER_GUIDE.md#L33), [main.js:21](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L21), [main.js:1489](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/main.js#L1489).
 
 Инструкция отправляет игрока на `http://<GM>:30123/`. HTTP-handler не раздает HTML и `dist/assets`; fallback возвращает статус сервера в JSON. В показанной конфигурации приложение по этому URL не откроется. Исправить поставку frontend через отдельный явно описанный сервер или безопасную раздачу статической сборки плагином; отделить health endpoint от страницы приложения.
 
 ### R22 · P2 · Диалоги и подписи полей не обеспечивают доступность
 
-Места: [ModalShell.tsx:30](../symbiote/src/shared/ui/ModalShell.tsx#L30), [ConnectionModal.tsx:161](../symbiote/src/features/manage-connection/ui/ConnectionModal.tsx#L161).
+Места: [ModalShell.tsx:30](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/ui/ModalShell.tsx#L30), [ConnectionModal.tsx:161](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/features/manage-connection/ui/ConnectionModal.tsx#L161).
 
 У общего диалога нет dialog role, доступного имени, управления начальным фокусом, удержания фокуса, восстановления фокуса и блокировки фона. В окне подключения текстовые `<label>` не связаны с полями через `htmlFor`/`id` и не оборачивают input. Наличие Escape закрывает только часть требований. Браузер подтвердил отсутствие `dialog` в accessibility-семантике открытого окна подключения.
 
@@ -218,7 +220,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R23 · P2 · Архитектурные границы и проверки качества не удерживают сложность
 
-Места: [shared/index.ts](../symbiote/src/shared/index.ts), [websocket.ts](../symbiote/src/shared/api/websocket.ts), [useRosterStore.ts](../symbiote/src/shared/lib/useRosterStore.ts), [package.json:6](../symbiote/package.json#L6).
+Места: [shared/index.ts](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/index.ts), [websocket.ts](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/websocket.ts), [useRosterStore.ts](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/lib/useRosterStore.ts), [package.json:6](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/package.json#L6).
 
 Сетевые адаптеры напрямую знают все store, а store импортируют адаптеры обратно: найдены циклы `useAppStore ↔ websocket`, `useRosterStore ↔ websocket`, `useRosterStore ↔ talespire`, `useCombatStore ↔ websocket`. В `shared` находятся и предметная логика боя/персонажей, и инфраструктура. `useRosterStore` объединяет многочисленные подсистемы. Подписки `useStore()` без selector перерисовывают крупные компоненты при любом изменении store. Подтвержденных измерений задержек пока нет.
 
@@ -226,7 +228,7 @@ HTTP `/clipboard` читает системный clipboard компьютера
 
 ### R24 · P2 · Требования runtime противоречат инструментам и сетевой конфигурации
 
-Места: [README.md:79](../README.md#L79), [package.json](../symbiote/package.json), [websocket.ts:75](../symbiote/src/shared/api/websocket.ts#L75), [websocket.ts:109](../symbiote/src/shared/api/websocket.ts#L109).
+Места: [README.md:79](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/README.md#L79), [package.json](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/package.json), [websocket.ts:75](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/websocket.ts#L75), [websocket.ts:109](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/src/shared/api/websocket.ts#L109).
 
 README заявляет Node 18+ и рекомендует 20+, но установленный Vite требует `^20.19.0 || >=22.12.0`; `engines` и фиксации package manager нет. Сетевые URL жестко `http`/`ws`, поэтому защищенный HTTPS frontend не получает совместимый WSS endpoint; для доступа вне локальной доверенной среды также нужна защита транспорта. `connect()` не отделяет события старого сокета от текущего, а открытый новый сокет не отменяет заранее запланированный reconnect — возможны лишние переподключения; нагрузочный/временной сценарий отдельно не воспроизводился.
 
@@ -234,7 +236,7 @@ README заявляет Node 18+ и рекомендует 20+, но устан�
 
 ### R25 · P2 · Метаданные поставки противоречат друг другу
 
-Места: [LICENSE](../LICENSE), [README.md:117](../README.md#L117), [package.json:14](../symbiote/package.json#L14), [manifest.json](../symbiote/manifest.json), [plugin manifest](../obsidian-plugin/manifest.json).
+Места: [LICENSE](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/LICENSE), [README.md:117](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/README.md#L117), [package.json:14](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/package.json#L14), [manifest.json](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/symbiote/manifest.json), [plugin manifest](https://github.com/Anoonimik/TaleBridge/blob/9f3b052/obsidian-plugin/manifest.json).
 
 В корне текст GPL v3, README и symbiote manifest указывают MIT, package.json — ISC. Версии также расходятся: package 1.0.0, symbiote 0.4.4, plugin 0.1.0, handshake 0.6.0. Это установленные расхождения метаданных; правовой вывод о действующей лицензии не делался.
 

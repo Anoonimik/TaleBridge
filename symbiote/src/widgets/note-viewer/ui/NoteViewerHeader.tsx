@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState } from 'react';
 import { Character, COMBAT_SIDES, CombatSide, useRosterStore, wsBridge } from '../../../shared';
 
@@ -18,16 +19,16 @@ export const NoteViewerHeader: React.FC<NoteViewerHeaderProps> = ({
   onAddToCombat,
   onOpenObsidian,
 }) => {
-  const { selectedToken } = useRosterStore();
+  const { selectedToken } = useRosterStore(useShallow((s) => ({ selectedToken: s.selectedToken })));
   const [showSideSelector, setShowSideSelector] = useState(false);
   const [justLinked, setJustLinked] = useState(false);
 
   const isLinkedToSelected = Boolean(
     selectedToken &&
-      ((character.talespire_id && character.talespire_id === selectedToken.id) ||
-        (character.name &&
-          selectedToken.name &&
-          character.name.toLowerCase() === selectedToken.name.toLowerCase()))
+    ((character.talespire_id && character.talespire_id === selectedToken.id) ||
+      (character.name &&
+        selectedToken.name &&
+        character.name.toLowerCase() === selectedToken.name.toLowerCase())),
   );
 
   const handleLinkToken = () => {
@@ -72,8 +73,8 @@ export const NoteViewerHeader: React.FC<NoteViewerHeaderProps> = ({
 
       <div className="flex items-center gap-1.5 shrink-0 relative">
         {/* Link TaleSpire token button (when miniature is selected) */}
-        {selectedToken && (
-          isLinkedToSelected ? (
+        {selectedToken &&
+          (isLinkedToSelected ? (
             <span
               className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-medium"
               title={`Токен TaleSpire "${selectedToken.name}" привязан к этой заметке`}
@@ -94,8 +95,7 @@ export const NoteViewerHeader: React.FC<NoteViewerHeaderProps> = ({
               <span>🔗</span>
               <span>{justLinked ? 'Привязано ✓' : `Привязать «${selectedToken.name}»`}</span>
             </button>
-          )
-        )}
+          ))}
 
         {/* Add to combat button */}
         <div className="relative">

@@ -1,1 +1,0 @@
-import{d as e,i as t,l as n,o as r,r as i,t as a,u as o}from"./index-Dnuqx12D.js";e();var s=n(),c=()=>{let{activeTab:e}=o();return(0,s.jsxs)(`div`,{className:`w-full h-full overflow-hidden relative`,children:[e===`story`&&(0,s.jsx)(i,{}),e===`characters`&&(0,s.jsx)(t,{}),e===`combat`&&(0,s.jsx)(r,{}),e===`tools`&&(0,s.jsx)(a,{})]})};export{c as GmScreen};

@@ -1,6 +1,11 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect } from 'react';
-import { useAppStore, useCombatStore, useRosterStore, wsBridge } from '../../shared';
-import { GmAuthModal, ConnectionModal } from '../../features';
+import { useAppStore } from '../../shared/lib/useAppStore';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { useRosterStore } from '../../entities/character/model/store';
+import { wsBridge } from '../../shared/api/websocket';
+import { GmAuthModal } from '../../features/gm-auth/GmAuthModal';
+import { ConnectionModal } from '../../features/manage-connection/ui/ConnectionModal';
 
 export const AppHeader = () => {
   const {
@@ -17,18 +22,38 @@ export const AppHeader = () => {
     setDiceSecret,
     cinemaMedia,
     stopBroadcast,
-  } = useAppStore();
-  const { combatants, active: combatActive } = useCombatStore();
-  const { roster } = useRosterStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      role: s.role,
+      activeTab: s.activeTab,
+      setRole: s.setRole,
+      setActiveTab: s.setActiveTab,
+      scale: s.scale,
+      setScale: s.setScale,
+      connected: s.connected,
+      vaultName: s.vaultName,
+      diceSecret: s.diceSecret,
+      setDiceSecret: s.setDiceSecret,
+      cinemaMedia: s.cinemaMedia,
+      stopBroadcast: s.stopBroadcast,
+    })),
+  );
+  const { combatants, active: combatActive } = useCombatStore(
+    useShallow((s) => ({ combatants: s.combatants, active: s.active })),
+  );
+  const { roster } = useRosterStore(useShallow((s) => ({ roster: s.roster })));
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showConnectionModal, setShowConnectionModal] = useState(!connected);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  useEffect(() => {if (connected) setShowConnectionModal(false);}, [connected]);
+  useEffect(() => {
+    if (connected) setShowConnectionModal(false);
+  }, [connected]);
 
   const isGm = role === 'gm';
 
   const handleRoleToggle = () => {
-    if (isGm) void wsBridge.logout(); else setShowAuthModal(true);
+    if (isGm) void wsBridge.logout();
+    else setShowAuthModal(true);
   };
 
   const handleRefresh = () => {
@@ -225,10 +250,7 @@ export const AppHeader = () => {
         onCancel={() => setShowAuthModal(false)}
       />
 
-      <ConnectionModal
-        isOpen={showConnectionModal}
-        onClose={() => setShowConnectionModal(false)}
-      />
+      <ConnectionModal isOpen={showConnectionModal} onClose={() => setShowConnectionModal(false)} />
     </>
   );
 };

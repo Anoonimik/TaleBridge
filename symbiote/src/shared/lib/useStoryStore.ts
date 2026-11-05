@@ -20,7 +20,10 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
     const safeScenes = Array.isArray(scenes) ? scenes : [];
     set({ scenes: safeScenes });
     const current = get().activeScene;
-    set({ activeScene: safeScenes.find(s => s.id === current?.id) || safeScenes[0] || null, sceneHistory: get().sceneHistory.filter(id => safeScenes.some(s => s.id === id)) });
+    set({
+      activeScene: safeScenes.find((s) => s.id === current?.id) || safeScenes[0] || null,
+      sceneHistory: get().sceneHistory.filter((id) => safeScenes.some((s) => s.id === id)),
+    });
   },
 
   setActiveScene: (activeScene) => set({ activeScene }),

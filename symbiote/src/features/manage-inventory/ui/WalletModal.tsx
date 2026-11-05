@@ -131,9 +131,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         <div className="flex items-center justify-between border-b border-[#262a3d] pb-2.5">
           <div className="flex items-center gap-2">
             <Coins className="w-5 h-5 text-amber-400" />
-            <h2 className="text-sm font-bold tracking-wide uppercase">
-              Кошелек персонажа
-            </h2>
+            <h2 className="text-sm font-bold tracking-wide uppercase">Кошелек персонажа</h2>
           </div>
           <button
             type="button"
@@ -229,9 +227,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
             {/* Coin selector */}
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">
-                Выберите валюту:
-              </label>
+              <label className="text-[11px] text-slate-400 block mb-1">Выберите валюту:</label>
               <div className="grid grid-cols-5 gap-1">
                 {COIN_CONFIG.map((coin) => (
                   <button
@@ -290,7 +286,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({
               <button
                 type="submit"
                 className={`px-4 py-1.5 rounded font-bold text-white cursor-pointer transition-colors ${
-                  opType === 'add' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-600 hover:bg-rose-500'
+                  opType === 'add'
+                    ? 'bg-emerald-600 hover:bg-emerald-500'
+                    : 'bg-rose-600 hover:bg-rose-500'
                 }`}
               >
                 {opType === 'add' ? 'Добавить в кошелек' : 'Списать из кошелька'}

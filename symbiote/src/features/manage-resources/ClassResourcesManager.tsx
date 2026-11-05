@@ -105,9 +105,7 @@ export const ClassResourcesManager = ({
           <span className="text-xs uppercase font-bold text-slate-400">Кости хитов:</span>
           <select
             value={hitDice.dieType}
-            onChange={(e) =>
-              onUpdateHitDice({ ...hitDice, dieType: e.target.value })
-            }
+            onChange={(e) => onUpdateHitDice({ ...hitDice, dieType: e.target.value })}
             className="bg-[#141622] border border-[#262a3d] text-amber-300 text-xs rounded px-1.5 py-0.5 focus:outline-none cursor-pointer font-mono font-bold"
           >
             <option value="d6">d6</option>
@@ -131,7 +129,8 @@ export const ClassResourcesManager = ({
           }`}
           title={`Бросить 1${hitDice.dieType}${conModStr} и восстановить здоровье`}
         >
-          Использовать кость (1{hitDice.dieType}{conModStr})
+          Использовать кость (1{hitDice.dieType}
+          {conModStr})
         </button>
       </div>
 
@@ -152,7 +151,8 @@ export const ClassResourcesManager = ({
 
         {resources.length === 0 ? (
           <div className="text-center py-4 text-slate-500 text-xs">
-            Нет добавленных ресурсов. Нажмите «+ Ресурс», чтобы отслеживать Ярость, Вдохновение барда, Ци, патроны и т.д.
+            Нет добавленных ресурсов. Нажмите «+ Ресурс», чтобы отслеживать Ярость, Вдохновение
+            барда, Ци, патроны и т.д.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -163,7 +163,10 @@ export const ClassResourcesManager = ({
               >
                 <div className="flex flex-col min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 truncate">
-                    <span className="font-semibold text-slate-200 text-xs truncate" title={res.name}>
+                    <span
+                      className="font-semibold text-slate-200 text-xs truncate"
+                      title={res.name}
+                    >
                       {res.name}
                     </span>
                     {res.resetOn !== 'none' && (

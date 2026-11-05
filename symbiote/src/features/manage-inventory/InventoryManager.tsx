@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   InventoryItem,
   Character,
@@ -7,12 +8,9 @@ import {
   taleSpireDriver,
   useLogStore,
 } from '../../shared';
-import { ItemCard } from '../../entities';
+import { ItemCard } from '../../entities/inventory-item/ui/ItemCard';
 import { InventoryWeightGauge, AddItemForm, CoinWalletBar } from './ui';
-import {
-  getConsumableActionInfo,
-  evaluateLocalDiceFormula,
-} from './lib/consumable-helper';
+import { getConsumableActionInfo, evaluateLocalDiceFormula } from './lib/consumable-helper';
 
 interface InventoryManagerProps {
   playerData: Character | null;
@@ -21,14 +19,18 @@ interface InventoryManagerProps {
 const CATEGORIES = ['all', 'Оружие', 'Броня', 'Зелья', 'Снаряжение', 'Квестовое'];
 
 export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
-  const {
-    playerCharacterName,
-    setPlayerData,
-    updatePlayerHp,
-    updateCurrency,
-    adjustCurrency,
-  } = useRosterStore();
+  const { playerCharacterName, setPlayerData, updatePlayerHp, updateCurrency, adjustCurrency } =
+    useRosterStore(
+      useShallow((s) => ({
+        playerCharacterName: s.playerCharacterName,
+        setPlayerData: s.setPlayerData,
+        updatePlayerHp: s.updatePlayerHp,
+        updateCurrency: s.updateCurrency,
+        adjustCurrency: s.adjustCurrency,
+      })),
+    );
 
+  const pendingItems = useRef(new Set<string>());
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
@@ -44,7 +46,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
         const w = it.weight || 0;
         return acc + q * w;
       }, 0),
-    [items]
+    [items],
   );
 
   // Calculate coins weight (50 coins = 1 lb ≈ 0.45 kg, or ~0.009 kg per coin)
@@ -77,7 +79,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
   const weightPercent = useMemo(
     () => Math.min(100, Math.round((totalWeight / (maxWeight || 1)) * 100)),
-    [totalWeight, maxWeight]
+    [totalWeight, maxWeight],
   );
 
   const filteredItems = useMemo(() => {
@@ -94,7 +96,9 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
   const saveInventory = (updatedItems: InventoryItem[]) => {
     if (!playerData) return;
-    const updated = { ...playerData, inventory: updatedItems };
+    const current = useRosterStore.getState().playerData;
+    if (!current || current.id !== playerData.id) return;
+    const updated = { ...current, inventory: updatedItems };
     setPlayerData(updated);
 
     if (playerCharacterName) {
@@ -106,12 +110,14 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   };
 
   const handleToggleEquip = (id: string, equipped: boolean) => {
-    const updated = items.map((it) => (it.id === id ? { ...it, equipped } : it));
+    const updated = (useRosterStore.getState().playerData?.inventory || []).map((it) =>
+      it.id === id ? { ...it, equipped } : it,
+    );
     saveInventory(updated);
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
-    const updated = items
+    const updated = (useRosterStore.getState().playerData?.inventory || [])
       .map((it) => {
         if (it.id !== id) return it;
         const newQ = (it.quantity || 1) + delta;
@@ -122,7 +128,9 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   };
 
   const handleDeleteItem = (id: string) => {
-    const updated = items.filter((it) => it.id !== id);
+    const updated = (useRosterStore.getState().playerData?.inventory || []).filter(
+      (it) => it.id !== id,
+    );
     saveInventory(updated);
   };
 
@@ -135,68 +143,75 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
    * Interactive Consumable Use (Healing Potions, Scrolls, Rations)
    */
   const handleUseConsumable = async (item: InventoryItem) => {
-    if (!playerData) return;
-    const charName = playerData.name || 'Персонаж';
-    const action = getConsumableActionInfo(item);
+    if (!playerData || pendingItems.current.has(item.id)) return;
+    pendingItems.current.add(item.id);
+    try {
+      const charName = playerData.name || 'Персонаж';
+      const action = getConsumableActionInfo(item);
 
-    // 1. If item has dice formula (e.g. 2d4+2 for healing)
-    if (action.formula) {
-      let rollResult = 0;
-      if (taleSpireDriver.isReady()) {
-        try {
-          rollResult = await taleSpireDriver.rollForResult(
-            action.formula,
-            `${action.label}: ${item.name} (${charName})`
-          );
-        } catch {
+      // 1. If item has dice formula (e.g. 2d4+2 for healing)
+      if (action.formula) {
+        let rollResult: number;
+        if (taleSpireDriver.isReady()) {
+          try {
+            rollResult = await taleSpireDriver.rollForResult(
+              action.formula,
+              `${action.label}: ${item.name} (${charName})`,
+            );
+          } catch {
+            rollResult = evaluateLocalDiceFormula(action.formula);
+          }
+        } else {
           rollResult = evaluateLocalDiceFormula(action.formula);
         }
-      } else {
-        rollResult = evaluateLocalDiceFormula(action.formula);
-      }
 
-      // If it's a healing potion, apply HP restoration
-      if (action.isHealing) {
-        const currentHp = playerData.hp ?? 0;
-        const maxHp = playerData.hp_max ?? 20;
-        const missingHp = Math.max(0, maxHp - currentHp);
-        const actualHealed = Math.min(missingHp, rollResult);
-        const newHp = currentHp + actualHealed;
+        const latest = useRosterStore.getState().playerData;
+        if (!latest || latest.id !== playerData.id) return;
+        // If it's a healing potion, apply HP restoration
+        if (action.isHealing) {
+          const currentHp = latest.hp ?? 0;
+          const maxHp = latest.hp_max ?? 20;
+          const missingHp = Math.max(0, maxHp - currentHp);
+          const actualHealed = Math.min(missingHp, rollResult);
+          const newHp = currentHp + actualHealed;
 
-        if (actualHealed > 0) {
-          updatePlayerHp(actualHealed);
+          if (actualHealed > 0) {
+            updatePlayerHp(actualHealed);
+          }
+
+          useLogStore
+            .getState()
+            .addLog(
+              'roll',
+              `[Зелье] ${charName} выпил «${item.name}» (бросок ${action.formula} = ${rollResult}): восстановлено ${actualHealed} ХП (текущее: ${newHp}/${maxHp})`,
+            );
+
+          setActionNotice(`+${actualHealed} ХП восстановлено (${item.name})`);
+          setTimeout(() => setActionNotice(null), 4000);
+        } else {
+          useLogStore
+            .getState()
+            .addLog(
+              'roll',
+              `[Расходник] ${charName} использовал «${item.name}» (бросок ${action.formula} = ${rollResult})`,
+            );
+          setActionNotice(`Использовано: ${item.name} (бросок ${rollResult})`);
+          setTimeout(() => setActionNotice(null), 4000);
         }
-
-        useLogStore
-          .getState()
-          .addLog(
-            'roll',
-            `[Зелье] ${charName} выпил «${item.name}» (бросок ${action.formula} = ${rollResult}): восстановлено ${actualHealed} ХП (текущее: ${newHp}/${maxHp})`
-          );
-
-        setActionNotice(`+${actualHealed} ХП восстановлено (${item.name})`);
-        setTimeout(() => setActionNotice(null), 4000);
       } else {
+        // General consumable without dice formula
         useLogStore
           .getState()
-          .addLog(
-            'roll',
-            `[Расходник] ${charName} использовал «${item.name}» (бросок ${action.formula} = ${rollResult})`
-          );
-        setActionNotice(`Использовано: ${item.name} (бросок ${rollResult})`);
-        setTimeout(() => setActionNotice(null), 4000);
+          .addLog('action', `[Расходник] ${charName} использовал «${item.name}»`);
+        setActionNotice(`Использовано: ${item.name}`);
+        setTimeout(() => setActionNotice(null), 3000);
       }
-    } else {
-      // General consumable without dice formula
-      useLogStore
-        .getState()
-        .addLog('action', `[Расходник] ${charName} использовал «${item.name}»`);
-      setActionNotice(`Использовано: ${item.name}`);
-      setTimeout(() => setActionNotice(null), 3000);
-    }
 
-    // 2. Consume item: reduce quantity by 1
-    handleUpdateQuantity(item.id, -1);
+      // 2. Consume item: reduce quantity by 1
+      handleUpdateQuantity(item.id, -1);
+    } finally {
+      pendingItems.current.delete(item.id);
+    }
   };
 
   return (
@@ -269,9 +284,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       </div>
 
       {/* Inline Add Item Form */}
-      {isAdding && (
-        <AddItemForm onAdd={handleAddItem} onCancel={() => setIsAdding(false)} />
-      )}
+      {isAdding && <AddItemForm onAdd={handleAddItem} onCancel={() => setIsAdding(false)} />}
 
       {/* Items List */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 scrollbar-thin">

@@ -28,11 +28,7 @@ export const CoinWalletBar: React.FC<CoinWalletBarProps> = ({
     (curr.cp || 0) * 0.01;
 
   const totalCoins =
-    (curr.pp || 0) +
-    (curr.gp || 0) +
-    (curr.ep || 0) +
-    (curr.sp || 0) +
-    (curr.cp || 0);
+    (curr.pp || 0) + (curr.gp || 0) + (curr.ep || 0) + (curr.sp || 0) + (curr.cp || 0);
 
   const coinsWeightKg = Math.round((totalCoins / 50) * 0.45 * 10) / 10;
 
@@ -103,15 +99,18 @@ export const CoinWalletBar: React.FC<CoinWalletBarProps> = ({
 
         {/* Right: Quick actions & Totals */}
         <div className="flex items-center gap-2 shrink-0 ml-auto text-xs">
-          <div
+          <button
+            type="button"
             className="text-[11px] text-slate-400 hidden md:flex items-center gap-2 cursor-pointer"
             onClick={() => setIsModalOpen(true)}
             title="Суммарный вес всех монет"
           >
             <span>~{totalInGold.toFixed(1)} ЗМ</span>
             <span>•</span>
-            <span>{coinsWeightKg} кг ({totalCoins} шт)</span>
-          </div>
+            <span>
+              {coinsWeightKg} кг ({totalCoins} шт)
+            </span>
+          </button>
 
           <button
             type="button"

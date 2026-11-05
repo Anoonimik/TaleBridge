@@ -27,7 +27,12 @@ interface CombatStore {
   setConditions: (id: string, conditions: string[]) => void;
   clearCombat: () => void;
   syncWithObsidian: () => void;
-  setFromSync: (state: { active: boolean; round: number; turnIndex: number; combatants: Combatant[] }) => void;
+  setFromSync: (state: {
+    active: boolean;
+    round: number;
+    turnIndex: number;
+    combatants: Combatant[];
+  }) => void;
 }
 
 export const useCombatStore = create<CombatStore>((set, get) => ({
@@ -73,12 +78,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
 
   addCombatant: (c) => {
     const defaultSide: CombatSide =
-      c.side ||
-      (c.isPlayer
-        ? 'player'
-        : c.category
-        ? categoryToSide(c.category)
-        : 'enemy');
+      c.side || (c.isPlayer ? 'player' : c.category ? categoryToSide(c.category) : 'enemy');
 
     const newCombatant: Combatant = {
       id: c.id || `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -103,7 +103,9 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
 
     set((state) => {
       const exists = state.combatants.some(
-        (existing) => existing.name.toLowerCase() === newCombatant.name.toLowerCase() && existing.id === newCombatant.id
+        (existing) =>
+          existing.name.toLowerCase() === newCombatant.name.toLowerCase() &&
+          existing.id === newCombatant.id,
       );
       if (exists) return state;
       return { combatants: [...state.combatants, newCombatant] };
@@ -117,8 +119,11 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     set((state) => {
       const nextList = state.combatants.filter((c) => c.id !== id);
       const activeId = state.combatants[state.turnIndex]?.id;
-      const remainingIndex = nextList.findIndex(c => c.id === activeId);
-      const safeTurn = remainingIndex >= 0 ? remainingIndex : Math.min(state.turnIndex, Math.max(0,nextList.length - 1));
+      const remainingIndex = nextList.findIndex((c) => c.id === activeId);
+      const safeTurn =
+        remainingIndex >= 0
+          ? remainingIndex
+          : Math.min(state.turnIndex, Math.max(0, nextList.length - 1));
       return {
         combatants: nextList,
         turnIndex: safeTurn,
@@ -172,20 +177,33 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   },
 
   rollSingleInitiative: (id) => {
-    const c = get().combatants.find(item => item.id === id);
+    const c = get().combatants.find((item) => item.id === id);
     if (!c) return;
     const mod = c.dexMod ?? (c.stats?.dex ? parseModifier(c.stats.dex) : 0);
-    void taleSpireDriver.rollForResult('1d20' + formatModifier(mod), 'Инициатива: ' + c.name).then(total => get().setInitiative(id,total)).catch(() => {});
+    void taleSpireDriver
+      .rollForResult('1d20' + formatModifier(mod), 'Инициатива: ' + c.name)
+      .then((total) => get().setInitiative(id, total))
+      .catch(() => {});
   },
   rollAllInitiatives: () => {
     for (const c of get().combatants) get().rollSingleInitiative(c.id);
   },
 
   sortByInitiative: () => {
-    set(state => {
+    set((state) => {
       const activeId = state.combatants[state.turnIndex]?.id;
-      const combatants = [...state.combatants].sort((a,b) => b.initiative-a.initiative || (b.dexMod ?? 0)-(a.dexMod ?? 0));
-      return {combatants,turnIndex:state.active ? Math.max(0,combatants.findIndex(c => c.id === activeId)) : 0};
+      const combatants = [...state.combatants].sort(
+        (a, b) => b.initiative - a.initiative || (b.dexMod ?? 0) - (a.dexMod ?? 0),
+      );
+      return {
+        combatants,
+        turnIndex: state.active
+          ? Math.max(
+              0,
+              combatants.findIndex((c) => c.id === activeId),
+            )
+          : 0,
+      };
     });
   },
 
@@ -218,7 +236,13 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
 
   syncWithObsidian: () => {
     const { active, round, turnIndex, combatants } = get();
-    wsBridge.send('SYNC_COMBAT_STATE', { active, round, turnIndex, combatants, activeCombatantId: combatants[turnIndex]?.id || null });
+    wsBridge.send('SYNC_COMBAT_STATE', {
+      active,
+      round,
+      turnIndex,
+      combatants,
+      activeCombatantId: combatants[turnIndex]?.id || null,
+    });
   },
 
   setFromSync: (data) => {

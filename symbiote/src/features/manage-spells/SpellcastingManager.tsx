@@ -119,14 +119,14 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
         .getState()
         .addLog(
           'roll',
-          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг). Израсходована ячейка (осталось: ${slot.current - 1}/${slot.max})`
+          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг). Израсходована ячейка (осталось: ${slot.current - 1}/${slot.max})`,
         );
     } else {
       useLogStore
         .getState()
         .addLog(
           'roll',
-          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг) [без доступных ячеек]`
+          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг) [без доступных ячеек]`,
         );
     }
 

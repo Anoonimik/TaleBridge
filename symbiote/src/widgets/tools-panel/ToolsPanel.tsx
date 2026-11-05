@@ -1,10 +1,23 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState } from 'react';
-import { useLogStore, useAppStore, taleSpireDriver } from '../../shared';
-import { QuickDiceBar, BroadcastMediaModal, CameraBookmarksModal } from '../../features';
+import { useLogStore } from '../../shared/lib/useLogStore';
+import { useAppStore } from '../../shared/lib/useAppStore';
+import { taleSpireDriver } from '../../shared/api/talespire';
+import { QuickDiceBar } from '../../features/roll-dice/QuickDiceBar';
+import { BroadcastMediaModal } from '../../features/broadcast-media/BroadcastMediaModal';
+import { CameraBookmarksModal } from '../../features/camera-bookmarks/CameraBookmarksModal';
 
 export const ToolsPanel = () => {
-  const { logs, clearLogs } = useLogStore();
-  const { bookmarks, cinemaMedia, stopBroadcast } = useAppStore();
+  const { logs, clearLogs } = useLogStore(
+    useShallow((s) => ({ logs: s.logs, clearLogs: s.clearLogs })),
+  );
+  const { bookmarks, cinemaMedia, stopBroadcast } = useAppStore(
+    useShallow((s) => ({
+      bookmarks: s.bookmarks,
+      cinemaMedia: s.cinemaMedia,
+      stopBroadcast: s.stopBroadcast,
+    })),
+  );
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [showBookmarksModal, setShowBookmarksModal] = useState(false);
 

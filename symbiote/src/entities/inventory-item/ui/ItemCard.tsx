@@ -69,8 +69,8 @@ export const ItemCard = ({
                 actionInfo.isHealing
                   ? `Выпить зелье (${actionInfo.formula || 'восстанавливает ХП'}). Списывает 1 шт.`
                   : actionInfo.formula
-                  ? `Использовать (бросок ${actionInfo.formula}). Списывает 1 шт.`
-                  : `Использовать расходник. Списывает 1 шт.`
+                    ? `Использовать (бросок ${actionInfo.formula}). Списывает 1 шт.`
+                    : `Использовать расходник. Списывает 1 шт.`
               }
               className={`px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs ${
                 actionInfo.isHealing
@@ -122,17 +122,9 @@ export const ItemCard = ({
                 : 'w-6 bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
             }`}
             onClick={handleDelete}
-            title={
-              isConfirmingDelete
-                ? 'Нажмите еще раз для подтверждения'
-                : 'Удалить предмет'
-            }
+            title={isConfirmingDelete ? 'Нажмите еще раз для подтверждения' : 'Удалить предмет'}
           >
-            {isConfirmingDelete ? (
-              'Удалить?'
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
+            {isConfirmingDelete ? 'Удалить?' : <Trash2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>

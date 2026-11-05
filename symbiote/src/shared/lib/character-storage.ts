@@ -10,7 +10,6 @@ import {
 import { STORAGE_KEYS } from '../config/constants';
 
 export interface StoredCharMeta {
-  currency?: Character['currency'];
   skills?: Character['skills'];
   temp_hp?: number;
   deathSaves?: DeathSaves;
@@ -25,16 +24,24 @@ export interface StoredCharMeta {
 }
 
 let campaignScope = 'unbound';
-export const storageKey = (key:string) => `tb_v2:${campaignScope}:${key}`;
-export function configureCharacterStorage(campaignId:string) {
+export const storageKey = (key: string) => `tb_v2:${campaignScope}:${key}`;
+export function configureCharacterStorage(campaignId: string) {
   campaignScope = campaignId;
   try {
     if (!localStorage.getItem('tb_legacy_backup_v1')) {
-      const backup:Record<string,string> = {};
-      for(let i=0;i<localStorage.length;i++) {const key=localStorage.key(i);if(key && (key.startsWith('tb_char_meta_') || Object.values(STORAGE_KEYS).includes(key))){const value=localStorage.getItem(key);if(value!==null)backup[key]=value;}}
-      localStorage.setItem('tb_legacy_backup_v1',JSON.stringify(backup));
+      const backup: Record<string, string> = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('tb_char_meta_') || Object.values(STORAGE_KEYS).includes(key))) {
+          const value = localStorage.getItem(key);
+          if (value !== null) backup[key] = value;
+        }
+      }
+      localStorage.setItem('tb_legacy_backup_v1', JSON.stringify(backup));
     }
-  } catch { /* Existing legacy values are left intact when storage is unavailable. */ }
+  } catch {
+    /* Existing legacy values are left intact when storage is unavailable. */
+  }
 }
 
 export const DEFAULT_CURRENCY: Currency = {
@@ -57,7 +64,7 @@ export const DEFAULT_SLOTS: SpellSlot[] = [
   { level: 9, max: 0, current: 0 },
 ];
 
-export const getStoredArray = <T,>(key: string): T[] => {
+export const getStoredArray = <T>(key: string): T[] => {
   try {
     const raw = localStorage.getItem(storageKey(key));
     if (!raw) return [];
@@ -68,7 +75,7 @@ export const getStoredArray = <T,>(key: string): T[] => {
   }
 };
 
-export const getStoredJson = <T,>(key: string): T | null => {
+export const getStoredJson = <T>(key: string): T | null => {
   try {
     const raw = localStorage.getItem(storageKey(key));
     return raw ? JSON.parse(raw) : null;
@@ -88,10 +95,7 @@ export const getStoredCharMeta = (name?: string): StoredCharMeta | null => {
   }
 };
 
-export const saveCharMeta = (
-  name: string | undefined,
-  meta: Partial<StoredCharMeta>
-): void => {
+export const saveCharMeta = (name: string | undefined, meta: Partial<StoredCharMeta>): void => {
   if (!name) return;
   try {
     const key = storageKey(`char:${name}`);
@@ -103,13 +107,9 @@ export const saveCharMeta = (
   }
 };
 
-export const mergeCharWithMeta = (
-  raw: Character,
-  meta: StoredCharMeta | null
-): Character => {
+export const mergeCharWithMeta = (raw: Character, meta: StoredCharMeta | null): Character => {
   return {
     ...raw,
-    currency: raw.currency ?? meta?.currency ?? {cp:0,sp:0,ep:0,gp:0,pp:0},
     skills: raw.skills ?? meta?.skills ?? {},
     temp_hp: raw.temp_hp ?? meta?.temp_hp ?? 0,
     deathSaves: raw.deathSaves ?? meta?.deathSaves ?? { successes: 0, failures: 0 },
@@ -118,13 +118,13 @@ export const mergeCharWithMeta = (
     spellSlots: raw.spellSlots ?? meta?.spellSlots ?? DEFAULT_SLOTS,
     spells: raw.spells ?? meta?.spells ?? [],
     resources: raw.resources ?? meta?.resources ?? [],
-    hitDice: raw.hitDice ?? meta?.hitDice ?? {
-      current: raw.level || 1,
-      total: raw.level || 1,
-      dieType: 'd8',
-    },
-    savingThrowsProficient:
-      raw.savingThrowsProficient ?? meta?.savingThrowsProficient ?? [],
+    hitDice: raw.hitDice ??
+      meta?.hitDice ?? {
+        current: raw.level || 1,
+        total: raw.level || 1,
+        dieType: 'd8',
+      },
+    savingThrowsProficient: raw.savingThrowsProficient ?? meta?.savingThrowsProficient ?? [],
     currency: raw.currency ?? meta?.currency ?? DEFAULT_CURRENCY,
   };
 };
@@ -134,7 +134,6 @@ export const persistPlayerData = (data: Character | null): void => {
     if (data) {
       localStorage.setItem(storageKey(STORAGE_KEYS.PLAYER_DATA), JSON.stringify(data));
       saveCharMeta(data.id || data.name, {
-        currency: data.currency,
         skills: data.skills,
         temp_hp: data.temp_hp,
         deathSaves: data.deathSaves,

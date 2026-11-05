@@ -1,4 +1,8 @@
 import { httpBase, serverInfo } from '../api/endpoint';
+let mediaLinks: Record<string, string> = {};
+export const setMediaLinks = (links: Record<string, string>) => {
+  mediaLinks = links;
+};
 // TaleBridge Media Helper Utilities
 
 export function getWebSocketPort(): number {
@@ -21,7 +25,10 @@ export function resolveMediaUrl(url: string | undefined | null): string {
     return trimmed;
   }
 
-  if (trimmed.startsWith('/media/')) return httpBase() + trimmed;
+  if (trimmed.startsWith('/media/')) {
+    const id = trimmed.split('/media/')[1].split('?')[0];
+    return httpBase() + (mediaLinks[id] || trimmed);
+  }
   return ''; // Private vault paths are not HTTP resources.
 }
 
@@ -30,9 +37,11 @@ export function resolveMediaUrl(url: string | undefined | null): string {
  */
 export function getYouTubeVideoId(url: string | undefined | null): string | null {
   if (!url) return null;
-  const match = url.trim().match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
-  );
+  const match = url
+    .trim()
+    .match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/,
+    );
   return match ? match[1] : null;
 }
 
@@ -58,7 +67,7 @@ export function getYouTubeThumbnailUrl(url: string | undefined | null): string |
  * Automatically detects media type based on URL / path.
  */
 export function detectMediaType(
-  url: string | undefined | null
+  url: string | undefined | null,
 ): 'image' | 'video' | 'audio' | 'text' {
   if (!url) return 'image';
   const clean = url.trim().toLowerCase();

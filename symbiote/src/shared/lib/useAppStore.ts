@@ -54,7 +54,10 @@ const getInitialScale = (): string => {
   } catch {
     // storage unavailable
   }
-  if (typeof window !== 'undefined' && (window.screen?.width >= 2560 || window.screen?.height >= 1440)) {
+  if (
+    typeof window !== 'undefined' &&
+    (window.screen?.width >= 2560 || window.screen?.height >= 1440)
+  ) {
     return '150%';
   }
   return '100%';
@@ -92,8 +95,9 @@ export const useAppStore = create<AppStore>((set) => ({
   setDiceSecret: (diceSecret) => set({ diceSecret }),
   setConnected: (connected) => set({ connected }),
   setVaultName: (vaultName) => set({ vaultName }),
-  setLastError: (lastError) => set({lastError}),
-  setVaultImages: (vaultImages) => set({ vaultImages: Array.isArray(vaultImages) ? vaultImages : [] }),
+  setLastError: (lastError) => set({ lastError }),
+  setVaultImages: (vaultImages) =>
+    set({ vaultImages: Array.isArray(vaultImages) ? vaultImages : [] }),
   setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
   stopBroadcast: () => {
     set({ cinemaMedia: null });
