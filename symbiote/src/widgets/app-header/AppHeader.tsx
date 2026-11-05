@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore, useCombatStore, useRosterStore, wsBridge } from '../../shared';
-import { GmAuthModal } from '../../features';
+import { GmAuthModal, ConnectionModal } from '../../features';
 
 export const AppHeader = () => {
   const {
@@ -21,6 +21,7 @@ export const AppHeader = () => {
   const { combatants, active: combatActive } = useCombatStore();
   const { roster } = useRosterStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isGm = role === 'gm';
@@ -157,21 +158,27 @@ export const AppHeader = () => {
               ⟳
             </button>
 
-            <div
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#10111a] border border-[#262a3d] shrink-0"
-              title={connected ? `Подключено: ${vaultName}` : 'Ожидание связи с Obsidian...'}
+            <button
+              type="button"
+              onClick={() => setShowConnectionModal(true)}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#10111a] hover:bg-[#1a1d2d] border border-[#262a3d] hover:border-slate-500 cursor-pointer shrink-0 transition-colors"
+              title={
+                connected
+                  ? `Подключено: ${vaultName} (${wsBridge.getServerInfo().host}:${wsBridge.getServerInfo().port}). Нажмите для настройки`
+                  : `Офлайн (${wsBridge.getServerInfo().host}:${wsBridge.getServerInfo().port}). Нажмите для ввода IP Мастера`
+              }
             >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   connected
                     ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]'
-                    : 'bg-rose-500'
+                    : 'bg-rose-500 animate-pulse'
                 }`}
               />
-              <span className="hidden xl:inline text-[10px] text-slate-400 max-w-[60px] truncate">
+              <span className="hidden xl:inline text-[10px] text-slate-300 max-w-[80px] truncate">
                 {connected ? vaultName : 'Офлайн'}
               </span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -230,6 +237,11 @@ export const AppHeader = () => {
           setRole('gm');
         }}
         onCancel={() => setShowAuthModal(false)}
+      />
+
+      <ConnectionModal
+        isOpen={showConnectionModal}
+        onClose={() => setShowConnectionModal(false)}
       />
     </>
   );

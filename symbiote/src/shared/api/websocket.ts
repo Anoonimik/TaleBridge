@@ -1,4 +1,5 @@
 import { WebSocketMessage } from '../types';
+import { STORAGE_KEYS, DEFAULT_WS_PORT } from '../config/constants';
 import { useAppStore } from '../lib/useAppStore';
 import { useRosterStore } from '../lib/useRosterStore';
 import { useStoryStore } from '../lib/useStoryStore';
@@ -9,16 +10,94 @@ type MessageListener = (payload: any) => void;
 
 class WebSocketBridge {
   private ws: WebSocket | null = null;
-  private port = 30123;
+  private host: string;
+  private port: number;
   private reconnectTimer: any = null;
   private listeners: Map<string, Set<MessageListener>> = new Map();
 
   constructor() {
-    this.connect();
+    this.host = this.getInitialHost();
+    this.port = this.getInitialPort();
+    this.connect(this.host, this.port);
   }
 
-  public connect(port = 30123): void {
-    this.port = port;
+  private getInitialHost(): string {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.HOST);
+      if (stored && stored.trim()) return stored.trim();
+    } catch {}
+
+    // Auto-detect browser hostname if page is served over HTTP/LAN
+    if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+      const h = window.location.hostname;
+      if (h && h !== 'localhost' && !h.startsWith('127.')) {
+        return h;
+      }
+    }
+    return '127.0.0.1';
+  }
+
+  private getInitialPort(): number {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.PORT);
+      if (stored) {
+        const p = parseInt(stored, 10);
+        if (!isNaN(p) && p > 0 && p < 65536) return p;
+      }
+    } catch {}
+    return DEFAULT_WS_PORT;
+  }
+
+  public getServerInfo(): { host: string; port: number } {
+    return { host: this.host, port: this.port };
+  }
+
+  public setServer(host: string, port: number): void {
+    this.host = (host && host.trim()) || '127.0.0.1';
+    this.port = port || DEFAULT_WS_PORT;
+    try {
+      localStorage.setItem(STORAGE_KEYS.HOST, this.host);
+      localStorage.setItem(STORAGE_KEYS.PORT, String(this.port));
+    } catch {}
+    this.connect(this.host, this.port);
+  }
+
+  public async pingServer(
+    host: string,
+    port: number
+  ): Promise<{ ok: boolean; data?: any; error?: string }> {
+    try {
+      const cleanHost = host.trim() || '127.0.0.1';
+      const cleanPort = port || DEFAULT_WS_PORT;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch(`http://${cleanHost}:${cleanPort}`, {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const json = await res.json().catch(() => ({}));
+        return { ok: true, data: json };
+      }
+      return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+    } catch (err: any) {
+      return {
+        ok: false,
+        error:
+          err.name === 'AbortError'
+            ? 'Таймаут (3.5 сек) — проверьте IP или брандмауэр'
+            : err.message || 'Ошибка сети',
+      };
+    }
+  }
+
+  public connect(host?: string, port?: number): void {
+    if (host) this.host = host.trim();
+    if (port) this.port = port;
+
     if (this.ws) {
       try {
         this.ws.close();
@@ -27,13 +106,13 @@ class WebSocketBridge {
       }
     }
 
-    const url = `ws://127.0.0.1:${this.port}`;
+    const url = `ws://${this.host}:${this.port}`;
     try {
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
         useAppStore.getState().setConnected(true);
-        useLogStore.getState().addLog('sync', `Подключено к Obsidian на порту ${this.port}`);
+        useLogStore.getState().addLog('sync', `Подключено к Obsidian на ${this.host}:${this.port}`);
         this.send('HANDSHAKE', { client: 'TaleSpire-Symbiote-React' });
         this.send('GET_CHARACTERS', {});
         this.send('GET_SCENES', {});
@@ -72,7 +151,7 @@ class WebSocketBridge {
   private scheduleReconnect(): void {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = setTimeout(() => {
-      this.connect(this.port);
+      this.connect(this.host, this.port);
     }, 2500);
   }
 

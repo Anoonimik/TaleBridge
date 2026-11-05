@@ -110,6 +110,8 @@ export const STORAGE_KEYS = {
   PLAYER_DATA: 'tb_player_data',
   PLAYER_CHARACTER: 'tb_player_character',
   GM_PIN: 'tb_gm_pin',
+  HOST: 'tb_host',
+  PORT: 'tb_port',
 };
 
 /** Default port for TaleBridge Obsidian plugin WebSocket/HTTP server. */
