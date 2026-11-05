@@ -200,6 +200,19 @@ test('expired/revoked sessions fail, login attempts are limited', () => {
     assert.throws(() => sessions.authenticate('bad', { role: 'gm', code: 'wrong' }));
   assert.throws(() => sessions.authenticate('bad', { role: 'gm', code: 'secret' }), /попыток/);
 });
+test('player executes own public dice without a GM driver and cannot hide results', async () => {
+  const f = fixture();
+  try {
+    const player = await f.login('player', 'alice-code', true);
+    await f.send(player, 'ROLL_DICE', { formula: '1d20', name: 'Player roll', rollId: 'player-roll', isGmOnly: true });
+    const routed = f.messages.get(player.id)!.find((m) => m.type === 'ROLL_DICE')!;
+    assert.ok(routed);
+    assert.equal((routed.payload as { isGmOnly: boolean }).isGmOnly, false);
+    await f.send(player, 'DICE_RESULT', { rollId: 'player-roll', total: 12 });
+    assert.ok(f.messages.get(player.id)!.some((m) => m.type === 'DICE_RESULT'));
+  } finally { f.app.dispose(); }
+});
+
 test('dice execution requires the registered GM driver and exact roll ID', async () => {
   const f = fixture(),
     a = await f.login('player', 'alice-code'),

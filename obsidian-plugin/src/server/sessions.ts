@@ -30,7 +30,7 @@ export class SessionManager {
     if (payload.token) {
       const previous = this.sessions.get(secretHash(payload.token));
       if (previous && previous.expires > this.now() && previous.role === payload.role)
-        return { ...previous, driver: previous.role === 'gm' && Boolean(payload.driver) };
+        return { ...previous, driver: Boolean(payload.driver) };
     }
     const rate = this.attempts.get(peer) || { count: 0, until: this.now() + 60000 };
     if (++rate.count > 5)
@@ -49,7 +49,7 @@ export class SessionManager {
       characterId,
       token: newCode(),
       expires: this.now() + 8 * 60 * 60 * 1000,
-      driver: payload.role === 'gm' && Boolean(payload.driver),
+      driver: Boolean(payload.driver),
     };
     this.sessions.set(secretHash(session.token), session);
     return session;

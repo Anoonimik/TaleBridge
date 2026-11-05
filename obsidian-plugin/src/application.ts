@@ -307,7 +307,7 @@ export class BridgeApplication {
         client.session = undefined;
         return;
       case 'REGISTER_DRIVER':
-        this.gm(client);
+        this.requireSession(client);
         client.session!.driver = command.payload.ready;
         return;
       case 'PING':
@@ -494,7 +494,7 @@ export class BridgeApplication {
           throw new ProtocolError('RATE_LIMIT', 'Слишком много ожидающих бросков');
         if (this.rolls.has(command.payload.rollId))
           throw new ProtocolError('CONFLICT', 'Идентификатор броска уже используется');
-        const driver = this.driver(),
+        const driver = client.session?.driver ? client : this.driver(),
           secret = client.session?.role === 'gm' && Boolean(command.payload.isGmOnly);
         const timer = setTimeout(() => {
           this.rolls.delete(command.payload.rollId);
