@@ -122,7 +122,7 @@ export class TaleSpireDriver {
     window.onStateChangeEvent = (event) => {
       if (record(event).kind === 'hasInitialized') {
         void this.pollActiveToken();
-        if (this.ports.role() === 'gm') wsBridge.send('REGISTER_DRIVER', { ready: true });
+        wsBridge.send('REGISTER_DRIVER', { ready: true });
       }
     };
     window.handleVisibilityEvent = () => {};
@@ -165,13 +165,13 @@ export class TaleSpireDriver {
     isGmOnly?: boolean;
   }) {
     const api = window.TS;
-    if (!api || this.ports.role() !== 'gm') throw new Error('Исполнитель TaleSpire недоступен');
+    if (!api) throw new Error('Исполнитель TaleSpire недоступен');
     const descriptors = await api.dice.makeRollDescriptors(cleanDiceFormula(payload.formula));
     if (!Array.isArray(descriptors) || !descriptors.length)
       throw new Error('TaleSpire не распознал формулу');
     const engineId = await api.dice.putDiceInTray(
       descriptors.map((d) => ({ ...d, name: payload.name })),
-      Boolean(payload.isGmOnly),
+      this.ports.role() === 'gm' && Boolean(payload.isGmOnly),
     );
     if (typeof engineId !== 'string') throw new Error('TaleSpire не вернул rollId');
     this.engineRolls.set(engineId, payload.rollId);
