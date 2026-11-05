@@ -3,6 +3,15 @@ let mediaLinks: Record<string, string> = {};
 export const setMediaLinks = (links: Record<string, string>) => {
   mediaLinks = links;
 };
+/** Persist the publication identity, never its session-bound ticket. */
+export function archiveMediaUrl(url: string): string {
+  return /^(?:https?:\/\/[^/]+)?(\/media\/[a-f0-9]{32})(?:\?.*)?$/.exec(url)?.[1] || url;
+}
+export function rememberPublishedMedia(url: string) {
+  const path = archiveMediaUrl(url);
+  if (path !== url && path.startsWith('/media/'))
+    mediaLinks[path.slice('/media/'.length)] = url.slice(url.indexOf('/media/'));
+}
 // TaleBridge Media Helper Utilities
 
 export function getWebSocketPort(): number {
@@ -16,6 +25,10 @@ export function resolveMediaUrl(url: string | undefined | null): string {
   if (!url) return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
+
+  const stable = archiveMediaUrl(trimmed);
+  if (stable !== trimmed && mediaLinks[stable.slice('/media/'.length)])
+    return httpBase() + mediaLinks[stable.slice('/media/'.length)];
 
   if (
     trimmed.startsWith('http://') ||

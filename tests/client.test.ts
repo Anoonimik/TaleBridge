@@ -1,3 +1,13 @@
+import {
+  configureClueStorage,
+  readPersonalClues,
+  clueKey,
+} from '../symbiote/src/shared/lib/personal-clues';
+import {
+  archiveMediaUrl,
+  rememberPublishedMedia,
+  setMediaLinks,
+} from '../symbiote/src/shared/lib/media';
 import { scaleDiceFormula } from '../symbiote/src/features/manage-spells/lib/spellScaling';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -306,5 +316,74 @@ test('upcast dice reach both TaleSpire API calls without losing additional dice'
   } finally {
     driver.dispose();
     Reflect.deleteProperty(globalThis, 'window');
+  }
+});
+
+test('personal archives isolate players and campaigns and persist voluntary saves and deletions', () => {
+  const clue = {
+    id: 'letter',
+    title: 'Letter',
+    type: 'text' as const,
+    text: 'Find the lighthouse',
+    url: '',
+  };
+  configureCharacterStorage('clue-campaign');
+  configureClueStorage('player:alice');
+  useRosterStore.setState({ cluesArchive: [] });
+  useRosterStore.getState().addClue(clue);
+  useRosterStore.getState().addClue({ ...clue, id: 'repeat' });
+  assert.equal(useRosterStore.getState().cluesArchive.length, 1);
+  configureClueStorage('player:bob');
+  assert.equal(readPersonalClues().items.length, 0);
+  useRosterStore.getState().addClue(clue);
+  configureClueStorage('player:alice');
+  useRosterStore.getState().removeClue('letter');
+  assert.equal(readPersonalClues().items.length, 0);
+  configureClueStorage('player:bob');
+  assert.equal(readPersonalClues().items.length, 1);
+  configureCharacterStorage('other-clue-campaign');
+  assert.equal(readPersonalClues().items.length, 0);
+  configureCharacterStorage('clue-campaign');
+  configureClueStorage('player:alice');
+  useRosterStore.getState().addClue({ ...clue, id: 'restored' });
+  assert.equal(readPersonalClues().items.length, 1);
+  configureClueStorage();
+  assert.deepEqual(readPersonalClues().items, []);
+});
+
+test('archive media identity survives session tickets and uses fresh authorized URLs', () => {
+  const id = 'a'.repeat(32);
+  const old = `http://old.example/media/${id}?ticket=old`;
+  const fresh = `/media/${id}?ticket=fresh`;
+  assert.equal(archiveMediaUrl(old), `/media/${id}`);
+  assert.equal(
+    clueKey({ type: 'image', title: 'Map', url: old }),
+    clueKey({ type: 'image', title: 'Map', url: fresh }),
+  );
+  setMediaLinks({});
+  rememberPublishedMedia(fresh);
+  assert.ok(resolveMediaUrl(archiveMediaUrl(old)).endsWith(fresh));
+  setMediaLinks({ [id]: `/media/${id}?ticket=reconnected` });
+  assert.ok(resolveMediaUrl(old).endsWith(`ticket=reconnected`));
+});
+
+test('storage failure never claims a clue was saved or deleted', () => {
+  configureCharacterStorage('quota-campaign');
+  configureClueStorage('player:alice');
+  const clue = { id: 'quota', title: 'Quota', type: 'text' as const, text: 'Keep me' };
+  useRosterStore.setState({ cluesArchive: [] });
+  useRosterStore.getState().addClue(clue);
+  const original = local.setItem;
+  local.setItem = () => {
+    throw Error('Quota exceeded');
+  };
+  try {
+    useRosterStore.getState().removeClue(clue.id);
+    assert.equal(useRosterStore.getState().cluesArchive.length, 1);
+    useRosterStore.getState().addClue({ ...clue, id: 'new', text: 'New' });
+    assert.equal(useRosterStore.getState().cluesArchive.length, 1);
+  } finally {
+    local.setItem = original;
+    configureClueStorage();
   }
 });

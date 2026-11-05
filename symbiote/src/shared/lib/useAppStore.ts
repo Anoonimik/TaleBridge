@@ -4,7 +4,7 @@ import { STORAGE_KEYS } from '../config/constants';
 import { wsBridge } from '../api/websocket';
 
 export type UserRole = 'gm' | 'player';
-export type AppTab = 'story' | 'characters' | 'combat' | 'tools' | 'player-cockpit';
+export type AppTab = 'story' | 'characters' | 'combat' | 'tools' | 'player-cockpit' | 'clues';
 
 export interface VaultImage {
   name: string;
@@ -14,6 +14,7 @@ export interface VaultImage {
 }
 
 export interface CinemaMediaPayload {
+  source?: 'archive' | 'broadcast';
   type: 'image' | 'video' | 'text' | 'audio';
   url: string;
   title?: string;

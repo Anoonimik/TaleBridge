@@ -1,3 +1,4 @@
+import { configureClueStorage, readPersonalClues } from '../shared/lib/personal-clues';
 import { wsBridge } from '../shared/api/websocket';
 import { taleSpireDriver } from '../shared/api/talespire';
 import { useAppStore, type VaultImage, type CinemaMediaPayload } from '../shared/lib/useAppStore';
@@ -6,7 +7,7 @@ import { useCombatStore } from '../shared/lib/useCombatStore';
 import { useStoryStore } from '../shared/lib/useStoryStore';
 import { useLogStore } from '../shared/lib/useLogStore';
 import { configureCharacterStorage, getStoredArray } from '../shared/lib/character-storage';
-import { setMediaLinks } from '../shared/lib/media';
+import { setMediaLinks, rememberPublishedMedia } from '../shared/lib/media';
 import { STORAGE_KEYS } from '../shared/config/constants';
 import { stateSchema, mediaSchema, combatSchema } from '../../../packages/protocol';
 import type { Character, Scene, Bookmark, CombatState } from '../shared/types';
@@ -68,16 +69,24 @@ export function connectBridge() {
     }>('HANDSHAKE_ACK', (p) => {
       ownedId = p.characterId;
       configureCharacterStorage(p.campaignId);
+      configureClueStorage(p.role === 'gm' ? 'gm' : `player:${p.characterId}`);
+      useAppStore.setState({ lastError: '' });
+      let cluesArchive: ReturnType<typeof readPersonalClues>['items'] = [];
+      try {
+        cluesArchive = readPersonalClues().items;
+      } catch {
+        error('Не удалось прочитать личный архив улик.');
+      }
       setMediaLinks({});
       apply(() => {
-        useAppStore.setState({ role: p.role, vaultName: p.vault, lastError: '' });
+        useAppStore.setState({ role: p.role, vaultName: p.vault, cinemaMedia: null });
         useRosterStore.setState({
           playerData: null,
           playerCharacterName: '',
           playerCharacterId: ownedId || '',
           roster: [],
           charactersById: {},
-          cluesArchive: getStoredArray(STORAGE_KEYS.CLUES_ARCHIVE),
+          cluesArchive,
           pinnedNames: getStoredArray(STORAGE_KEYS.PINNED_ROSTER),
         });
       });
@@ -126,15 +135,24 @@ export function connectBridge() {
     wsBridge.subscribe<Bookmark[]>('BOOKMARKS_LIST', (bookmarks) => {
       if (Array.isArray(bookmarks)) useAppStore.getState().setBookmarks(bookmarks);
     }),
-    wsBridge.subscribe<Record<string, string>>('PUBLISHED_MEDIA', (links) => setMediaLinks(links)),
-    wsBridge.subscribe<CinemaMediaPayload>('MEDIA_HANDOUT', (payload) => {
-      if (mediaSchema.safeParse(payload).success)
-        useAppStore.getState().setCinemaMedia({ ...payload, active: true });
+    wsBridge.subscribe<Record<string, string>>('PUBLISHED_MEDIA', (links) => {
+      setMediaLinks(links);
+      useRosterStore.setState((state) => ({ cluesArchive: [...state.cluesArchive] }));
     }),
-    wsBridge.subscribe('DISMISS_HANDOUT', () => useAppStore.getState().setCinemaMedia(null)),
+    wsBridge.subscribe<CinemaMediaPayload>('MEDIA_HANDOUT', (payload) => {
+      if (mediaSchema.safeParse(payload).success) {
+        rememberPublishedMedia(payload.url);
+        useAppStore.getState().setCinemaMedia({ ...payload, active: true, source: 'broadcast' });
+      }
+    }),
+    wsBridge.subscribe('DISMISS_HANDOUT', () => {
+      if (useAppStore.getState().cinemaMedia?.source !== 'archive')
+        useAppStore.getState().setCinemaMedia(null);
+    }),
     wsBridge.subscribe('LOGGED_OUT', () =>
       apply(() => {
         ownedId = undefined;
+        configureClueStorage();
         useAppStore.setState({ role: 'player', cinemaMedia: null, vaultImages: [] });
         useRosterStore.setState({
           roster: [],
@@ -144,6 +162,7 @@ export function connectBridge() {
           playerCharacterId: '',
           noteContent: null,
           selectedCharacter: null,
+          cluesArchive: [],
         });
         useStoryStore.getState().setScenes([]);
       }),

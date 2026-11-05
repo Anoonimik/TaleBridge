@@ -1,49 +1,72 @@
+import { clueKey } from '../../shared/lib/personal-clues';
+import { createId } from '../../../../packages/domain/id';
+import type { CinemaMediaPayload } from '../../shared/lib/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 import { DialogLayer } from '../../shared/ui/DialogLayer';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAppStore } from '../../shared/lib/useAppStore';
 import { useRosterStore } from '../../entities/character/model/store';
 import { resolveMediaUrl, getYouTubeVideoId } from '../../shared/lib/media';
 
 export const CinemaOverlay = () => {
-  const { cinemaMedia, setCinemaMedia, stopBroadcast, role } = useAppStore(
+  const media = useAppStore((s) => s.cinemaMedia);
+  if (!media?.active) return null;
+  return (
+    <CinemaSession
+      key={clueKey({
+        type: media.type,
+        url: media.url,
+        title: media.title || 'Улика',
+        text: media.description,
+      })}
+      cinemaMedia={media}
+    />
+  );
+};
+
+function CinemaSession({ cinemaMedia }: { cinemaMedia: CinemaMediaPayload }) {
+  const { setCinemaMedia, stopBroadcast, role } = useAppStore(
     useShallow((s) => ({
-      cinemaMedia: s.cinemaMedia,
       setCinemaMedia: s.setCinemaMedia,
       stopBroadcast: s.stopBroadcast,
       role: s.role,
     })),
   );
   const { addClue } = useRosterStore(useShallow((s) => ({ addClue: s.addClue })));
-  const [isSaved, setIsSaved] = useState(false);
   const [imgError, setImgError] = useState(false);
-
-  useEffect(() => {
-    setIsSaved(false);
-    setImgError(false);
-  }, [cinemaMedia?.url]);
+  const isSaved = useRosterStore((s) =>
+    s.cluesArchive.some(
+      (clue) =>
+        clueKey(clue) ===
+        clueKey({
+          type: cinemaMedia.type,
+          url: cinemaMedia.url,
+          title: cinemaMedia.title || 'Улика',
+          text: cinemaMedia.description,
+        }),
+    ),
+  );
+  const isBroadcast = cinemaMedia.source !== 'archive';
 
   const handleClose = useCallback(() => {
-    if (role === 'gm') {
+    if (role === 'gm' && isBroadcast) {
       stopBroadcast();
     } else {
       setCinemaMedia(null);
     }
-  }, [role, stopBroadcast, setCinemaMedia]);
+  }, [role, isBroadcast, stopBroadcast, setCinemaMedia]);
 
   if (!cinemaMedia?.active) return null;
 
   const handleSaveToArchive = () => {
     addClue({
-      id: `clue_${Date.now()}`,
+      id: createId(),
       title: cinemaMedia.title || 'Улика',
       type: cinemaMedia.type,
       url: cinemaMedia.url,
       text: cinemaMedia.description,
       date: new Date().toLocaleDateString(),
     });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
   };
 
   const ytId = getYouTubeVideoId(cinemaMedia.url);
@@ -86,7 +109,7 @@ export const CinemaOverlay = () => {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {role === 'gm' && (
+              {role === 'gm' && isBroadcast && (
                 <button
                   type="button"
                   onClick={stopBroadcast}
@@ -106,16 +129,17 @@ export const CinemaOverlay = () => {
                     : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
                 }`}
                 onClick={handleSaveToArchive}
-                title="Сохранить в архив улик"
+                disabled={isSaved}
+                title="Сохранить в мой архив улик"
               >
-                {isSaved ? 'Сохранено в улики ✓' : 'В архив улик'}
+                {isSaved ? 'Сохранено в улики ✓' : 'Сохранить у себя'}
               </button>
 
               <button
                 type="button"
                 onClick={handleClose}
                 className="text-white/70 hover:text-white text-lg font-bold cursor-pointer w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                title={role === 'gm' ? 'Снять с эфира и закрыть' : 'Закрыть (Esc)'}
+                title={role === 'gm' && isBroadcast ? 'Снять с эфира и закрыть' : 'Закрыть (Esc)'}
               >
                 ✕
               </button>
@@ -205,7 +229,7 @@ export const CinemaOverlay = () => {
 
           {/* Footer Controls */}
           <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
-            {role === 'gm' ? (
+            {role === 'gm' && isBroadcast ? (
               <>
                 <button
                   type="button"
@@ -239,4 +263,4 @@ export const CinemaOverlay = () => {
       </div>
     </DialogLayer>
   );
-};
+}

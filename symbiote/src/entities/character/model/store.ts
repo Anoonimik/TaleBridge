@@ -1,3 +1,6 @@
+import { archiveMediaUrl } from '../../../shared/lib/media';
+import { clueKey, readPersonalClues, writePersonalClues } from '../../../shared/lib/personal-clues';
+import { useAppStore } from '../../../shared/lib/useAppStore';
 import { create } from 'zustand';
 import {
   Character,
@@ -45,7 +48,6 @@ interface RosterStore {
   setNoteContent: (content: { name: string; path: string; content: string } | null) => void;
   setPlayerCharacterName: (name: string) => void;
   setPlayerData: (data: Character | null) => void;
-  setCluesArchive: (clues: Clue[]) => void;
   addClue: (clue: Clue) => void;
   removeClue: (id: string) => void;
   togglePinCharacter: (name: string) => void;
@@ -87,7 +89,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   playerCharacterId: '',
   charactersById: {},
   playerData: null,
-  cluesArchive: getStoredArray<Clue>(STORAGE_KEYS.CLUES_ARCHIVE),
+  cluesArchive: [],
   pinnedNames: getStoredArray<string>(STORAGE_KEYS.PINNED_ROSTER),
 
   setRoster: (roster) =>
@@ -152,38 +154,33 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     }
   },
 
-  setCluesArchive: (cluesArchive) => {
-    try {
-      localStorage.setItem(storageKey(STORAGE_KEYS.CLUES_ARCHIVE), JSON.stringify(cluesArchive));
-    } catch {
-      // ignore
-    }
-    set({ cluesArchive });
-  },
-
   addClue: (clue) => {
-    const current = get().cluesArchive;
-    const exists = current.some((c) => c.id === clue.id || (c.url && c.url === clue.url));
-    if (exists) return;
-
-    const updated = [clue, ...current];
     try {
-      localStorage.setItem(storageKey(STORAGE_KEYS.CLUES_ARCHIVE), JSON.stringify(updated));
+      const archive = readPersonalClues();
+      clue = { ...clue, url: clue.url ? archiveMediaUrl(clue.url) : clue.url };
+      const key = clueKey(clue);
+      const existing = archive.items.some((entry) => clueKey(entry) === key);
+      const items = existing ? archive.items : [clue, ...archive.items];
+      writePersonalClues({ items });
+      set({ cluesArchive: items });
     } catch {
-      // ignore
+      useAppStore
+        .getState()
+        .setLastError('Не удалось сохранить улику: проверьте доступ к хранилищу браузера.');
     }
-    set({ cluesArchive: updated });
-    useLogStore.getState().addLog('sync', `Добавлена улика в архив: «${clue.title}»`);
   },
 
   removeClue: (id) => {
-    const updated = get().cluesArchive.filter((c) => c.id !== id);
     try {
-      localStorage.setItem(storageKey(STORAGE_KEYS.CLUES_ARCHIVE), JSON.stringify(updated));
+      const archive = readPersonalClues();
+      const clue = archive.items.find((entry) => entry.id === id);
+      if (!clue) return;
+      const items = archive.items.filter((entry) => entry.id !== id);
+      writePersonalClues({ items });
+      set({ cluesArchive: items });
     } catch {
-      // ignore
+      useAppStore.getState().setLastError('Не удалось удалить улику из личного архива.');
     }
-    set({ cluesArchive: updated });
   },
 
   togglePinCharacter: (name) => {

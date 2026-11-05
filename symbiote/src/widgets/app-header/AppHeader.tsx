@@ -120,7 +120,7 @@ export const AppHeader = () => {
           </div>
 
           {/* Center: Live Media Broadcast Indicator (if GM and active) */}
-          {isGm && cinemaMedia?.active && (
+          {isGm && cinemaMedia?.active && cinemaMedia.source !== 'archive' && (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-rose-950/70 border border-rose-500/70 text-xs shrink-0 shadow-sm animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
               <span className="text-rose-200 text-[10px] uppercase font-bold hidden md:inline">
@@ -195,7 +195,7 @@ export const AppHeader = () => {
 
         {/* Row 2: GM Main Navigation Tabs */}
         {isGm && (
-          <nav className="grid grid-cols-4 gap-1 bg-[#10111a] p-0.5 rounded border border-[#262a3d] w-full shrink-0">
+          <nav className="grid grid-cols-5 gap-1 bg-[#10111a] p-0.5 rounded border border-[#262a3d] w-full shrink-0">
             {[
               { id: 'story' as const, label: 'Сюжет', badge: null },
               {
@@ -208,6 +208,7 @@ export const AppHeader = () => {
                 label: 'Бой',
                 badge: combatants && combatants.length > 0 ? combatants.length : null,
               },
+              { id: 'clues' as const, label: 'Улики', badge: null },
               { id: 'tools' as const, label: 'Утилиты', badge: null },
             ].map((tab) => {
               const isActive = activeTab === tab.id;
