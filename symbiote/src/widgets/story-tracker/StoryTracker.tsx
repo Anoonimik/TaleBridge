@@ -1,5 +1,8 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useStoryStore, useRosterStore, wsBridge } from '../../shared';
+import { useStoryStore } from '../../shared/lib/useStoryStore';
+import { useRosterStore } from '../../entities/character/model/store';
+import { wsBridge } from '../../shared/api/websocket';
 import {
   SceneNavigationBar,
   SceneCatalogModal,
@@ -13,8 +16,18 @@ import {
 } from './ui';
 
 export const StoryTracker = () => {
-  const { scenes, activeScene, sceneHistory, goToScene, goBack } = useStoryStore();
-  const { setSelectedCharacter, roster } = useRosterStore();
+  const { scenes, activeScene, sceneHistory, goToScene, goBack } = useStoryStore(
+    useShallow((s) => ({
+      scenes: s.scenes,
+      activeScene: s.activeScene,
+      sceneHistory: s.sceneHistory,
+      goToScene: s.goToScene,
+      goBack: s.goBack,
+    })),
+  );
+  const { setSelectedCharacter, roster } = useRosterStore(
+    useShallow((s) => ({ setSelectedCharacter: s.setSelectedCharacter, roster: s.roster })),
+  );
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [mode, setMode] = useState<StoryMode>('all');
@@ -62,7 +75,7 @@ export const StoryTracker = () => {
         }
       }
     },
-    [roster, setSelectedCharacter]
+    [roster, setSelectedCharacter],
   );
 
   const readAloudItems = useMemo((): string[] => {
@@ -124,26 +137,17 @@ export const StoryTracker = () => {
 
             {/* Read Aloud Section */}
             {(mode === 'all' || mode === 'readAloud') && (
-              <ReadAloudSection
-                sceneTitle={activeScene.title}
-                readAloudItems={readAloudItems}
-              />
+              <ReadAloudSection sceneTitle={activeScene.title} readAloudItems={readAloudItems} />
             )}
 
             {/* Roleplay Tips / Personas / Dialogues Section */}
             {(mode === 'all' || mode === 'roleplay') && (
-              <RoleplaySection
-                personas={activeScene.personas}
-                dialogues={activeScene.dialogues}
-              />
+              <RoleplaySection personas={activeScene.personas} dialogues={activeScene.dialogues} />
             )}
 
             {/* Mechanics, Checks & Clues Section */}
             {(mode === 'all' || mode === 'mechanics') && (
-              <MechanicsSection
-                clues={activeScene.clues}
-                mechanics={activeScene.mechanics}
-              />
+              <MechanicsSection clues={activeScene.clues} mechanics={activeScene.mechanics} />
             )}
 
             {/* Plot Branches Section */}

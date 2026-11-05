@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getHpColorClass } from '../../../shared';
+import { getHpColorClass } from '../../../shared/lib/dnd-rules';
 
 interface CombatantHpPanelProps {
   combatantId: string;

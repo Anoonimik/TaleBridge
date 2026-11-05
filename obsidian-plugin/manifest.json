@@ -1,8 +1,8 @@
 {
   "id": "talebridge",
   "name": "TaleBridge",
-  "version": "0.1.0",
-  "minAppVersion": "0.15.0",
+  "version": "0.7.0",
+  "minAppVersion": "1.8.7",
   "description": "Bridge between Obsidian and TaleSpire for D&D 5e Game Masters",
   "author": "GM",
   "isDesktopOnly": true

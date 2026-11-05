@@ -1,6 +1,7 @@
+import { useShallow } from 'zustand/react/shallow';
 import React from 'react';
 import { Combatant, CombatSide, COMBAT_SIDES } from '../../shared';
-import { useCombatStore } from '../../shared';
+import { useCombatStore } from '../../entities/combatant/model/store';
 
 interface CombatSideMenuProps {
   combatant: Combatant;
@@ -8,12 +9,8 @@ interface CombatSideMenuProps {
   onClose: () => void;
 }
 
-export const CombatSideMenu = ({
-  combatant,
-  position,
-  onClose,
-}: CombatSideMenuProps) => {
-  const { changeSide } = useCombatStore();
+export const CombatSideMenu = ({ combatant, position, onClose }: CombatSideMenuProps) => {
+  const { changeSide } = useCombatStore(useShallow((s) => ({ changeSide: s.changeSide })));
 
   const handleSelectSide = (side: CombatSide) => {
     changeSide(combatant.id, side);
@@ -44,10 +41,7 @@ export const CombatSideMenu = ({
               onClick={() => handleSelectSide(side.id)}
             >
               <div className="flex items-center gap-1.5">
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: side.color }}
-                />
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: side.color }} />
                 <span>{side.label}</span>
               </div>
               {isSelected && <span className="text-amber-400">✓</span>}

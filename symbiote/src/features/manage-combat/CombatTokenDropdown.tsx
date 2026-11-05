@@ -1,6 +1,8 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect } from 'react';
 import { TaleSpireCreature, CombatSide, COMBAT_SIDES } from '../../shared';
-import { useCombatStore, useRosterStore } from '../../shared';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { useRosterStore } from '../../entities/character/model/store';
 
 interface CombatTokenDropdownProps {
   token: TaleSpireCreature;
@@ -8,13 +10,13 @@ interface CombatTokenDropdownProps {
 }
 
 export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps) => {
-  const { addCombatant } = useCombatStore();
-  const { roster } = useRosterStore();
+  const { addCombatant } = useCombatStore(useShallow((s) => ({ addCombatant: s.addCombatant })));
+  const { roster } = useRosterStore(useShallow((s) => ({ roster: s.roster })));
 
   const matchInRoster = roster.find(
     (r) =>
       (token.name && r.name.toLowerCase() === token.name.toLowerCase()) ||
-      (token.id && r.talespire_id === token.id)
+      (token.id && r.talespire_id === token.id),
   );
 
   const getInitialSide = (): CombatSide => {
@@ -46,10 +48,10 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
         selectedSide === 'player'
           ? 'Игроки'
           : selectedSide === 'ally'
-          ? 'Союзники'
-          : selectedSide === 'neutral'
-          ? 'Нейтралы'
-          : 'Враги',
+            ? 'Союзники'
+            : selectedSide === 'neutral'
+              ? 'Нейтралы'
+              : 'Враги',
       hp: token.hp || matchInRoster?.hp || 10,
       maxHp: token.hpMax || matchInRoster?.hp_max || token.hp || 10,
       ac: matchInRoster?.ac || 10,
@@ -102,7 +104,10 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
                   }`}
                   onClick={() => setSelectedSide(side.id)}
                 >
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: side.color }} />
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: side.color }}
+                  />
                   <span className="truncate">{side.label}</span>
                 </button>
               );

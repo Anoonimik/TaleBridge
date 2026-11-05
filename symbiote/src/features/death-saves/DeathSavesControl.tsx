@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dices, X, Check } from 'lucide-react';
-import { DeathSaves, taleSpireDriver } from '../../shared';
+import { DeathSaves } from '../../shared';
 
 interface DeathSavesControlProps {
   hp: number;
   deathSaves: DeathSaves;
-  onRollDeathSave: () => void;
+  onRollDeathSave: () => Promise<void>;
   onApplyDeathSaveRoll: (roll: number) => void;
   onUpdateDeathSaves: (successes: number, failures: number) => void;
   onResetDeathSaves: () => void;
@@ -15,7 +15,6 @@ export const DeathSavesControl = ({
   hp,
   deathSaves,
   onRollDeathSave,
-  onApplyDeathSaveRoll,
   onUpdateDeathSaves,
   onResetDeathSaves,
 }: DeathSavesControlProps) => {
@@ -29,28 +28,15 @@ export const DeathSavesControl = ({
   const isStable = successes >= 3;
   const isDead = failures >= 3;
 
-  useEffect(() => {
-    if (!isWaitingForRoll) return;
-
-    // Listen for real 3D dice roll result from TaleSpire / Host
-    const unsubscribe = taleSpireDriver.onRollResult((total) => {
-      onApplyDeathSaveRoll(total);
-      setIsWaitingForRoll(false);
-    });
-
-    const timer = setTimeout(() => {
-      setIsWaitingForRoll(false);
-    }, 20000);
-
-    return () => {
-      unsubscribe();
-      clearTimeout(timer);
-    };
-  }, [isWaitingForRoll, onApplyDeathSaveRoll]);
-
-  const handleStartRoll = () => {
+  const handleStartRoll = async () => {
     setIsWaitingForRoll(true);
-    onRollDeathSave();
+    try {
+      await onRollDeathSave();
+    } catch {
+      /* Reported by the common request error view. */
+    } finally {
+      setIsWaitingForRoll(false);
+    }
   };
 
   const handleCancelWaiting = () => {
@@ -94,10 +80,10 @@ export const DeathSavesControl = ({
         isDead
           ? 'bg-rose-950/40 border-rose-600/70 text-rose-200'
           : isStable
-          ? 'bg-emerald-950/30 border-emerald-500/50 text-emerald-200'
-          : isDying
-          ? 'bg-rose-950/30 border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-in fade-in'
-          : 'bg-[#141622] border-[#262a3d]'
+            ? 'bg-emerald-950/30 border-emerald-500/50 text-emerald-200'
+            : isDying
+              ? 'bg-rose-950/30 border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-in fade-in'
+              : 'bg-[#141622] border-[#262a3d]'
       }`}
     >
       {/* Header Banner */}
@@ -108,20 +94,20 @@ export const DeathSavesControl = ({
               isDead
                 ? 'bg-rose-500'
                 : isStable
-                ? 'bg-emerald-400'
-                : isDying
-                ? 'bg-rose-500 animate-ping'
-                : 'bg-slate-400'
+                  ? 'bg-emerald-400'
+                  : isDying
+                    ? 'bg-rose-500 animate-ping'
+                    : 'bg-slate-400'
             }`}
           />
           <h4 className="text-xs font-bold uppercase tracking-wider">
             {isDead
               ? 'Персонаж погиб (3 провала)'
               : isStable
-              ? 'Персонаж стабилизирован'
-              : isDying
-              ? 'Персонаж при смерти (0 ХП) — Спасброски'
-              : 'Спасброски от смерти'}
+                ? 'Персонаж стабилизирован'
+                : isDying
+                  ? 'Персонаж при смерти (0 ХП) — Спасброски'
+                  : 'Спасброски от смерти'}
           </h4>
         </div>
 
@@ -236,7 +222,8 @@ export const DeathSavesControl = ({
 
       {/* Rule tip */}
       <div className="text-[10px] text-slate-400 leading-tight">
-        Правило 5e: 10+ успех, 1-9 провал, 20 восстанавливает 1 ХП, 1 дает сразу 2 провала. Вы также можете нажать на круги вручную.
+        Правило 5e: 10+ успех, 1-9 провал, 20 восстанавливает 1 ХП, 1 дает сразу 2 провала. Вы также
+        можете нажать на круги вручную.
       </div>
     </div>
   );

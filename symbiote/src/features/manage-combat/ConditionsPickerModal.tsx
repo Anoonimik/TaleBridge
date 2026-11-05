@@ -1,16 +1,22 @@
+import { useShallow } from 'zustand/react/shallow';
 import React from 'react';
-import { CONDITIONS, useCombatStore, ModalShell } from '../../shared';
+import { CONDITIONS } from '../../shared/config/constants';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { ModalShell } from '../../shared/ui/ModalShell';
 
 interface ConditionsPickerModalProps {
   combatantId: string;
   onClose: () => void;
 }
 
-export const ConditionsPickerModal = ({
-  combatantId,
-  onClose,
-}: ConditionsPickerModalProps) => {
-  const { toggleCondition, setConditions, combatants } = useCombatStore();
+export const ConditionsPickerModal = ({ combatantId, onClose }: ConditionsPickerModalProps) => {
+  const { toggleCondition, setConditions, combatants } = useCombatStore(
+    useShallow((s) => ({
+      toggleCondition: s.toggleCondition,
+      setConditions: s.setConditions,
+      combatants: s.combatants,
+    })),
+  );
   const combatant = combatants.find((c) => c.id === combatantId);
 
   if (!combatant) return null;
@@ -77,9 +83,7 @@ export const ConditionsPickerModal = ({
                       {cond.label}
                     </span>
                   </div>
-                  {isActive && (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                  )}
+                  {isActive && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />}
                 </div>
                 <p className="text-[10px] text-slate-400 leading-tight m-0 line-clamp-2">
                   {cond.desc}
