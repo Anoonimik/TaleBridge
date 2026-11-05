@@ -21,4 +21,13 @@ export default ts.config(
       'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
+  {
+    files: [
+      'symbiote/src/entities/character/ui/AttackCard.tsx',
+      'symbiote/src/features/manage-concentration/ui/ConcentrationBanner.tsx',
+      'symbiote/src/features/manage-inventory/ui/EditItemModal.tsx',
+      'symbiote/src/features/manage-spells/ui/SpellCastModal.tsx',
+    ],
+    rules: { 'react-hooks/set-state-in-effect': 'error' },
+  },
 );

@@ -356,6 +356,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
       {/* Edit Item Modal */}
       <EditItemModal
+        key={editingItem?.owner || 'no-character'}
         isOpen={Boolean(editingItem)}
         item={editingItem?.item || null}
         onClose={() => setEditingItem(null)}

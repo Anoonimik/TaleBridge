@@ -13,12 +13,13 @@
   "packageManager": "npm@12.2.2",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p symbiote/tsconfig.json",
-    "lint": "eslint packages obsidian-plugin/src symbiote/src scripts tests",
+    "lint": "eslint packages obsidian-plugin/src symbiote/src symbiote/tests scripts tests",
     "test": "node --import ./scripts/register.mjs --test tests/*.test.ts",
     "build:plugin": "node scripts/build-plugin.mjs",
     "build": "npm run typecheck && npm run build:plugin && npm run build --workspace symbiote && node scripts/package-release.mjs",
     "check": "npm run lint && npm test && npm run build",
-    "test:browser": "node tests/browser.mjs"
+    "test:browser": "node tests/browser.mjs",
+    "test:react": "node tests/react-sessions.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0",

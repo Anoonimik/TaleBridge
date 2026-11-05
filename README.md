@@ -56,6 +56,7 @@ npm run check
 npm run build             # plugin/main.js, frontend, готовый release/
 npm run dev --workspace symbiote
 npm run test:browser      # после сборки и установки браузера Playwright
+npm run test:react        # реальные компоненты в React StrictMode: сессии форм и поздние async-результаты
 ```
 
 Для браузерных проверок: `npx playwright install chromium`; на Windows можно использовать установленный Chrome через `PLAYWRIGHT_CHANNEL=chrome`. Тесты используют отдельный сервер, тестовые заметки и коды доступа. Настоящий vault и буфер обмена пользователя не затрагиваются.
