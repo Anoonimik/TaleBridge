@@ -1,8 +1,9 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { wsBridge } from '../../../shared/api/websocket';
 import { useAppStore } from '../../../shared/lib/useAppStore';
 import { ModalShell } from '../../../shared/ui/ModalShell';
 import { LegacyImport } from './LegacyImport';
+import { readClipboard } from '../../../shared/lib/clipboard';
 export interface ConnectionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,6 +18,17 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
   const id = useId();
+  const codeInput = useRef<HTMLInputElement>(null);
+  const pasteCode = async () => {
+    const pasted = await readClipboard();
+    if (pasted.trim()) {
+      setCode(pasted.trim());
+      setMessage('');
+    } else {
+      setMessage('Не удалось прочитать буфер обмена. Скопируйте код и разрешите чтение буфера, если появится запрос.');
+    }
+    codeInput.current?.focus();
+  };
   useEffect(() => {
     if (isOpen) {
       setHost(wsBridge.getServerInfo().host);
@@ -45,6 +57,8 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
     <ModalShell
       isOpen={isOpen}
       onClose={onClose}
+      closeOnBackdrop={false}
+      closeOnEscape={false}
       title="Подключение к Мастеру"
       subtitle={connected ? `Кампания: ${vault}` : 'Введите адрес сервера и личный код доступа'}
     >
@@ -83,13 +97,22 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
         <label htmlFor={`${id}-code`}>Код доступа</label>
         <input
           id={`${id}-code`}
+          ref={codeInput}
           required
           type="password"
           autoComplete="current-password"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="input-field"
+          className="input-field select-text"
         />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => { void pasteCode(); }}
+          className="self-start px-3 py-2 rounded border border-slate-500 disabled:opacity-50"
+        >
+          Вставить код
+        </button>
         <p className="text-slate-400">
           Мастер создает коды в настройках плагина Obsidian. Код игрока открывает только
           назначенного ему персонажа.

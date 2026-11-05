@@ -11,6 +11,8 @@ export interface ModalShellProps {
   maxHeightClass?: string;
   children: React.ReactNode;
   headerRight?: React.ReactNode;
+  closeOnBackdrop?: boolean;
+  closeOnEscape?: boolean;
 }
 
 export const ModalShell: React.FC<ModalShellProps> = ({
@@ -22,6 +24,8 @@ export const ModalShell: React.FC<ModalShellProps> = ({
   maxHeightClass = 'max-h-[90vh]',
   children,
   headerRight,
+  closeOnBackdrop = true,
+  closeOnEscape = true,
 }) => {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -43,13 +47,13 @@ export const ModalShell: React.FC<ModalShellProps> = ({
       className="m-0 p-0 border-0 bg-transparent text-inherit fixed inset-0 w-screen max-w-none h-dvh max-h-none"
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        if (closeOnEscape) onClose();
       }}
     >
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (closeOnBackdrop && e.target === e.currentTarget) onClose();
         }}
       >
         <div
@@ -72,7 +76,7 @@ export const ModalShell: React.FC<ModalShellProps> = ({
                 type="button"
                 className="text-slate-400 hover:text-white text-base font-bold cursor-pointer w-6 h-6 rounded flex items-center justify-center transition-colors hover:bg-[#1f2233]"
                 onClick={onClose}
-                title="Закрыть (Esc)"
+                title={closeOnEscape ? 'Закрыть (Esc)' : 'Закрыть'}
                 aria-label="Закрыть окно"
               >
                 ✕
