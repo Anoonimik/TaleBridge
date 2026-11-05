@@ -30821,7 +30821,7 @@ var inventorySchema = external_exports.array(
     quantity: count.min(1).optional(),
     weight: amount.optional(),
     category: line.optional(),
-    description: line.optional()
+    description: text.optional()
   })
 ).max(1e3).refine(
   (items) => new Set(items.map((item) => item.id)).size === items.length,
@@ -31409,6 +31409,16 @@ function parseInventory(content) {
       equipped = false;
       rest = rest.replace(/^\[\s*\]\s*/, "");
     }
+    if (persistedId && rest.startsWith("{")) {
+      try {
+        const parsed = inventorySchema.safeParse([{ ...JSON.parse(rest), id: persistedId }]);
+        if (parsed.success) {
+          items.push(parsed.data[0]);
+          continue;
+        }
+      } catch {
+      }
+    }
     let description = "";
     const descMatch = rest.match(/\s+[—–-]\s+(.*)$/);
     if (descMatch) {
@@ -31453,6 +31463,12 @@ function serializeInventory(items) {
   }
   const lines = ["## \u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u044C"];
   for (const it of items) {
+    if (/[[\]()—–]|\s-\s|<!--/.test(it.name) || /[[\]\r\n]/.test(it.category || "") || /[\r\n]/.test(it.description || "")) {
+      lines.push(
+        `- ${it.equipped ? "[x]" : "[ ]"} ${JSON.stringify(it)} <!-- talebridge-item:${it.id} -->`
+      );
+      continue;
+    }
     const check2 = it.equipped ? "[x]" : "[ ]";
     const qty = it.quantity || 1;
     const wt = it.weight !== void 0 && it.weight !== null ? `, \u0432\u0435\u0441: ${it.weight} \u043A\u0433` : "";

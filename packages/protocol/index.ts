@@ -34,7 +34,7 @@ export const inventorySchema = z
       quantity: count.min(1).optional(),
       weight: amount.optional(),
       category: line.optional(),
-      description: line.optional(),
+      description: text.optional(),
     }),
   )
   .max(1000)
