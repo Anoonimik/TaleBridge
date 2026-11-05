@@ -1,5 +1,5 @@
 import React from 'react';
-import { HeartPulse, Sparkles, Trash2, Plus, Minus } from 'lucide-react';
+import { HeartPulse, Sparkles, Trash2, Plus, Minus, Pencil } from 'lucide-react';
 import { InventoryItem, useConfirmDelete } from '../../../shared';
 import { getConsumableActionInfo } from '../../../features/manage-inventory/lib/consumable-helper';
 
@@ -9,6 +9,7 @@ interface ItemCardProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onDelete: (id: string) => void;
   onUseItem?: (item: InventoryItem) => void;
+  onEdit?: (item: InventoryItem) => void;
 }
 
 export const ItemCard = ({
@@ -17,6 +18,7 @@ export const ItemCard = ({
   onUpdateQuantity,
   onDelete,
   onUseItem,
+  onEdit,
 }: ItemCardProps) => {
   const { isConfirming: isConfirmingDelete, handleDelete } = useConfirmDelete({
     onDelete: () => onDelete(item.id),
@@ -46,8 +48,9 @@ export const ItemCard = ({
           <span
             className={`text-xs font-semibold truncate ${
               item.equipped ? 'text-indigo-200' : 'text-slate-200'
-            }`}
-            title={item.name}
+            } ${onEdit ? 'cursor-pointer hover:underline' : ''}`}
+            title={onEdit ? `${item.name} (нажмите для редактирования)` : item.name}
+            onClick={() => onEdit?.(item)}
           >
             {item.name}
           </span>
@@ -112,6 +115,18 @@ export const ItemCard = ({
               <Plus className="w-3 h-3" />
             </button>
           </div>
+
+          {/* Edit Button */}
+          {onEdit && (
+            <button
+              type="button"
+              className="w-6 h-6 bg-[#1a1d2d] hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors cursor-pointer flex items-center justify-center text-xs"
+              onClick={() => onEdit(item)}
+              title="Редактировать предмет"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* Delete Button with 2-step confirmation */}
           <button

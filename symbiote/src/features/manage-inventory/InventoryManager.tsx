@@ -9,7 +9,7 @@ import {
   useLogStore,
 } from '../../shared';
 import { ItemCard } from '../../entities/inventory-item/ui/ItemCard';
-import { InventoryWeightGauge, AddItemForm, CoinWalletBar } from './ui';
+import { InventoryWeightGauge, AddItemForm, CoinWalletBar, EditItemModal } from './ui';
 import { getConsumableActionInfo } from './lib/consumable-helper';
 
 interface InventoryManagerProps {
@@ -34,6 +34,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const items = useMemo(() => playerData?.inventory || [], [playerData?.inventory]);
@@ -137,6 +138,14 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   const handleAddItem = (newItem: InventoryItem) => {
     saveInventory([newItem, ...items]);
     setIsAdding(false);
+  };
+
+  const handleSaveEdit = (updatedItem: InventoryItem) => {
+    const updated = (useRosterStore.getState().playerData?.inventory || []).map((it) =>
+      it.id === updatedItem.id ? updatedItem : it,
+    );
+    saveInventory(updated);
+    setEditingItem(null);
   };
 
   /**
@@ -295,10 +304,19 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDeleteItem}
               onUseItem={handleUseConsumable}
+              onEdit={(it) => setEditingItem(it)}
             />
           ))
         )}
       </div>
+
+      {/* Edit Item Modal */}
+      <EditItemModal
+        isOpen={Boolean(editingItem)}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };
