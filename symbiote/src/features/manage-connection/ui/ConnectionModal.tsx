@@ -89,7 +89,7 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
           id={`${id}-role`}
           value={role}
           onChange={(e) => setRole(e.target.value as 'gm' | 'player')}
-          className="input-field"
+          className="input-field cursor-pointer"
         >
           <option value="player">Игрок</option>
           <option value="gm">Мастер</option>
@@ -109,7 +109,7 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
           type="button"
           disabled={busy}
           onClick={() => { void pasteCode(); }}
-          className="self-start px-3 py-2 rounded border border-slate-500 disabled:opacity-50"
+          className="self-start px-3 py-2 rounded border border-slate-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 hover:bg-slate-800 transition-colors"
         >
           Вставить код
         </button>
@@ -124,14 +124,14 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
           <button
             type="submit"
             disabled={busy}
-            className="px-3 py-2 rounded bg-indigo-600 text-white disabled:opacity-50"
+            className="px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
           >
             {busy ? 'Подключение…' : 'Подключиться'}
           </button>
           <button
             type="button"
             disabled={busy}
-            className="px-3 py-2 rounded border border-slate-500"
+            className="px-3 py-2 rounded border border-slate-500 hover:bg-slate-800 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             onClick={async () => {
               const result = await wsBridge.pingServer(host, Number(port));
               setMessage(result.ok ? 'Сервер доступен' : result.error || 'Нет связи');
@@ -145,7 +145,7 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
               onClick={() => {
                 void wsBridge.logout();
               }}
-              className="px-3 py-2 rounded border border-slate-500"
+              className="px-3 py-2 rounded border border-slate-500 hover:bg-slate-800 cursor-pointer transition-colors"
             >
               Выйти
             </button>
@@ -155,7 +155,7 @@ export const ConnectionModal = ({ isOpen, onClose }: ConnectionModalProps) => {
           <>
             <button
               type="button"
-              className="underline text-left"
+              className="underline text-left cursor-pointer hover:text-indigo-300 transition-colors"
               onClick={() => {
                 void wsBridge.retryPending();
               }}

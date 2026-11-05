@@ -58,7 +58,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, onCancel }) => 
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-2 py-1 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 focus:outline-none"
+            className="w-full px-2 py-1 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 focus:outline-none cursor-pointer"
           >
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
@@ -106,14 +106,14 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, onCancel }) => 
       <div className="flex justify-end gap-2 pt-1 border-t border-[#262a3d]">
         <button
           type="button"
-          className="px-3 py-1 rounded bg-[#1a1d2d] text-slate-400 hover:text-white"
+          className="px-3 py-1 rounded bg-[#1a1d2d] text-slate-400 hover:text-white cursor-pointer transition-colors"
           onClick={onCancel}
         >
           Отмена
         </button>
         <button
           type="submit"
-          className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+          className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium cursor-pointer transition-colors"
         >
           Добавить
         </button>

@@ -25,9 +25,10 @@ test(
       await mkdir(path.join(root, 'symbiote/node_modules'));
       await writeFile(path.join(root, 'symbiote/node_modules/do-not-install.txt'), 'development only');
       await symlink(path.join(root, 'symbiote'), path.join(root, 'table/TaleBridge'), 'junction');
+      const pwshBin = spawnSync('where.exe', ['pwsh']).status === 0 ? 'pwsh' : 'powershell';
       const run = (copy: boolean) =>
         spawnSync(
-          'pwsh',
+          pwshBin,
           [
             '-NoProfile',
             '-NonInteractive',

@@ -85,7 +85,7 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
             <select
               value={level}
               onChange={(e) => setLevel(Number(e.target.value))}
-              className="w-full px-2 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full px-2 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
               <option value={0}>Заговор (0)</option>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
@@ -105,7 +105,7 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
             <select
               value={school}
               onChange={(e) => setSchool(e.target.value)}
-              className="w-full px-2 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full px-2 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
               {SCHOOLS.map((s) => (
                 <option key={s} value={s}>
@@ -191,7 +191,7 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
               type="checkbox"
               checked={concentration}
               onChange={(e) => setConcentration(e.target.checked)}
-              className="rounded bg-[#10111a] border-[#262a3d] text-indigo-600 focus:ring-0 focus:outline-none"
+              className="rounded bg-[#10111a] border-[#262a3d] text-indigo-600 focus:ring-0 focus:outline-none cursor-pointer"
             />
             <span className="text-xs text-slate-300">Концентрация</span>
           </label>
@@ -201,7 +201,7 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
               type="checkbox"
               checked={ritual}
               onChange={(e) => setRitual(e.target.checked)}
-              className="rounded bg-[#10111a] border-[#262a3d] text-indigo-600 focus:ring-0 focus:outline-none"
+              className="rounded bg-[#10111a] border-[#262a3d] text-indigo-600 focus:ring-0 focus:outline-none cursor-pointer"
             />
             <span className="text-xs text-slate-300">Ритуал</span>
           </label>

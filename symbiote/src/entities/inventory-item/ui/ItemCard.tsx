@@ -67,7 +67,7 @@ export const ItemCard = ({
               type="button"
               onClick={() => onLinkToAttack(item)}
               title="Создать черновик атаки из оружия"
-              className="px-2 py-1 text-xs text-amber-300 border rounded"
+              className="px-2 py-1 text-xs text-amber-300 hover:text-amber-200 border border-amber-500/40 hover:border-amber-500/70 rounded cursor-pointer transition-colors"
             >
               <Swords className="w-3 h-3 inline" /> В атаки
             </button>

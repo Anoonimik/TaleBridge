@@ -24,7 +24,7 @@ const NotesSession = ({ character }: { character: Character }) => {
       {session.error && (
         <div role="alert" className="text-amber-300">
           {session.error} Текст остается в локальном черновике.
-          <button type="button" className="underline ml-2" onClick={session.acceptServer}>
+          <button type="button" className="underline ml-2 cursor-pointer hover:text-amber-200 transition-colors" onClick={session.acceptServer}>
             Загрузить серверную версию
           </button>
         </div>
@@ -42,7 +42,7 @@ const NotesSession = ({ character }: { character: Character }) => {
         onClick={() => {
           void session.save();
         }}
-        className="p-2 rounded bg-indigo-600 text-white self-end"
+        className="p-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white self-end cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
       >
         Сохранить сейчас
       </button>

@@ -45,13 +45,17 @@ export function LegacyImport() {
   };
   return (
     <div className="flex flex-col gap-2 border-t border-slate-600 pt-3">
-      <button type="button" className="underline text-left" onClick={exportRecoveryData}>
+      <button
+        type="button"
+        className="underline text-left cursor-pointer hover:text-indigo-300 transition-colors"
+        onClick={exportRecoveryData}
+      >
         Скачать резервную копию локальных данных
       </button>
       {legacy && (
         <button
           type="button"
-          className="underline text-left"
+          className="underline text-left cursor-pointer hover:text-indigo-300 transition-colors"
           onClick={() => {
             setSelected([]);
             setError('');
@@ -73,11 +77,15 @@ export function LegacyImport() {
             переноса. Отмеченные поля заменят серверные значения после проверки версии.
           </p>
           {Object.entries(legacy || {}).map(([key, value]) => (
-            <label key={key} className="border border-slate-600 rounded p-2">
-              <span className="flex gap-2">
+            <label
+              key={key}
+              className="border border-slate-600 rounded p-2 cursor-pointer hover:bg-slate-800/40 transition-colors"
+            >
+              <span className="flex gap-2 items-center">
                 <input
                   type="checkbox"
                   checked={selected.includes(key)}
+                  className="cursor-pointer"
                   onChange={(e) =>
                     setSelected(
                       e.target.checked ? [...selected, key] : selected.filter((k) => k !== key),
@@ -100,7 +108,7 @@ export function LegacyImport() {
           <button
             type="button"
             disabled={busy || !selected.length}
-            className="p-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+            className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             onClick={() => {
               void apply();
             }}

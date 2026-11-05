@@ -55,14 +55,18 @@ export const GmAuthModal = ({ isOpen, onSuccess, onCancel }: Props) => {
           type="button"
           disabled={busy}
           onClick={() => { void pasteCode(); }}
-          className="self-start px-3 py-2 rounded border border-slate-500 disabled:opacity-50"
+          className="self-start px-3 py-2 rounded border border-slate-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 hover:bg-slate-800 transition-colors"
         >
           Вставить код
         </button>
         <p role="alert" className="text-rose-300">
           {error}
         </p>
-        <button type="submit" disabled={busy} className="bg-indigo-600 rounded p-2 text-white">
+        <button
+          type="submit"
+          disabled={busy}
+          className="bg-indigo-600 hover:bg-indigo-500 rounded p-2 text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+        >
           {busy ? 'Подключение…' : 'Войти'}
         </button>
       </form>
