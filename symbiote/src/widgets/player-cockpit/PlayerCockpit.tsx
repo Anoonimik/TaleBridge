@@ -467,6 +467,7 @@ export const PlayerCockpit = () => {
                           key={idx}
                           attack={atk}
                           index={idx}
+                          characterName={playerData?.name}
                           canManage={true}
                           onEdit={handleEditAttack}
                           onDelete={deletePlayerAttack}

@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { InventoryItem, Character, useRosterStore, wsBridge } from '../../shared';
+import { Swords } from 'lucide-react';
+import {
+  InventoryItem,
+  Character,
+  useRosterStore,
+  wsBridge,
+  createAttackFromWeapon,
+  useLogStore,
+} from '../../shared';
 import { ItemCard } from '../../entities';
 import { InventoryWeightGauge, AddItemForm } from './ui';
 
@@ -10,10 +18,11 @@ interface InventoryManagerProps {
 const CATEGORIES = ['all', 'Оружие', 'Броня', 'Зелья', 'Снаряжение', 'Квестовое'];
 
 export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
-  const { playerCharacterName, setPlayerData } = useRosterStore();
+  const { playerCharacterName, setPlayerData, savePlayerAttack } = useRosterStore();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const items = useMemo(() => playerData?.inventory || [], [playerData?.inventory]);
 
@@ -90,6 +99,21 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
     setIsAdding(false);
   };
 
+  const handleLinkToAttack = (item: InventoryItem) => {
+    if (!playerData) return;
+    const newAttack = createAttackFromWeapon(item, playerData);
+    savePlayerAttack(newAttack);
+
+    const message = `«${item.name}» добавлен в список атак!`;
+    setNotice(message);
+    useLogStore.getState().addLog('action', message);
+    wsBridge.send('SHOW_NOTICE', { text: message });
+
+    setTimeout(() => {
+      setNotice((cur) => (cur === message ? null : cur));
+    }, 4000);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-2.5">
       {/* Weight Gauge Panel */}
@@ -98,6 +122,23 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
         maxWeight={maxWeight}
         weightPercent={weightPercent}
       />
+
+      {/* Notice Banner */}
+      {notice && (
+        <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded flex items-center justify-between animate-fade-in shrink-0">
+          <div className="flex items-center gap-2">
+            <Swords className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="font-medium">{notice}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="text-emerald-400 hover:text-white cursor-pointer ml-2 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Controls: Search + Add Button */}
       <div className="flex items-center gap-2 shrink-0">
@@ -155,6 +196,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
               onToggleEquip={handleToggleEquip}
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDeleteItem}
+              onLinkToAttack={handleLinkToAttack}
             />
           ))
         )}

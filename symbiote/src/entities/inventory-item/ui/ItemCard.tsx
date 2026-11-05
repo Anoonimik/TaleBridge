@@ -1,11 +1,13 @@
 import React from 'react';
-import { InventoryItem, useConfirmDelete } from '../../../shared';
+import { Swords } from 'lucide-react';
+import { InventoryItem, useConfirmDelete, isWeaponItem } from '../../../shared';
 
 interface ItemCardProps {
   item: InventoryItem;
   onToggleEquip: (id: string, equipped: boolean) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onDelete: (id: string) => void;
+  onLinkToAttack?: (item: InventoryItem) => void;
 }
 
 export const ItemCard = ({
@@ -13,10 +15,13 @@ export const ItemCard = ({
   onToggleEquip,
   onUpdateQuantity,
   onDelete,
+  onLinkToAttack,
 }: ItemCardProps) => {
   const { isConfirming: isConfirmingDelete, handleDelete } = useConfirmDelete({
     onDelete: () => onDelete(item.id),
   });
+
+  const isWeapon = isWeaponItem(item);
 
   return (
     <div
@@ -53,6 +58,19 @@ export const ItemCard = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Quick Weapon-to-Action button */}
+          {isWeapon && onLinkToAttack && (
+            <button
+              type="button"
+              className="h-6 px-2 text-xs rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 flex items-center gap-1 cursor-pointer transition-colors font-medium shrink-0"
+              onClick={() => onLinkToAttack(item)}
+              title={`Добавить «${item.name}» в список атак персонажа`}
+            >
+              <Swords className="w-3.5 h-3.5" />
+              <span>В атаки</span>
+            </button>
+          )}
+
           <div className="flex items-center gap-1 bg-[#10111a] px-2 py-0.5 rounded border border-[#262a3d] text-xs">
             <button
               type="button"
