@@ -131,6 +131,7 @@ export const combatantSchema = z
     category: line.optional(),
     path: line.nullish(),
     talespireId: line.nullish(),
+    cameraBookmarkId: line.nullish(),
     stats: ability.nullish(),
     dexMod: z.number().min(-30).max(30).optional(),
     attacks: z.array(attackSchema).max(100).optional(),

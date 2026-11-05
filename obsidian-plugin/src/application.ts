@@ -1,3 +1,4 @@
+import { turnCameraBookmark } from '../../packages/domain/turn-camera';
 import { concentrationDamage, breaksConcentration } from '../../packages/domain/concentration';
 import { randomUUID } from 'node:crypto';
 import type { Character, CombatState, Scene, Bookmark } from '../../packages/domain/types';
@@ -315,7 +316,17 @@ export class BridgeApplication {
     const id = next.combatants[turnIndex]?.id || null;
     const state = { ...next, activeCombatantId: id, turnIndex, revision: randomUUID() };
     await this.ports.saveCombat(state);
+    const cameraBookmark = turnCameraBookmark(this.combat, state);
     this.combat = state;
+    const cameraDriver = this.members().find(
+      (member) => member.session?.role === 'gm' && member.session.driver,
+    );
+    if (
+      cameraBookmark &&
+      cameraDriver &&
+      this.bookmarks.some((bookmark) => bookmark.id === cameraBookmark)
+    )
+      this.send(cameraDriver, 'GOTO_BOOKMARK', { id: cameraBookmark });
     for (const c of this.members()) this.send(c, 'COMBAT_STATE_UPDATE', this.projectCombat(c));
   }
   private async execute(command: Command, client: Client): Promise<unknown> {
