@@ -97,6 +97,37 @@ const ready = new Promise((resolve, reject) => {
       await dialog.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
       await dialog.waitFor({ state: 'hidden' });
       await page.screenshot({ path: `test-results/player-${width}.png` });
+      await page.locator('button[title^="Режим Игрока"]').click();
+      const gmDialog = page.getByRole('dialog', { name: 'Доступ Мастера' });
+      await gmDialog.waitFor();
+      await gmDialog.click({ position: { x: 1, y: 1 } });
+      await page.keyboard.press('Escape');
+      assert.ok(await gmDialog.isVisible(), 'GM login must close only with its close button');
+      const gmCode = gmDialog.getByLabel('Код Мастера из настроек Obsidian', { exact: true });
+      await gmCode.fill('keep-gm-draft');
+      await page.evaluate(() => {
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+          readText: async () => { throw new DOMException('Denied', 'NotAllowedError'); },
+        } });
+      });
+      await gmDialog.getByRole('button', { name: 'Вставить код', exact: true }).click();
+      await gmDialog.getByRole('alert').getByText('Не удалось прочитать буфер обмена.', { exact: false }).waitFor();
+      assert.equal(await gmCode.inputValue(), 'keep-gm-draft');
+      await gmDialog.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+      await gmDialog.waitFor({ state: 'hidden' });
+      await page.locator('button[title^="Режим Игрока"]').click();
+      await page.evaluate(() => { navigator.clipboard.readText = async () => '  gm-code\n'; });
+      await gmDialog.getByRole('button', { name: 'Вставить код', exact: true }).click();
+      await page.waitForFunction((id) => document.getElementById(id)?.value === 'gm-code', await gmCode.getAttribute('id'));
+      if (width === 375) {
+        await gmDialog.getByRole('button', { name: 'Войти', exact: true }).click();
+        await gmDialog.waitFor({ state: 'hidden' });
+        await page.getByRole('button', { name: 'Сюжет', exact: true }).click();
+        await page.getByText('Private scene', { exact: false }).first().waitFor();
+      } else {
+        await gmDialog.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+        await gmDialog.waitFor({ state: 'hidden' });
+      }
       assert.deepEqual(errors, []);
       results.push({
         width,
