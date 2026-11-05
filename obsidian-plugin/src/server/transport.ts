@@ -22,12 +22,23 @@ export interface TransportOptions {
   allowedOrigins: string[];
   allowWebview: boolean;
 }
+export function isWebviewOrigin(origin: string | undefined): boolean {
+  if (!origin || origin === 'null') return true;
+  return (
+    origin === 'file://' ||
+    origin.startsWith('file:') ||
+    origin.startsWith('talespire:') ||
+    origin.startsWith('app:') ||
+    origin.startsWith('vscode-webview:')
+  );
+}
 export function allowedOrigin(
   origin: string | undefined,
   host: string | undefined,
   options: Pick<TransportOptions, 'allowedOrigins' | 'allowWebview'>,
 ): boolean {
-  if (!origin || origin === 'null') return options.allowWebview;
+  if (isWebviewOrigin(origin)) return options.allowWebview;
+  if (!origin) return false;
   return (
     Boolean(host && [`http://${host}`, `https://${host}`].includes(origin)) ||
     options.allowedOrigins.includes(origin)
@@ -46,21 +57,28 @@ export class BridgeServer extends EventEmitter {
   }
   async start(): Promise<number> {
     this.server = http.createServer((req, res) => {
-      if (!allowedOrigin(req.headers.origin, req.headers.host, this.options)) {
+      const origin = req.headers.origin;
+      if (!allowedOrigin(origin, req.headers.host, this.options)) {
         res.writeHead(403);
         res.end();
         return;
       }
-      if (req.headers.origin) {
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+      const allowOrigin = !origin || isWebviewOrigin(origin) ? '*' : origin;
+      res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+      res.setHeader('Access-Control-Allow-Private-Network', 'true');
+      if (origin && !isWebviewOrigin(origin)) {
         res.setHeader('Vary', 'Origin');
       }
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Referrer-Policy', 'no-referrer');
       if (req.method === 'OPTIONS') {
         res.writeHead(204, {
-          'Access-Control-Allow-Methods': 'GET, HEAD',
-          'Access-Control-Allow-Headers': 'Authorization',
+          'Access-Control-Allow-Origin': allowOrigin,
+          'Access-Control-Allow-Private-Network': 'true',
+          'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
+          'Access-Control-Allow-Headers':
+            'Authorization, Content-Type, Access-Control-Request-Private-Network',
+          'Access-Control-Max-Age': '86400',
         });
         res.end();
         return;

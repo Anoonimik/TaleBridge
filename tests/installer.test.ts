@@ -18,9 +18,10 @@ test(
       await writeFile(path.join(root, 'obsidian-plugin/web/index.html'), '<html/>');
       await writeFile(path.join(root, 'obsidian-plugin/main.js'), 'v1');
       await writeFile(path.join(root, 'symbiote/dist/index.html'), '<html/>');
+      const ps = spawnSync('pwsh', ['-v']).error ? 'powershell' : 'pwsh';
       const run = (copy: boolean) =>
         spawnSync(
-          'pwsh',
+          ps,
           [
             '-NoProfile',
             '-NonInteractive',

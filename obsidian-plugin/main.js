@@ -31086,8 +31086,13 @@ var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 
 // obsidian-plugin/src/server/transport.ts
+function isWebviewOrigin(origin) {
+  if (!origin || origin === "null") return true;
+  return origin === "file://" || origin.startsWith("file:") || origin.startsWith("talespire:") || origin.startsWith("app:") || origin.startsWith("vscode-webview:");
+}
 function allowedOrigin(origin, host, options) {
-  if (!origin || origin === "null") return options.allowWebview;
+  if (isWebviewOrigin(origin)) return options.allowWebview;
+  if (!origin) return false;
   return Boolean(host && [`http://${host}`, `https://${host}`].includes(origin)) || options.allowedOrigins.includes(origin);
 }
 var BridgeServer = class extends import_node_events.EventEmitter {
@@ -31104,21 +31109,27 @@ var BridgeServer = class extends import_node_events.EventEmitter {
   heartbeat;
   async start() {
     this.server = import_node_http.default.createServer((req, res) => {
-      if (!allowedOrigin(req.headers.origin, req.headers.host, this.options)) {
+      const origin = req.headers.origin;
+      if (!allowedOrigin(origin, req.headers.host, this.options)) {
         res.writeHead(403);
         res.end();
         return;
       }
-      if (req.headers.origin) {
-        res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+      const allowOrigin = !origin || isWebviewOrigin(origin) ? "*" : origin;
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+      res.setHeader("Access-Control-Allow-Private-Network", "true");
+      if (origin && !isWebviewOrigin(origin)) {
         res.setHeader("Vary", "Origin");
       }
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Referrer-Policy", "no-referrer");
       if (req.method === "OPTIONS") {
         res.writeHead(204, {
-          "Access-Control-Allow-Methods": "GET, HEAD",
-          "Access-Control-Allow-Headers": "Authorization"
+          "Access-Control-Allow-Origin": allowOrigin,
+          "Access-Control-Allow-Private-Network": "true",
+          "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Authorization, Content-Type, Access-Control-Request-Private-Network",
+          "Access-Control-Max-Age": "86400"
         });
         res.end();
         return;

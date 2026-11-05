@@ -12,7 +12,10 @@ test('origin policy allows only configured or same origins, with explicit WebVie
   assert.ok(allowedOrigin('https://game.example', 'host:3000', opts));
   assert.ok(!allowedOrigin('https://evil.example', 'host:3000', opts));
   assert.ok(!allowedOrigin('null', 'host:3000', opts));
+  assert.ok(!allowedOrigin('file://', 'host:3000', opts));
   assert.ok(allowedOrigin(undefined, undefined, { ...opts, allowWebview: true }));
+  assert.ok(allowedOrigin('file://', 'host:3000', { ...opts, allowWebview: true }));
+  assert.ok(allowedOrigin('talespire://custom', 'host:3000', { ...opts, allowWebview: true }));
 });
 test('HTTP/WS integration: static app, health, private file rejection, authentication and frame limit', async () => {
   const f = fixture((client, message) => server.send(client, message));
