@@ -34,14 +34,14 @@ export const SpellCastModal: React.FC<SpellCastModalProps> = ({
   const baseLevel = spell?.level ?? 1;
 
   const [selectedCircle, setSelectedCircle] = useState<number>(() =>
-    getInitialCircle(baseLevel, spellSlots)
+    getInitialCircle(baseLevel, spellSlots),
   );
 
   useEffect(() => {
     if (spell && isOpen) {
       setSelectedCircle(getInitialCircle(spell.level, spellSlots));
     }
-  }, [spell?.id, spell?.level, isOpen, spellSlots]);
+  }, [spell, isOpen, spellSlots]);
 
   const circleOptions = useMemo(() => {
     const options: number[] = [];
@@ -131,9 +131,7 @@ export const SpellCastModal: React.FC<SpellCastModalProps> = ({
 
           {spell.desc && (
             <div className="mt-1 pt-1.5 border-t border-[#262a3d]/60">
-              <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">
-                Описание
-              </div>
+              <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Описание</div>
               <div className="max-h-28 overflow-y-auto scrollbar-thin text-slate-300 text-[11px] leading-relaxed whitespace-pre-wrap">
                 {spell.desc}
               </div>
@@ -164,8 +162,8 @@ export const SpellCastModal: React.FC<SpellCastModalProps> = ({
                     isEmpty
                       ? 'opacity-40 bg-[#0d0e15] border-[#262a3d] border-dashed text-slate-500 cursor-not-allowed'
                       : isSelected
-                      ? 'bg-indigo-600/30 border-indigo-500 text-indigo-100 ring-1 ring-indigo-500 shadow-sm cursor-pointer'
-                      : 'bg-[#10111a] border-[#262a3d] text-slate-300 hover:border-slate-500 hover:text-white cursor-pointer'
+                        ? 'bg-indigo-600/30 border-indigo-500 text-indigo-100 ring-1 ring-indigo-500 shadow-sm cursor-pointer'
+                        : 'bg-[#10111a] border-[#262a3d] text-slate-300 hover:border-slate-500 hover:text-white cursor-pointer'
                   }`}
                   title={
                     isEmpty
@@ -180,8 +178,8 @@ export const SpellCastModal: React.FC<SpellCastModalProps> = ({
                         isEmpty
                           ? 'text-slate-600'
                           : isSelected
-                          ? 'text-indigo-300'
-                          : 'text-slate-400'
+                            ? 'text-indigo-300'
+                            : 'text-slate-400'
                       }`}
                     >
                       {current}/{max}

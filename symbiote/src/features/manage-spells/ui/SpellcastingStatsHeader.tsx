@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatModifier } from '../../../shared';
+import { formatModifier } from '../../../shared/lib/text-utils';
 
 interface SpellcastingStatsHeaderProps {
   ability: 'int' | 'wis' | 'cha';
@@ -61,9 +61,7 @@ export const SpellcastingStatsHeader: React.FC<SpellcastingStatsHeaderProps> = (
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-[#10111a] p-2 rounded border border-[#262a3d] text-center flex flex-col items-center">
           <span className="text-[10px] uppercase font-bold text-slate-400">Сл спасброска</span>
-          <span className="text-base font-bold text-amber-300 font-mono mt-0.5">
-            {spellSaveDC}
-          </span>
+          <span className="text-base font-bold text-amber-300 font-mono mt-0.5">{spellSaveDC}</span>
           <span className="text-[9px] text-slate-500">8 + БМ + мод</span>
         </div>
 

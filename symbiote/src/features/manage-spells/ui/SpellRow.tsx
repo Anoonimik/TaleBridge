@@ -107,12 +107,7 @@ export const SpellRow: React.FC<SpellRowProps> = ({
         {spell.dmg && (
           <button
             type="button"
-            onClick={() =>
-              taleSpireDriver.rollDice(
-                spell.dmg!,
-                `${spell.name} (${playerName})`
-              )
-            }
+            onClick={() => taleSpireDriver.rollDice(spell.dmg!, `${spell.name} (${playerName})`)}
             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-600/40 font-mono font-bold cursor-pointer transition-colors"
             title="Бросить урон / эффект в TaleSpire"
           >

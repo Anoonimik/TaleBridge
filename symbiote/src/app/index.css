@@ -153,3 +153,9 @@
 .text-\[11px\] {
   font-size: 0.78rem !important;
 }
+/* Native dialog provides a focus trap, top layer and inert background. */
+dialog::backdrop { background: transparent; }
+:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 3px; }
+.input-field { color: #f1f5f9; background: #10111a; border: 1px solid #64748b; border-radius: .375rem; padding: .65rem; min-width: 0; }
+button { min-height: 24px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

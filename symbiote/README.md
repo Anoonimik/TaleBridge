@@ -30,7 +30,7 @@ src/
 │   ├── archive-clues/    # Handout saving, 2-step deletion & archive grid
 │   ├── broadcast-media/  # GM media broadcast form, public/ gallery picker, dismiss
 │   ├── roll-dice/        # Formula sanitizing, TaleSpire 3D dice tray integration
-│   └── gm-auth/          # PIN code verification modal
+│   └── gm-auth/          # Server authentication modal
 ├── entities/             # Business models & domain UI cards
 │   ├── character/        # Character model, ability cell, attack card, roster card
 │   ├── inventory-item/   # Inventory weight calculations, item card

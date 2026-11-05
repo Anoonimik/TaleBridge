@@ -1,8 +1,12 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState } from 'react';
-import { taleSpireDriver, useAppStore } from '../../shared';
+import { taleSpireDriver } from '../../shared/api/talespire';
+import { useAppStore } from '../../shared/lib/useAppStore';
 
 export const QuickDiceBar = () => {
-  const { diceSecret, setDiceSecret } = useAppStore();
+  const { diceSecret, setDiceSecret } = useAppStore(
+    useShallow((s) => ({ diceSecret: s.diceSecret, setDiceSecret: s.setDiceSecret })),
+  );
   const [customFormula, setCustomFormula] = useState('');
 
   const handleRoll = (formula: string, label: string) => {

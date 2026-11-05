@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Character,
   Spell,
@@ -10,6 +10,8 @@ import {
 } from '../../shared';
 import { SpellModal } from './SpellModal';
 import { SpellcastingStatsHeader, SpellSlotsMatrix, SpellRow, SpellCastModal } from './ui';
+import { useRosterStore } from '../../entities/character/model/store';
+import { cleanDiceFormula } from '../../../../packages/domain/dice';
 import { scaleDiceFormula } from './lib/spellScaling';
 
 interface SpellcastingManagerProps {
@@ -44,6 +46,8 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSpell, setEditingSpell] = useState<Spell | null>(null);
   const [castingSpell, setCastingSpell] = useState<Spell | null>(null);
+  const castOwner = useRef<string | undefined>(undefined);
+  const castPending = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCircleFilter, setSelectedCircleFilter] = useState<number | 'all'>('all');
   const [expandedSpellId, setExpandedSpellId] = useState<string | null>(null);
@@ -61,8 +65,7 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
   const spellAttackBonus = profBonus + abilityMod;
 
   const spellSlots: SpellSlot[] = useMemo(() => {
-    if (!playerData) return DEFAULT_SLOTS;
-    return playerData.spellSlots && playerData.spellSlots.length > 0
+    return playerData?.spellSlots && playerData.spellSlots.length > 0
       ? playerData.spellSlots
       : DEFAULT_SLOTS;
   }, [playerData?.spellSlots]);
@@ -116,21 +119,49 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
     }
 
     // Leveled spell: open SpellCastModal
+    castOwner.current = playerData.id;
+    castPending.current = false;
     setCastingSpell(spell);
   };
 
   const handleConfirmCastSpell = (spell: Spell, selectedCircle: number) => {
     const charName = playerData.name || 'Персонаж';
 
-    // 1. Deduct slot
+    const current = useRosterStore.getState().playerData;
+    if (
+      castPending.current ||
+      !current ||
+      current.id !== castOwner.current ||
+      !current.spells?.some((entry) => entry.id === spell.id) ||
+      !Number.isInteger(selectedCircle) ||
+      selectedCircle < spell.level ||
+      selectedCircle > 9 ||
+      !(current.spellSlots || spellSlots).some(
+        (slot) => slot.level === selectedCircle && slot.current > 0,
+      )
+    )
+      return;
+    let formula = '';
+    try {
+      if (spell.dmg)
+        formula = cleanDiceFormula(
+          scaleDiceFormula(spell.dmg, spell.level, selectedCircle, spell.desc),
+        );
+    } catch {
+      useLogStore
+        .getState()
+        .addLog('action', 'Некорректная формула заклинания. Ячейка не потрачена.');
+      return;
+    }
+    castPending.current = true;
     onUseSpellSlot(selectedCircle);
 
     // 2. Roll scaled dice formula in TaleSpire if spell has dmg
     if (spell.dmg) {
-      const scaledFormula = scaleDiceFormula(spell.dmg, spell.level, selectedCircle, spell.desc);
+      const scaledFormula = formula;
       taleSpireDriver.rollDice(
         scaledFormula,
-        `${spell.name} (${selectedCircle} круг) [${charName}]`
+        `${spell.name} (${selectedCircle} круг) [${charName}]`,
       );
     }
 
@@ -139,7 +170,7 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
       .getState()
       .addLog(
         'roll',
-        `[Заклинание] ${charName} сотворил «${spell.name}» с ячейкой ${selectedCircle} круга (базовый: ${spell.level} круг).`
+        `[Заклинание] ${charName} сотворил «${spell.name}» с ячейкой ${selectedCircle} круга (базовый: ${spell.level} круг).`,
       );
 
     // 4. Close modal
