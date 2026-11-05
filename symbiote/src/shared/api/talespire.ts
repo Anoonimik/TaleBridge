@@ -216,6 +216,14 @@ export class TaleSpireDriver {
       this.ports.error(error instanceof Error ? error.message : 'Ошибка броска');
     }
   }
+  async getSelectedCreatureId(): Promise<string> {
+    if (!window.TS || this.ports.role() !== 'gm')
+      throw new Error('Выделите миниатюру в клиенте TaleSpire мастера');
+    const selected = await window.TS.creatures.getSelectedCreatures();
+    if (selected.length !== 1 || typeof selected[0]?.id !== 'string' || !selected[0].id.trim())
+      throw new Error('Выберите ровно одну миниатюру в TaleSpire');
+    return selected[0].id;
+  }
   async pollActiveToken() {
     const api = window.TS;
     if (!api) return;

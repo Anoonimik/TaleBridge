@@ -1,5 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
-import React, { useMemo } from 'react';
+import { useAppStore } from '../../../shared/lib/useAppStore';
+import { taleSpireDriver } from '../../../shared/api/talespire';
+import React, { useMemo, useState, useRef } from 'react';
 import { Dices, FileText, X } from 'lucide-react';
 import { Combatant, COMBAT_SIDES, useCombatStore, useRosterStore, wsBridge } from '../../../shared';
 import { CombatantHpPanel } from './CombatantHpPanel';
@@ -19,6 +21,27 @@ export const CombatantCard = ({
   onOpenConditions,
   onOpenSideMenu,
 }: CombatantCardProps) => {
+  const bookmarks = useAppStore((state) => state.bookmarks);
+  const isGm = useAppStore((state) => state.role === 'gm');
+  const [linkError, setLinkError] = useState('');
+  const [linking, setLinking] = useState(false);
+  const linkPending = useRef(false);
+  const linkMiniature = async () => {
+    if (!isGm || linkPending.current) return;
+    linkPending.current = true;
+    setLinking(true);
+    setLinkError('');
+    try {
+      const id = await taleSpireDriver.getSelectedCreatureId();
+      if (useAppStore.getState().role === 'gm')
+        useCombatStore.getState().setMiniature(combatant.id, id);
+    } catch (error) {
+      setLinkError(error instanceof Error ? error.message : 'Ошибка привязки');
+    } finally {
+      linkPending.current = false;
+      setLinking(false);
+    }
+  };
   const {
     updateCombatantHp,
     setInitiative,
@@ -73,6 +96,69 @@ export const CombatantCard = ({
           : 'bg-[#141622] border-[#262a3d] hover:border-[#383d57]'
       }`}
     >
+      {isGm && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            type="button"
+            disabled={linking}
+            onClick={() => {
+              void linkMiniature();
+            }}
+          >
+            {linking
+              ? 'Привязка…'
+              : combatant.talespireId
+                ? 'Перепривязать миниатюру'
+                : 'Привязать выбранную миниатюру'}
+          </button>
+          {combatant.talespireId && (
+            <button
+              type="button"
+              onClick={() => useCombatStore.getState().setMiniature(combatant.id, null)}
+            >
+              Отвязать миниатюру
+            </button>
+          )}
+          <label>
+            Камера при ходе
+            <select
+              aria-label={`Закладка камеры: ${combatant.name}`}
+              value={combatant.cameraBookmarkId || ''}
+              onChange={(event) =>
+                useCombatStore
+                  .getState()
+                  .setCameraBookmark(combatant.id, event.target.value || null)
+              }
+            >
+              <option value="">Не перемещать</option>
+              {bookmarks.map((bookmark) => (
+                <option key={bookmark.id} value={bookmark.id}>
+                  {bookmark.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              void taleSpireDriver.getBookmarks();
+            }}
+          >
+            Обновить закладки
+          </button>
+          {combatant.cameraBookmarkId && (
+            <button
+              type="button"
+              onClick={() => {
+                void taleSpireDriver.gotoBookmark(combatant.cameraBookmarkId!);
+              }}
+            >
+              К закладке
+            </button>
+          )}
+          <p role="alert">{linkError}</p>
+        </div>
+      )}
       {/* Top row: Side badge, Name, Initiative, Note & Delete */}
       <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
         <div className="flex items-center gap-2 min-w-0 flex-1">

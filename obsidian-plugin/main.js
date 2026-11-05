@@ -30888,6 +30888,7 @@ var combatantSchema = external_exports.object({
   category: line.optional(),
   path: line.nullish(),
   talespireId: line.nullish(),
+  cameraBookmarkId: line.nullish(),
   stats: ability.nullish(),
   dexMod: external_exports.number().min(-30).max(30).optional(),
   attacks: external_exports.array(attackSchema).max(100).optional()
@@ -31291,6 +31292,15 @@ var SessionManager = class {
     if (this.attempts.size > 1e4) throw new ProtocolError("SERVER_BUSY", "\u0421\u0435\u0440\u0432\u0435\u0440 \u0437\u0430\u043D\u044F\u0442");
   }
 };
+
+// packages/domain/turn-camera.ts
+function turnCameraBookmark(previous, next) {
+  if (!next.active) return null;
+  const id = next.activeCombatantId || next.combatants[next.turnIndex]?.id;
+  const oldId = previous.activeCombatantId || previous.combatants[previous.turnIndex]?.id;
+  if (previous.active && oldId === id && previous.round === next.round) return null;
+  return next.combatants.find((entry) => entry.id === id)?.cameraBookmarkId || null;
+}
 
 // packages/domain/id.ts
 function createId() {
@@ -32152,7 +32162,13 @@ var BridgeApplication = class {
     const id = next.combatants[turnIndex]?.id || null;
     const state = { ...next, activeCombatantId: id, turnIndex, revision: (0, import_node_crypto5.randomUUID)() };
     await this.ports.saveCombat(state);
+    const cameraBookmark = turnCameraBookmark(this.combat, state);
     this.combat = state;
+    const cameraDriver = this.members().find(
+      (member) => member.session?.role === "gm" && member.session.driver
+    );
+    if (cameraBookmark && cameraDriver && this.bookmarks.some((bookmark) => bookmark.id === cameraBookmark))
+      this.send(cameraDriver, "GOTO_BOOKMARK", { id: cameraBookmark });
     for (const c of this.members()) this.send(c, "COMBAT_STATE_UPDATE", this.projectCombat(c));
   }
   async execute(command, client) {
