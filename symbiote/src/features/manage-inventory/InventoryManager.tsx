@@ -148,7 +148,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
     setIsAdding(false);
   };
 
-  const handleSaveEdit = (updatedItem: InventoryItem) => {
+  const handleSaveEdit = async (updatedItem: InventoryItem) => {
     const latest = useRosterStore.getState().playerData;
     if (
       !editingItem ||
@@ -162,10 +162,17 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       latest.inventory?.find((entry) => entry.id === updatedItem.id),
       updatedItem,
     );
-    saveInventory(
-      (latest.inventory || []).map((entry) => (entry.id === merged.id ? merged : entry)),
+    const items = (latest.inventory || []).map((entry) =>
+      entry.id === merged.id ? merged : entry,
     );
-    setEditingItem(null);
+    const saved = await wsBridge.request<{ revision: string }>(
+      'UPDATE_INVENTORY',
+      { characterId: latest.id, items },
+      { expectedRevision: latest.revision },
+    );
+    const current = useRosterStore.getState().playerData;
+    if (current && current.id === editingItem.owner)
+      setPlayerData({ ...current, inventory: items, revision: saved.revision });
   };
 
   /**

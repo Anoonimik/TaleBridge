@@ -49,6 +49,26 @@ try {
     'Server rope',
   );
   await item.getByRole('button', { name: 'Отмена', exact: true }).click();
+  await page.evaluate(() => {
+    window.reactSessions.deferSave(true);
+    window.reactSessions.open('item');
+  });
+  const nameInput = item.getByLabel('Название предмета', { exact: true });
+  await nameInput.fill('Edited rope');
+  await item.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  assert.ok(await nameInput.isDisabled());
+  assert.ok(await item.getByRole('button', { name: 'Сохранение…', exact: true }).isDisabled());
+  await page.keyboard.press('Escape');
+  await item.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+  assert.ok(await item.isVisible());
+  await page.evaluate(() => window.reactSessions.rejectSave());
+  await item.getByRole('alert').getByText('Inventory save failed', { exact: true }).waitFor();
+  assert.equal(await nameInput.inputValue(), 'Edited rope');
+  await item.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.evaluate(() => window.reactSessions.resolveSave());
+  await item.waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => window.reactSessions.saved().name), 'Edited rope');
+  await page.evaluate(() => window.reactSessions.deferSave(false));
   await page.evaluate(() => window.reactSessions.open('spell'));
   const spell = page.getByRole('dialog', { name: 'Сотворение заклинания' });
   await spell.getByTitle('Выбрать 3 круг (2/2)', { exact: true }).click();
@@ -99,7 +119,7 @@ try {
   assert.equal(await page.getByText('Old request failed', { exact: true }).count(), 0);
   assert.deepEqual(errors, []);
   console.log(
-    'React StrictMode regression scenarios passed: draft preservation, session reset, slot selection, stale async results.',
+    'React StrictMode regression scenarios passed: draft preservation, acknowledged saves and retry, session reset, slot selection, stale async results.',
   );
 } finally {
   await browser?.close();

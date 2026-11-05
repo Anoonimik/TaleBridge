@@ -7,6 +7,77 @@ import { fixture } from './fixtures';
 import type { InventoryItem } from '../packages/domain/types';
 import { mergeInventoryEdit } from '../packages/domain/inventory-edit';
 
+test('all representable editor categories and tiny weights survive a vault roundtrip', () => {
+  for (const category of ['Снаряжение — редкое', 'Custom [type]', 'Custom (type)', 'A - B'])
+    for (const weight of [0, 0.025, 0.0000001, 1e-10, 100000]) {
+      const item = {
+        id: 'edge',
+        name: 'Item',
+        category,
+        quantity: 2,
+        equipped: false,
+        weight,
+        description: 'Details',
+      };
+      assert.deepEqual(parseInventory(serializeInventory([item])), [item]);
+    }
+});
+
+test('malformed encoded records fail closed instead of being rewritten as item names', async () => {
+  const f = fixture();
+  try {
+    const player = await f.login('player', 'alice-code');
+    const before = await f.repo.get('alice');
+    const broken =
+      '## Инвентарь\n- [ ] {"name":broken} <!-- talebridge-item-json:v1 --> <!-- talebridge-item:broken -->';
+    assert.throws(() => parseInventory(broken), /Повреждена запись/);
+    assert.throws(
+      () => parseInventory('## Инвентарь\n- [ ] {"quantity":0} <!-- talebridge-item:old -->'),
+      /Повреждена запись/,
+    );
+    const content = f.docs
+      .get('players/Alice.md')!
+      .replace('## Инвентарь', broken + '\n## Old inventory');
+    f.docs.set('players/Alice.md', content);
+    assert.equal(
+      (
+        await f.send(
+          player,
+          'UPDATE_INVENTORY',
+          { characterId: 'alice', items: [{ id: 'new', name: 'New' }] },
+          before.revision,
+        )
+      ).type,
+      'ERROR',
+    );
+    assert.equal(f.docs.get('players/Alice.md'), content);
+  } finally {
+    f.app.dispose();
+  }
+});
+
+test('vault write failure never acknowledges an inventory edit or changes the stored note', async () => {
+  const f = fixture();
+  try {
+    const player = await f.login('player', 'alice-code');
+    const before = await f.repo.get('alice');
+    const content = f.docs.get('players/Alice.md');
+    f.vault.process = async () => {
+      throw new Error('Disk write failed');
+    };
+    const response = await f.send(
+      player,
+      'UPDATE_INVENTORY',
+      { characterId: 'alice', items: [{ id: 'new', name: 'New' }] },
+      before.revision,
+    );
+    assert.equal(response.type, 'ERROR');
+    assert.equal(f.docs.get('players/Alice.md'), content);
+  } finally {
+    f.app.dispose();
+  }
+});
+
 test('editing preserves concurrent quantity changes but rejects field conflicts and deleted items', () => {
   const original = { id: 'one', name: 'Rope', quantity: 3, weight: 1 };
   const edited = { ...original, name: 'Silk rope' };
