@@ -13,6 +13,13 @@ test('origin policy allows only configured or same origins, with explicit WebVie
   assert.ok(!allowedOrigin('https://evil.example', 'host:3000', opts));
   assert.ok(!allowedOrigin('null', 'host:3000', opts));
   assert.ok(allowedOrigin(undefined, undefined, { ...opts, allowWebview: true }));
+  assert.ok(!allowedOrigin('http://localhost:56848', '127.0.0.1:30123', opts));
+  const webview = { ...opts, allowWebview: true };
+  for (const port of [56848, 43210])
+    assert.ok(allowedOrigin(`http://localhost:${port}`, '127.0.0.1:30123', webview));
+  for (const origin of ['http://localhost.evil.example:56848', 'http://localhost:56848/path',
+    'http://localhost:56848@evil.example', 'https://evil.example', 'garbage'])
+    assert.ok(!allowedOrigin(origin, '127.0.0.1:30123', webview));
 });
 test('HTTP/WS integration: static app, health, private file rejection, authentication and frame limit', async () => {
   const f = fixture((client, message) => server.send(client, message));
@@ -38,6 +45,10 @@ test('HTTP/WS integration: static app, health, private file rejection, authentic
     const base = `http://127.0.0.1:${port}`;
     assert.ok((await (await fetch(base)).text()).includes('Test app'));
     assert.equal((await (await fetch(base + '/health')).json()).status, 'online');
+    const taleSpireOrigin = 'http://localhost:56848';
+    const health = await fetch(base + '/health', { headers: { Origin: taleSpireOrigin } });
+    assert.equal(health.status, 200);
+    assert.equal(health.headers.get('Access-Control-Allow-Origin'), taleSpireOrigin);
     for (const route of [
       '/vault-file?path=private.md',
       '/clipboard',
@@ -47,7 +58,7 @@ test('HTTP/WS integration: static app, health, private file rejection, authentic
       assert.equal((await fetch(base + route)).status, 403);
     assert.equal((await fetch(base + '/assets/../private.md')).status, 404);
     assert.equal((await fetch(base, { headers: { Origin: 'https://evil.example' } })).status, 403);
-    ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, { origin: taleSpireOrigin });
     await once(ws, 'open');
     const denied = once(ws, 'message');
     ws.send(
