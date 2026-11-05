@@ -13,6 +13,8 @@ import type { Character, Scene, Bookmark, CombatState } from '../shared/types';
 
 const metadataKeys = [
   'currency',
+  'activeConcentration',
+  'concentrationChecks',
   'skills',
   'temp_hp',
   'inspiration',

@@ -30829,6 +30829,8 @@ var inventorySchema = external_exports.array(
 );
 var stateSchema = external_exports.object({
   currency: external_exports.object({ cp: count, sp: count, ep: count, gp: count, pp: count }).optional(),
+  activeConcentration: external_exports.object({ spellId: line.optional(), spellName: line, instanceId: line }).nullable().optional(),
+  concentrationChecks: external_exports.array(external_exports.object({ id: line, dc: count, damage: count })).max(100).optional(),
   temp_hp: count.optional(),
   inspiration: external_exports.boolean().optional(),
   deathSaves: external_exports.object({ successes: external_exports.number().int().min(0).max(3), failures: external_exports.number().int().min(0).max(3) }).optional(),
@@ -30929,7 +30931,7 @@ var commandPayloads = {
   GET_PLAYER_DATA: target,
   GET_NOTE: external_exports.object({ path: line.optional(), name: line.optional() }).refine((v) => Boolean(v.path || v.name)),
   OPEN_IN_OBSIDIAN: external_exports.object({ path: line.optional(), name: line.optional() }),
-  UPDATE_CHARACTER_HP: target.safeExtend({ hp: count, maxHp: count.optional() }).refine((v) => v.maxHp === void 0 || v.hp <= v.maxHp),
+  UPDATE_CHARACTER_HP: target.safeExtend({ hp: count, maxHp: count.optional(), damage: count.optional() }).refine((v) => v.maxHp === void 0 || v.hp <= v.maxHp),
   UPDATE_CHARACTER_PARAM: target.safeExtend({
     param: external_exports.enum(["ac", "speed", "level", "status", "race", "class", "hp_max"]),
     value: external_exports.union([line, count])
@@ -31289,6 +31291,37 @@ var SessionManager = class {
     if (this.attempts.size > 1e4) throw new ProtocolError("SERVER_BUSY", "\u0421\u0435\u0440\u0432\u0435\u0440 \u0437\u0430\u043D\u044F\u0442");
   }
 };
+
+// packages/domain/id.ts
+function createId() {
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  bytes[6] = bytes[6] & 15 | 64;
+  bytes[8] = bytes[8] & 63 | 128;
+  const hex3 = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex3.slice(0, 8)}-${hex3.slice(8, 12)}-${hex3.slice(12, 16)}-${hex3.slice(16, 20)}-${hex3.slice(20)}`;
+}
+
+// packages/domain/concentration.ts
+var breaksConcentration = (conditions = []) => conditions.some(
+  (condition) => ["incapacitated", "unconscious", "stunned", "paralyzed", "petrified"].includes(condition)
+);
+function concentrationDamage(current, hp, damage) {
+  if (!current.activeConcentration) return { activeConcentration: null, concentrationChecks: [] };
+  if (hp <= 0 || breaksConcentration(current.conditions))
+    return { activeConcentration: null, concentrationChecks: [] };
+  const checks = current.concentrationChecks || [];
+  if (damage <= 0)
+    return { activeConcentration: current.activeConcentration, concentrationChecks: checks };
+  if (checks.length >= 100) throw new Error("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u043E\u0436\u0438\u0434\u0430\u044E\u0449\u0438\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438 \u043A\u043E\u043D\u0446\u0435\u043D\u0442\u0440\u0430\u0446\u0438\u0438");
+  return {
+    activeConcentration: current.activeConcentration,
+    concentrationChecks: [
+      ...checks,
+      { id: createId(), dc: Math.max(10, Math.floor(damage / 2)), damage }
+    ]
+  };
+}
 
 // obsidian-plugin/src/application.ts
 var import_node_crypto5 = require("node:crypto");
@@ -32076,11 +32109,24 @@ var BridgeApplication = class {
       const linked = characters.find((c) => c.path === combatant.path && c.playable);
       if (!linked?.id) continue;
       const current = await this.ports.repository.get(linked.id);
-      if (current.hp === combatant.hp && current.hp_max === combatant.maxHp) continue;
+      if (current.hp === combatant.hp && current.hp_max === combatant.maxHp && (current.temp_hp || 0) === (combatant.tempHp || 0) && !(current.activeConcentration && breaksConcentration(combatant.conditions)))
+        continue;
       const saved = await this.ports.repository.update(
         linked.id,
         current.revision,
-        (content) => patchFrontmatter(content, { hp: combatant.hp, hp_max: combatant.maxHp })
+        (content) => patchFrontmatter(content, {
+          hp: combatant.hp,
+          hp_max: combatant.maxHp,
+          talebridge: {
+            ...frontmatter(content).talebridge || {},
+            temp_hp: combatant.tempHp || 0,
+            ...concentrationDamage(
+              { ...current, conditions: combatant.conditions },
+              combatant.hp,
+              Math.max(0, (current.hp || 0) - combatant.hp) + Math.max(0, (current.temp_hp || 0) - (combatant.tempHp || 0))
+            )
+          }
+        })
       );
       for (const c of this.members())
         if (c.session?.characterId === saved.id) this.send(c, "PLAYER_DATA", saved);
@@ -32170,6 +32216,14 @@ var BridgeApplication = class {
             switch (command.type) {
               case "UPDATE_CHARACTER_HP":
                 return patchFrontmatter(content, {
+                  talebridge: {
+                    ...frontmatter(content).talebridge || {},
+                    ...concentrationDamage(
+                      current,
+                      command.payload.hp,
+                      command.payload.damage ?? Math.max(0, (current.hp || 0) - command.payload.hp)
+                    )
+                  },
                   hp: command.payload.hp,
                   hp_max: command.payload.maxHp ?? current.hp_max
                 });

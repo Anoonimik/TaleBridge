@@ -1,3 +1,4 @@
+import { createId } from '../../../../packages/domain/id';
 import React, { useState, useMemo, useRef } from 'react';
 import {
   Character,
@@ -115,6 +116,19 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
       if (spell.dmg) {
         taleSpireDriver.rollDice(spell.dmg, `${spell.name} (${charName})`);
       }
+      if (spell.concentration) {
+        const state = useRosterStore.getState();
+        if (state.playerData)
+          state.setPlayerData({
+            ...state.playerData,
+            activeConcentration: {
+              spellId: spell.id,
+              spellName: spell.name,
+              instanceId: createId(),
+            },
+            concentrationChecks: [],
+          });
+      }
       return;
     }
 
@@ -173,6 +187,15 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
         `[Заклинание] ${charName} сотворил «${spell.name}» с ячейкой ${selectedCircle} круга (базовый: ${spell.level} круг).`,
       );
 
+    if (spell.concentration) {
+      const state = useRosterStore.getState();
+      if (state.playerData && state.playerData.id === castOwner.current)
+        state.setPlayerData({
+          ...state.playerData,
+          activeConcentration: { spellId: spell.id, spellName: spell.name, instanceId: createId() },
+          concentrationChecks: [],
+        });
+    }
     // 4. Close modal
     setCastingSpell(null);
   };
