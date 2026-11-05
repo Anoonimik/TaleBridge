@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { DialogLayer } from '../../shared/ui/DialogLayer';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   useAppStore,
   useRosterStore,
-  wsBridge,
   resolveMediaUrl,
   getYouTubeVideoId,
 } from '../../shared';
@@ -18,23 +18,14 @@ export const CinemaOverlay = () => {
     setImgError(false);
   }, [cinemaMedia?.url]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (role === 'gm') {
       stopBroadcast();
     } else {
       setCinemaMedia(null);
     }
-  };
+  }, [role, stopBroadcast, setCinemaMedia]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && cinemaMedia?.active) {
-        handleClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cinemaMedia?.active, role, setCinemaMedia, stopBroadcast]);
 
   if (!cinemaMedia?.active) return null;
 
@@ -66,7 +57,7 @@ export const CinemaOverlay = () => {
   };
 
   return (
-    <div
+    <DialogLayer title="Материал Мастера" onClose={handleClose}><div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -235,6 +226,6 @@ export const CinemaOverlay = () => {
           )}
         </div>
       </div>
-    </div>
+    </div></DialogLayer>
   );
 };

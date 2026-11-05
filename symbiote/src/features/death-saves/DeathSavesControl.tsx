@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dices, X, Check } from 'lucide-react';
-import { DeathSaves, taleSpireDriver } from '../../shared';
+import { DeathSaves } from '../../shared';
 
 interface DeathSavesControlProps {
   hp: number;
   deathSaves: DeathSaves;
-  onRollDeathSave: () => void;
+  onRollDeathSave: () => Promise<void>;
   onApplyDeathSaveRoll: (roll: number) => void;
   onUpdateDeathSaves: (successes: number, failures: number) => void;
   onResetDeathSaves: () => void;
@@ -15,7 +15,6 @@ export const DeathSavesControl = ({
   hp,
   deathSaves,
   onRollDeathSave,
-  onApplyDeathSaveRoll,
   onUpdateDeathSaves,
   onResetDeathSaves,
 }: DeathSavesControlProps) => {
@@ -29,28 +28,10 @@ export const DeathSavesControl = ({
   const isStable = successes >= 3;
   const isDead = failures >= 3;
 
-  useEffect(() => {
-    if (!isWaitingForRoll) return;
-
-    // Listen for real 3D dice roll result from TaleSpire / Host
-    const unsubscribe = taleSpireDriver.onRollResult((total) => {
-      onApplyDeathSaveRoll(total);
-      setIsWaitingForRoll(false);
-    });
-
-    const timer = setTimeout(() => {
-      setIsWaitingForRoll(false);
-    }, 20000);
-
-    return () => {
-      unsubscribe();
-      clearTimeout(timer);
-    };
-  }, [isWaitingForRoll, onApplyDeathSaveRoll]);
-
-  const handleStartRoll = () => {
+  const handleStartRoll = async () => {
     setIsWaitingForRoll(true);
-    onRollDeathSave();
+    try { await onRollDeathSave(); } catch { /* Reported by the common request error view. */ }
+    finally { setIsWaitingForRoll(false); }
   };
 
   const handleCancelWaiting = () => {

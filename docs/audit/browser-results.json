@@ -1,0 +1,8 @@
+{
+  "mocked": true,
+  "results": [
+    {"width": 375, "rendered": true, "pageErrors": [], "semanticDialogs": 0, "connectionTitleMatches": 1},
+    {"width": 768, "rendered": true, "pageErrors": [], "semanticDialogs": 0, "connectionTitleMatches": 1},
+    {"width": 1440, "rendered": true, "pageErrors": [], "semanticDialogs": 0, "connectionTitleMatches": 1}
+  ]
+}

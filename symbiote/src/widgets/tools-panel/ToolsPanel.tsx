@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLogStore, useAppStore, wsBridge, taleSpireDriver } from '../../shared';
+import { useLogStore, useAppStore, taleSpireDriver } from '../../shared';
 import { QuickDiceBar, BroadcastMediaModal, CameraBookmarksModal } from '../../features';
 
 export const ToolsPanel = () => {

@@ -59,8 +59,7 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
   const spellAttackBonus = profBonus + abilityMod;
 
   const spellSlots: SpellSlot[] = useMemo(() => {
-    if (!playerData) return DEFAULT_SLOTS;
-    return playerData.spellSlots && playerData.spellSlots.length > 0
+    return playerData?.spellSlots && playerData.spellSlots.length > 0
       ? playerData.spellSlots
       : DEFAULT_SLOTS;
   }, [playerData?.spellSlots]);

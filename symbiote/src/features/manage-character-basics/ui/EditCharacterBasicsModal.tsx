@@ -1,3 +1,4 @@
+import { DialogLayer } from '../../../shared/ui/DialogLayer';
 import React, { useState, useEffect } from 'react';
 import {
   UserCog,
@@ -6,8 +7,6 @@ import {
   Shield,
   Activity,
   Save,
-  Plus,
-  Minus,
 } from 'lucide-react';
 import {
   Character,
@@ -129,16 +128,6 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
   }, [playerData, isOpen]);
 
   // Handle escape key
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen || !playerData) return null;
 
@@ -197,7 +186,7 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fadeIn">
+    <DialogLayer title="Параметры персонажа" onClose={onClose}><div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fadeIn">
       <div
         className="bg-[#141622] border border-[#262a3d] rounded-xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -518,6 +507,6 @@ export const EditCharacterBasicsModal: React.FC<EditCharacterBasicsModalProps> =
           </div>
         </form>
       </div>
-    </div>
+    </div></DialogLayer>
   );
 };

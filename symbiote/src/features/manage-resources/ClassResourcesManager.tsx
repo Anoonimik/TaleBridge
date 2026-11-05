@@ -5,7 +5,6 @@ import {
   HitDice,
   parseModifier,
   formatModifier,
-  taleSpireDriver,
 } from '../../shared';
 import { ResourceModal } from './ResourceModal';
 

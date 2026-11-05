@@ -1,13 +1,11 @@
+import { DialogLayer } from '../../shared/ui/DialogLayer';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   useAppStore,
   wsBridge,
-  resolveMediaUrl,
   getYouTubeVideoId,
   getYouTubeEmbedUrl,
-  detectMediaType,
   cleanFileNameToTitle,
-  useEscKey,
 } from '../../shared';
 import { BroadcastPreviewBox, BroadcastImageForm } from './ui';
 
@@ -24,7 +22,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
   const [description, setDescription] = useState('');
   const [selectedVaultImage, setSelectedVaultImage] = useState('');
 
-  useEscKey(isOpen, onClose);
+
 
   // Request latest vault images when modal opens
   useEffect(() => {
@@ -43,7 +41,6 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
     setUrl(value);
     setSelectedVaultImage('');
 
-    const detected = detectMediaType(value);
     if (getYouTubeVideoId(value) || /\.(mp4|webm|mov|mkv)$/i.test(value)) {
       if (type !== 'video') setType('video');
     } else if (/\.(png|jpe?g|webp|gif|svg)$/i.test(value)) {
@@ -83,7 +80,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
   };
 
   return (
-    <div
+    <DialogLayer title="Трансляция материала" onClose={onClose}><div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -153,7 +150,7 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
                       ? 'bg-indigo-600/30 text-indigo-200 border-indigo-500/60 font-bold shadow-xs'
                       : 'bg-[#10111a] text-slate-400 hover:text-slate-200 border-[#262a3d]'
                   }`}
-                  onClick={() => setType(tab.id as any)}
+                  onClick={() => setType(tab.id as 'image' | 'video' | 'text' | 'audio')}
                 >
                   {tab.label}
                 </button>
@@ -343,6 +340,6 @@ export const BroadcastMediaModal = ({ isOpen, onClose }: BroadcastMediaModalProp
           </button>
         </div>
       </div>
-    </div>
+    </div></DialogLayer>
   );
 };

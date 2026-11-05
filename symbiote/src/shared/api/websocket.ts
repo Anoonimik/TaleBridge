@@ -1,274 +1,133 @@
-import { WebSocketMessage } from '../types';
-import { STORAGE_KEYS, DEFAULT_WS_PORT } from '../config/constants';
-import { useAppStore } from '../lib/useAppStore';
-import { useRosterStore } from '../lib/useRosterStore';
-import { useStoryStore } from '../lib/useStoryStore';
-import { useCombatStore } from '../lib/useCombatStore';
-import { useLogStore } from '../lib/useLogStore';
-
-type MessageListener = (payload: any) => void;
-
-class WebSocketBridge {
-  private ws: WebSocket | null = null;
-  private host: string;
-  private port: number;
-  private reconnectTimer: any = null;
-  private listeners: Map<string, Set<MessageListener>> = new Map();
-
-  constructor() {
-    this.host = this.getInitialHost();
-    this.port = this.getInitialPort();
-    this.connect(this.host, this.port);
+import { PROTOCOL_VERSION, isWriteCommand, type WireMessage } from '../../../../packages/protocol';
+import { configureEndpoint, endpointScope, initialEndpoint, httpBase, serverInfo, socketUrl } from './endpoint';
+import { STORAGE_KEYS } from '../config/constants';
+type Listener = (payload: unknown) => void;
+interface Pending { resolve:(v:unknown)=>void; reject:(e:Error)=>void; timer:ReturnType<typeof setTimeout>; }
+interface Outbox {requestId:string;type:string;payload:Record<string,unknown>;expectedRevision?:string;fixedRevision?:boolean;sent:boolean;created:number;campaignId:string;}
+export class WebSocketBridge {
+  private ws:WebSocket|null = null;
+  private reconnectTimer?:ReturnType<typeof setTimeout>;
+  private generation = 0;
+  private attempts = 0;
+  private started = false;
+  private authenticated = false;
+  private campaignId = '';
+  private listeners = new Map<string,Set<Listener>>();
+  private pending = new Map<string,Pending>();
+  private revisions = new Map<string,string>();
+  private nameIds = new Map<string,string>();
+  private queues = new Map<string,Promise<unknown>>();
+  private outbox = new Map<string,Outbox>();
+  private activeWrites = new Map<string,number>();
+  private token?:{role:'gm'|'player';token:string};
+  getServerInfo = serverInfo;
+  hasPendingWrites(id?:string) {return Boolean(id && this.activeWrites.get(id));}
+  start() {if(this.started)return;this.started=true;initialEndpoint();this.connect();}
+  private tokenKey() {return `tb_session_v1:${endpointScope()}`;}
+  private outboxKey() {return `tb_outbox_v1:${endpointScope()}`;}
+  private status() {this.emit('STATUS',{connected:this.authenticated,connecting:Boolean(this.ws && this.ws.readyState === WebSocket.CONNECTING)});}
+  setServer(host:string,port:number) {
+    configureEndpoint(host.trim() || '127.0.0.1',port);
+    try {localStorage.setItem(STORAGE_KEYS.HOST,host);localStorage.setItem(STORAGE_KEYS.PORT,String(port));} catch { /* settings can be ephemeral */ }
+    this.outbox.clear();this.revisions.clear();this.nameIds.clear();this.token=undefined;this.campaignId='';this.connect();
   }
-
-  private getInitialHost(): string {
+  async pingServer(host:string,port:number):Promise<{ok:boolean;data?:Record<string,unknown>;error?:string}> {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.HOST);
-      if (stored && stored.trim()) return stored.trim();
-    } catch {}
-
-    // Auto-detect browser hostname if page is served over HTTP/LAN
-    if (typeof window !== 'undefined' && window.location && window.location.hostname) {
-      const h = window.location.hostname;
-      if (h && h !== 'localhost' && !h.startsWith('127.')) {
-        return h;
-      }
-    }
-    return '127.0.0.1';
+      const url=new URL(/^https?:\/\//.test(host) ? host : `http://${host}`);url.port=String(port);url.pathname='/health';
+      const res=await fetch(url,{signal:AbortSignal.timeout(3500)});
+      return res.ok ? {ok:true,data:await res.json()} : {ok:false,error:`HTTP ${res.status}`};
+    } catch(error) {return {ok:false,error:error instanceof Error ? error.message : 'Нет связи'};}
   }
-
-  private getInitialPort(): number {
+  connect() {
+    clearTimeout(this.reconnectTimer);const generation=++this.generation;this.authenticated=false;
+    if(this.ws){this.ws.onclose=null;this.ws.onmessage=null;this.ws.onopen=null;this.ws.onerror=null;this.ws.close();}
+    for(const [id,p] of this.pending){clearTimeout(p.timer);p.reject(new Error('Соединение прервано'));this.pending.delete(id);}
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.PORT);
-      if (stored) {
-        const p = parseInt(stored, 10);
-        if (!isNaN(p) && p > 0 && p < 65536) return p;
-      }
-    } catch {}
-    return DEFAULT_WS_PORT;
-  }
-
-  public getServerInfo(): { host: string; port: number } {
-    return { host: this.host, port: this.port };
-  }
-
-  public setServer(host: string, port: number): void {
-    this.host = (host && host.trim()) || '127.0.0.1';
-    this.port = port || DEFAULT_WS_PORT;
-    try {
-      localStorage.setItem(STORAGE_KEYS.HOST, this.host);
-      localStorage.setItem(STORAGE_KEYS.PORT, String(this.port));
-    } catch {}
-    this.connect(this.host, this.port);
-  }
-
-  public async pingServer(
-    host: string,
-    port: number
-  ): Promise<{ ok: boolean; data?: any; error?: string }> {
-    try {
-      const cleanHost = host.trim() || '127.0.0.1';
-      const cleanPort = port || DEFAULT_WS_PORT;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-      const res = await fetch(`http://${cleanHost}:${cleanPort}`, {
-        signal: controller.signal,
-        headers: { Accept: 'application/json' },
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const json = await res.json().catch(() => ({}));
-        return { ok: true, data: json };
-      }
-      return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
-    } catch (err: any) {
-      return {
-        ok: false,
-        error:
-          err.name === 'AbortError'
-            ? 'Таймаут (3.5 сек) — проверьте IP или брандмауэр'
-            : err.message || 'Ошибка сети',
+      const socket=this.ws=new WebSocket(socketUrl());this.status();
+      socket.onopen=() => {
+        if(generation!==this.generation)return;this.attempts=0;this.status();
+        try {this.token=JSON.parse(sessionStorage.getItem(this.tokenKey()) || 'null') || undefined;} catch {this.token=undefined;}
+        if(this.token)void this.authenticate(this.token.role,undefined,this.token.token).catch(()=>{});
       };
-    }
-  }
-
-  public connect(host?: string, port?: number): void {
-    if (host) this.host = host.trim();
-    if (port) this.port = port;
-
-    if (this.ws) {
-      try {
-        this.ws.close();
-      } catch {
-        // ignore
-      }
-    }
-
-    const url = `ws://${this.host}:${this.port}`;
-    try {
-      this.ws = new WebSocket(url);
-
-      this.ws.onopen = () => {
-        useAppStore.getState().setConnected(true);
-        useLogStore.getState().addLog('sync', `Подключено к Obsidian на ${this.host}:${this.port}`);
-        this.send('HANDSHAKE', { client: 'TaleSpire-Symbiote-React' });
-        this.send('GET_CHARACTERS', {});
-        this.send('GET_SCENES', {});
-        this.send('GET_COMBAT_STATE', {});
-        this.send('GET_VAULT_IMAGES', {});
-        this.send('GET_BOOKMARKS', {});
-
-        const activePlayer = useRosterStore.getState().playerCharacterName;
-        if (activePlayer) {
-          this.send('GET_PLAYER_DATA', { characterName: activePlayer });
-        }
+      socket.onmessage=event => {if(generation!==this.generation)return;try{this.receive(JSON.parse(String(event.data)));}catch{this.emit('ERROR',{message:'Некорректное сообщение сервера'});}};
+      socket.onerror=() => {if(generation===this.generation)this.status();};
+      socket.onclose=() => {
+        if(generation!==this.generation)return;this.authenticated=false;this.status();
+        for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('Соединение прервано'));}this.pending.clear();
+        if(this.started)this.reconnectTimer=setTimeout(()=>this.connect(),Math.min(30000,1000*2**Math.min(this.attempts++,5))+Math.random()*500);
       };
-
-      this.ws.onclose = () => {
-        useAppStore.getState().setConnected(false);
-        this.scheduleReconnect();
-      };
-
-      this.ws.onerror = () => {
-        useAppStore.getState().setConnected(false);
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          this.handleMessage(msg);
-        } catch (e) {
-          console.error('WebSocket parse error:', e);
-        }
-      };
-    } catch {
-      this.scheduleReconnect();
-    }
+    }catch{if(this.started)this.reconnectTimer=setTimeout(()=>this.connect(),2500);}
   }
-
-  private scheduleReconnect(): void {
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(() => {
-      this.connect(this.host, this.port);
-    }, 2500);
+  async authenticate(role:'gm'|'player',code?:string,token?:string) {
+    if(!this.started)this.start();const deadline=Date.now()+8000;
+    while(this.ws?.readyState!==WebSocket.OPEN){if(Date.now()>deadline)throw new Error('Сервер недоступен');await new Promise(r=>setTimeout(r,50));}
+    await this.transmit('HANDSHAKE',{role,code,token,driver:typeof window!=='undefined' && Boolean(window.TS)});
   }
-
-  public send(type: string, payload: any = {}): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    this.ws.send(JSON.stringify({ type, payload }));
+  async logout() {
+    if(this.authenticated)try{await this.request('LOGOUT');}catch{ /* clear local capability even offline */ }
+    this.token=undefined;this.authenticated=false;try{sessionStorage.removeItem(this.tokenKey());}catch{ /* ephemeral session */ }this.status();this.emit('LOGGED_OUT',{});
   }
-
-  public subscribe(type: string, listener: MessageListener): () => void {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, new Set());
-    }
-    this.listeners.get(type)!.add(listener);
-
-    return () => {
-      const set = this.listeners.get(type);
-      if (set) {
-        set.delete(listener);
-        if (set.size === 0) this.listeners.delete(type);
-      }
-    };
+  send(type:string,payload:unknown={}):boolean {
+    void this.request(type,payload).catch(error=>this.emit('ERROR',{message:error instanceof Error ? error.message : 'Ошибка отправки',type}));return this.authenticated;
   }
-
-  private handleMessage(msg: { type: string; payload: any }): void {
-    const { type, payload } = msg;
-
-    switch (type) {
-      case 'HANDSHAKE_ACK':
-        if (payload?.vault) useAppStore.getState().setVaultName(payload.vault);
-        if (payload?.gmPin !== undefined) useAppStore.getState().setGmPin(String(payload.gmPin));
-        break;
-
-      case 'CONFIG_UPDATE':
-        if (payload?.gmPin !== undefined) {
-          useAppStore.getState().setGmPin(String(payload.gmPin));
-        }
-        break;
-
-      case 'CHARACTERS_LIST':
-        if (Array.isArray(payload)) {
-          useRosterStore.getState().setRoster(payload);
-          useLogStore.getState().addLog('sync', `Обновлен ростер: ${payload.length} записей`);
-
-          const currentName = useRosterStore.getState().playerCharacterName;
-          if (currentName) {
-            this.send('GET_PLAYER_DATA', { characterName: currentName });
-          } else if (payload.length > 0) {
-            const firstPlayer = payload.find((c: any) => c.playable || c.category === 'Игроки');
-            if (firstPlayer) {
-              useRosterStore.getState().setPlayerCharacterName(firstPlayer.name);
-            }
-          }
-        }
-        break;
-
-      case 'SCENES_LIST':
-        if (Array.isArray(payload)) {
-          useStoryStore.getState().setScenes(payload);
-          useLogStore.getState().addLog('sync', `Обновлены сцены: ${payload.length} записей`);
-        }
-        break;
-
-      case 'COMBAT_STATE_UPDATE':
-        if (payload) {
-          useCombatStore.getState().setFromSync(payload);
-        }
-        break;
-
-      case 'PLAYER_DATA':
-        if (payload) {
-          useRosterStore.getState().setPlayerData(payload);
-        }
-        break;
-
-      case 'NOTE_CONTENT':
-        if (payload) {
-          useRosterStore.getState().setNoteContent(payload);
-        }
-        break;
-
-      case 'VAULT_IMAGES_LIST':
-        if (Array.isArray(payload)) {
-          useAppStore.getState().setVaultImages(payload);
-        }
-        break;
-
-      case 'BOOKMARKS_LIST':
-        if (Array.isArray(payload)) {
-          useAppStore.getState().setBookmarks(payload);
-        }
-        break;
-
-      case 'MEDIA_HANDOUT':
-        if (payload) {
-          useAppStore.getState().setCinemaMedia({ ...payload, active: true });
-        }
-        break;
-
-      case 'DISMISS_HANDOUT':
-        useAppStore.getState().setCinemaMedia(null);
-        break;
-
+  request<T=unknown>(type:string,payload:unknown={},options?:{expectedRevision?:string}):Promise<T> {
+    const data=payload && typeof payload==='object' && !Array.isArray(payload) ? {...payload as Record<string,unknown>} : payload;
+    if(!isWriteCommand(type)){
+      if(!this.authenticated)return Promise.reject(new Error('Требуется подключение с кодом доступа'));
+      return this.transmit(type,data) as Promise<T>;
     }
-
-    const custom = this.listeners.get(type);
-    if (custom) {
-      custom.forEach((listener) => {
-        try {
-          listener(payload);
-        } catch (e) {
-          console.error(`Error in listener for ${type}:`, e);
-        }
-      });
-    }
+    if(!this.campaignId)return Promise.reject(new Error('Сначала подключитесь к кампании'));
+    const object=data as Record<string,unknown>;
+    const id=typeof object.characterId==='string' ? object.characterId : typeof object.characterName==='string' ? this.nameIds.get(object.characterName) : undefined;
+    if(id){object.characterId=id;delete object.characterName;}
+    const key=id || 'combat';
+    if(this.outbox.size>=100)return Promise.reject(new Error('Очередь заполнена. Сохраните черновик и восстановите связь.'));
+    const entry:Outbox={requestId:crypto.randomUUID(),type,payload:object,expectedRevision:options?.expectedRevision || this.revisions.get(key),fixedRevision:Boolean(options?.expectedRevision),sent:false,created:Date.now(),campaignId:this.campaignId};
+    this.outbox.set(entry.requestId,entry);this.persistOutbox();this.activeWrites.set(key,(this.activeWrites.get(key)||0)+1);
+    const operation=(this.queues.get(key)||Promise.resolve()).catch(()=>{}).then(async()=>{
+      if(!this.authenticated)throw new Error('Нет связи. Правка оставлена в локальной очереди.');
+      if(!entry.fixedRevision)entry.expectedRevision=this.revisions.get(key) || entry.expectedRevision;return this.deliver(entry);
+    }).finally(()=>{
+      const count=(this.activeWrites.get(key)||1)-1;this.activeWrites.set(key,count);
+      if(count===0 && this.authenticated && id)this.send('GET_PLAYER_DATA',{characterId:id});
+      if(this.queues.get(key)===operation)this.queues.delete(key);
+    });
+    this.queues.set(key,operation);return operation as Promise<T>;
   }
+  private async deliver(entry:Outbox):Promise<unknown> {
+    if(entry.campaignId!==this.campaignId || Date.now()-entry.created>24*60*60*1000)throw new Error('Правка требует ручного восстановления из черновика');
+    entry.sent=true;this.persistOutbox();
+    try{const result=await this.transmit(entry.type,entry.payload,entry.requestId,entry.expectedRevision);this.outbox.delete(entry.requestId);this.persistOutbox();return result;}
+    catch(error){if(this.authenticated){this.outbox.delete(entry.requestId);this.persistOutbox();}throw error;}
+  }
+  private persistOutbox(){try{sessionStorage.setItem(this.outboxKey(),JSON.stringify([...this.outbox.values()]));}catch{this.emit('ERROR',{message:'Не удалось сохранить локальную очередь. Не закрывайте страницу.'});}}
+  private async replay(){
+    let entries:Outbox[]=[];try{entries=JSON.parse(sessionStorage.getItem(this.outboxKey())||'[]');}catch{return;}
+    for(const entry of entries){if(!this.authenticated)break;if(this.pending.has(entry.requestId))continue;this.outbox.set(entry.requestId,entry);try{await this.deliver(entry);}catch(error){this.emit('ERROR',{message:error instanceof Error ? error.message : 'Конфликт очереди'});}}
+  }
+  private transmit(type:string,payload:unknown,requestId:string=crypto.randomUUID(),expectedRevision?:string):Promise<unknown>{
+    if(this.ws?.readyState!==WebSocket.OPEN)return Promise.reject(new Error('Нет соединения с сервером'));
+    return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending.delete(requestId);reject(new Error('Нет подтверждения сервера. Проверьте сохранение перед повтором.'));},10000);this.pending.set(requestId,{resolve,reject,timer});this.ws!.send(JSON.stringify({protocolVersion:PROTOCOL_VERSION,type,payload,requestId,expectedRevision}));});
+  }
+  private receive(input:unknown){
+    if(!input || typeof input!=='object' || !('type' in input) || typeof input.type!=='string' || !('payload' in input))return;
+    const message=input as WireMessage;const payload=message.payload as Record<string,unknown>;
+    if(message.type==='HANDSHAKE_ACK'){
+      this.authenticated=true;this.campaignId=String(payload.campaignId);this.token={role:payload.role as 'gm'|'player',token:String(payload.token)};
+      try{sessionStorage.setItem(this.tokenKey(),JSON.stringify(this.token));}catch{ /* session remains in memory */ }
+      this.status();setTimeout(()=>{void this.replay();},0);
+    }
+    if(message.type==='PLAYER_DATA' && typeof payload.id==='string' && typeof payload.revision==='string')this.revisions.set(payload.id,payload.revision);
+    if(message.type==='CHARACTERS_LIST' && Array.isArray(payload))for(const c of payload)if(c && typeof c.id==='string'){this.nameIds.set(c.name,c.id);this.revisions.set(c.id,c.revision);}
+    if(message.type==='COMBAT_STATE_UPDATE' && typeof payload.revision==='string')this.revisions.set('combat',payload.revision);
+    if(message.type==='ACK' && payload?.data && typeof payload.data==='object'){const data=payload.data as Record<string,unknown>;if(typeof data.revision==='string')this.revisions.set(typeof data.characterId==='string' ? data.characterId : 'combat',data.revision);}
+    if(message.requestId && ['ACK','ERROR'].includes(message.type)){const pending=this.pending.get(message.requestId);if(pending){clearTimeout(pending.timer);this.pending.delete(message.requestId);if(message.type==='ACK')pending.resolve(payload.data);else pending.reject(new Error(String(payload.message || 'Ошибка сервера')));}}
+    if(message.type==='ERROR' && ['AUTH_FAILED','UNAUTHORIZED'].includes(String(payload.code))){this.authenticated=false;this.status();if(payload.code==='AUTH_FAILED'){this.token=undefined;try{sessionStorage.removeItem(this.tokenKey());}catch{ /* no persistence */ }}}
+    this.emit(message.type,message.payload);
+  }
+  subscribe<T=unknown>(type:string,listener:(payload:T)=>void):()=>void{if(!this.listeners.has(type))this.listeners.set(type,new Set());const callback=listener as Listener;this.listeners.get(type)!.add(callback);return()=>{this.listeners.get(type)?.delete(callback);};}
+  private emit(type:string,payload:unknown){for(const listener of this.listeners.get(type)||[])try{listener(payload);}catch(error){console.error('TaleBridge listener failed',type,error);}}
+  dispose(){this.started=false;++this.generation;clearTimeout(this.reconnectTimer);this.ws?.close();this.ws=null;for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('Клиент закрыт'));}this.pending.clear();this.authenticated=false;this.status();}
 }
-
-export const wsBridge = new WebSocketBridge();
+export const wsBridge=new WebSocketBridge();
+export {httpBase};

@@ -1,3 +1,4 @@
+import { DialogLayer } from '../../shared/ui/DialogLayer';
 import React, { useState } from 'react';
 import { Character, CombatSide, COMBAT_SIDES } from '../../shared';
 import { useCombatStore, useRosterStore } from '../../shared';
@@ -46,7 +47,7 @@ export const CombatRosterDropdown = ({ onClose }: CombatRosterDropdownProps) => 
   };
 
   return (
-    <div
+    <DialogLayer title="Добавить участника боя" onClose={onClose}><div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={onClose}
     >
@@ -117,6 +118,6 @@ export const CombatRosterDropdown = ({ onClose }: CombatRosterDropdownProps) => 
           )}
         </div>
       </div>
-    </div>
+    </div></DialogLayer>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore, useCombatStore, useRosterStore, wsBridge } from '../../shared';
 import { GmAuthModal, ConnectionModal } from '../../features';
 
@@ -12,7 +12,7 @@ export const AppHeader = () => {
     setScale,
     connected,
     vaultName,
-    gmPin,
+
     diceSecret,
     setDiceSecret,
     cinemaMedia,
@@ -21,34 +21,20 @@ export const AppHeader = () => {
   const { combatants, active: combatActive } = useCombatStore();
   const { roster } = useRosterStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(!connected);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  useEffect(() => {if (connected) setShowConnectionModal(false);}, [connected]);
 
   const isGm = role === 'gm';
 
   const handleRoleToggle = () => {
-    if (isGm) {
-      sessionStorage.removeItem('tb_gm_auth');
-      setRole('player');
-    } else {
-      const expected = (gmPin || '').trim();
-      if (!expected) {
-        sessionStorage.setItem('tb_gm_auth', 'true');
-        setRole('gm');
-        return;
-      }
-      if (sessionStorage.getItem('tb_gm_auth') === 'true') {
-        setRole('gm');
-      } else {
-        setShowAuthModal(true);
-      }
-    }
+    if (isGm) void wsBridge.logout(); else setShowAuthModal(true);
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     wsBridge.send('GET_CHARACTERS', {});
-    wsBridge.send('GET_SCENES', {});
+    if (isGm) wsBridge.send('GET_SCENES', {});
     wsBridge.send('GET_COMBAT_STATE', {});
     setTimeout(() => setIsRefreshing(false), 700);
   };

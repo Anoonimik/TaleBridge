@@ -3,7 +3,7 @@ import { Character, useRosterStore, wsBridge } from '../../shared';
 import { CharacterCard } from '../../entities';
 
 export const CharacterRoster = () => {
-  const { roster, pinnedNames, selectedCharacter, setSelectedCharacter } = useRosterStore();
+  const { roster, pinnedNames, setSelectedCharacter } = useRosterStore();
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
 

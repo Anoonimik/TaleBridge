@@ -4,7 +4,6 @@ import {
   useAppStore,
   useConfirmDelete,
   resolveMediaUrl,
-  getYouTubeVideoId,
   getYouTubeThumbnailUrl,
 } from '../../../shared';
 
@@ -29,7 +28,6 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
     });
   };
 
-  const ytId = getYouTubeVideoId(clue.url);
   const ytThumb = getYouTubeThumbnailUrl(clue.url);
 
   return (

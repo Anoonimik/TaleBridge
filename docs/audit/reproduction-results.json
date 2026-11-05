@@ -1,0 +1,87 @@
+{
+  "auditedCommit": "9f3b05257abaf9b9c65d930f6ac92aa6aa012e5e",
+  "probes": 20,
+  "reproduced": 20,
+  "results": [
+    {
+      "id": "S01-handshake-leaks-gm-pin",
+      "reproduced": true
+    },
+    {
+      "id": "S02-unauthenticated-character-write",
+      "reproduced": true
+    },
+    {
+      "id": "S03-http-reads-private-vault-file",
+      "reproduced": true
+    },
+    {
+      "id": "S04-http-reads-host-clipboard-without-auth",
+      "reproduced": true
+    },
+    {
+      "id": "F01-undefined-data-GET_SYSTEM_CLIPBOARD",
+      "reproduced": true
+    },
+    {
+      "id": "F01-undefined-data-SET_SYSTEM_CLIPBOARD",
+      "reproduced": true
+    },
+    {
+      "id": "F02-client-attack-command-ignored",
+      "reproduced": true
+    },
+    {
+      "id": "D01-action-update-deletes-intermediate-prose",
+      "reproduced": true
+    },
+    {
+      "id": "D02-section-replacement-interprets-dollar-text",
+      "reproduced": true
+    },
+    {
+      "id": "D03-concurrent-section-updates-lose-first-write",
+      "reproduced": true
+    },
+    {
+      "id": "S05-websocket-accepts-unmasked-client-frame",
+      "reproduced": true
+    },
+    {
+      "id": "S06-websocket-pong-drops-ping-payload",
+      "reproduced": true
+    },
+    {
+      "id": "S07-websocket-dispatches-incomplete-fragment",
+      "reproduced": true
+    },
+    {
+      "id": "F03-player-data-for-other-character-replaces-selection-data",
+      "reproduced": true
+    },
+    {
+      "id": "D04-skill-proficiency-lost-on-server-refresh",
+      "reproduced": true
+    },
+    {
+      "id": "F04-media-always-resolves-to-loopback-default-port",
+      "reproduced": true
+    },
+    {
+      "id": "F05-active-scene-remains-stale-after-refresh",
+      "reproduced": true
+    },
+    {
+      "id": "F06-removing-earlier-combatant-skips-active-turn",
+      "reproduced": true
+    },
+    {
+      "id": "F07-game-fallback-commands-dropped-by-host",
+      "reproduced": true
+    },
+    {
+      "id": "F08-composite-dice-formula-is-silently-truncated",
+      "reproduced": true
+    }
+  ]
+}

@@ -28,7 +28,7 @@ interface AppStore {
   diceSecret: boolean;
   connected: boolean;
   vaultName: string;
-  gmPin: string;
+  lastError: string;
   vaultImages: VaultImage[];
   cinemaMedia: CinemaMediaPayload | null;
   bookmarks: Bookmark[];
@@ -38,23 +38,14 @@ interface AppStore {
   setDiceSecret: (secret: boolean) => void;
   setConnected: (connected: boolean) => void;
   setVaultName: (name: string) => void;
-  setGmPin: (pin: string) => void;
+  setLastError: (error: string) => void;
   setVaultImages: (images: VaultImage[]) => void;
   setCinemaMedia: (media: CinemaMediaPayload | null) => void;
   stopBroadcast: () => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
 }
 
-const getInitialRole = (): UserRole => {
-  try {
-    const storedRole = localStorage.getItem(STORAGE_KEYS.ROLE);
-    const isAuth = sessionStorage.getItem(STORAGE_KEYS.GM_AUTH) === 'true';
-    if (storedRole === 'gm' && isAuth) return 'gm';
-  } catch {
-    // storage unavailable
-  }
-  return 'player';
-};
+const getInitialRole = (): UserRole => 'player';
 
 const getInitialScale = (): string => {
   try {
@@ -69,14 +60,6 @@ const getInitialScale = (): string => {
   return '100%';
 };
 
-const getInitialPin = (): string => {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.GM_PIN) || '5';
-  } catch {
-    return '5';
-  }
-};
-
 export const useAppStore = create<AppStore>((set) => ({
   role: getInitialRole(),
   activeTab: 'story',
@@ -84,7 +67,7 @@ export const useAppStore = create<AppStore>((set) => ({
   diceSecret: false,
   connected: false,
   vaultName: 'Obsidian Vault',
-  gmPin: getInitialPin(),
+  lastError: '',
   vaultImages: [],
   cinemaMedia: null,
   bookmarks: [],
@@ -109,14 +92,7 @@ export const useAppStore = create<AppStore>((set) => ({
   setDiceSecret: (diceSecret) => set({ diceSecret }),
   setConnected: (connected) => set({ connected }),
   setVaultName: (vaultName) => set({ vaultName }),
-  setGmPin: (gmPin) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.GM_PIN, gmPin);
-    } catch {
-      // storage unavailable
-    }
-    set({ gmPin });
-  },
+  setLastError: (lastError) => set({lastError}),
   setVaultImages: (vaultImages) => set({ vaultImages: Array.isArray(vaultImages) ? vaultImages : [] }),
   setCinemaMedia: (cinemaMedia) => set({ cinemaMedia }),
   stopBroadcast: () => {

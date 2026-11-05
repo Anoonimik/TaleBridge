@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, Search, X, Star } from 'lucide-react';
+import { ChevronRight, X, Star } from 'lucide-react';
 import {
   Character,
   parseModifier,
@@ -62,7 +62,7 @@ function normalizeToRu(str: string): string {
 export function getSkillProficiency(
   skillId: string,
   skillLabel: string,
-  skillsData: any
+  skillsData: unknown
 ): 'none' | 'proficient' | 'expert' {
   if (!skillsData) return 'none';
 
@@ -77,7 +77,8 @@ export function getSkillProficiency(
   }
 
   if (typeof skillsData === 'object') {
-    const val = skillsData[skillId] ?? skillsData[skillLabel] ?? skillsData[skillLabel.toLowerCase()];
+    const skills = skillsData as Record<string,unknown>;
+    const val = skills[skillId] ?? skills[skillLabel] ?? skills[skillLabel.toLowerCase()];
     if (val === 'expert' || val === 2) return 'expert';
     if (val === 'proficient' || val === 1 || val === true) return 'proficient';
     return 'none';

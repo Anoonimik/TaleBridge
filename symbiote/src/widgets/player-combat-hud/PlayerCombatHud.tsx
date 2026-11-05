@@ -1,13 +1,15 @@
+import { wsBridge } from '../../shared/api/websocket';
 import React, { useState, useRef, useEffect } from 'react';
 import { useCombatStore, useRosterStore, CONDITIONS, COMBAT_SIDES } from '../../shared';
 
 export const PlayerCombatHud = () => {
-  const { active: combatActive, round, turnIndex, combatants, nextTurn } = useCombatStore();
+  const { active: combatActive, round, turnIndex, combatants } = useCombatStore();
   const { playerCharacterName } = useRosterStore();
   const [showQueue, setShowQueue] = useState(true);
   const queueRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLDivElement>(null);
 
+  const finishTurn = () => { wsBridge.send('END_PLAYER_TURN'); };
   const currentCombatant = combatants[turnIndex];
   const isMyTurn =
     Boolean(currentCombatant?.name && playerCharacterName) &&
@@ -96,7 +98,7 @@ export const PlayerCombatHud = () => {
             <button
               type="button"
               className="px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded shadow-md cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 animate-pulse"
-              onClick={nextTurn}
+              onClick={finishTurn}
               title="Завершить ход и передать инициативу следующему бойцу"
             >
               <span>Завершить ход</span>

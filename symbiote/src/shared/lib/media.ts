@@ -1,8 +1,8 @@
+import { httpBase, serverInfo } from '../api/endpoint';
 // TaleBridge Media Helper Utilities
-import { DEFAULT_WS_PORT } from '../config/constants';
 
 export function getWebSocketPort(): number {
-  return DEFAULT_WS_PORT;
+  return serverInfo().port;
 }
 
 /**
@@ -16,15 +16,13 @@ export function resolveMediaUrl(url: string | undefined | null): string {
   if (
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:') ||
     trimmed.startsWith('blob:')
   ) {
     return trimmed;
   }
 
-  // Local Obsidian vault file served via TaleBridge HTTP host (default 30123)
-  const port = getWebSocketPort();
-  return `http://127.0.0.1:${port}/vault-file?path=${encodeURIComponent(trimmed)}`;
+  if (trimmed.startsWith('/media/')) return httpBase() + trimmed;
+  return ''; // Private vault paths are not HTTP resources.
 }
 
 /**

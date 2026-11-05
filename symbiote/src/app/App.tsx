@@ -1,10 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { useAppStore, useRosterStore } from '../shared';
 import { AppHeader, TokenHud, CinemaOverlay, NoteViewer } from '../widgets';
-import { GmScreen, PlayerScreen } from '../pages';
+const GmScreen = lazy(() => import('../pages/gm-screen/GmScreen').then(m => ({default:m.GmScreen})));
+const PlayerScreen = lazy(() => import('../pages/player-screen/PlayerScreen').then(m => ({default:m.PlayerScreen})));
 
 export const App = () => {
   const { role, scale } = useAppStore();
+  const lastError = useAppStore(s=>s.lastError);
+  const dismissError = useAppStore(s=>s.setLastError);
   const { selectedCharacter, setSelectedCharacter } = useRosterStore();
 
   const isGm = role === 'gm';
@@ -40,7 +43,7 @@ export const App = () => {
         break;
     }
     document.documentElement.style.fontSize = px;
-    (document.documentElement.style as any).zoom = '1';
+    document.documentElement.style.setProperty('zoom', '1');
     window.scrollTo(0, 0);
   }, [scale]);
 
@@ -58,9 +61,10 @@ export const App = () => {
     <div className="w-full h-full flex flex-col overflow-hidden bg-[#0c0d14]">
       <AppHeader />
       <TokenHud />
+      {lastError && <div role="alert" className="px-3 py-2 bg-rose-950 text-rose-100 flex items-center justify-between gap-3"><span>{lastError}</span><button type="button" aria-label="Закрыть уведомление" onClick={()=>dismissError('')}>✕</button></div>}
 
       <main className="flex-1 overflow-hidden relative">
-        {isGm ? <GmScreen /> : <PlayerScreen />}
+        <Suspense fallback={<p role="status">Загрузка…</p>}>{isGm ? <GmScreen /> : <PlayerScreen />}</Suspense>
       </main>
 
       <CinemaOverlay />

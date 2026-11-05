@@ -1,7 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { InventoryItem, Character, useRosterStore, wsBridge } from '../../shared';
+import {
+  InventoryItem,
+  Character,
+  useRosterStore,
+  wsBridge,
+  taleSpireDriver,
+  useLogStore,
+} from '../../shared';
 import { ItemCard } from '../../entities';
-import { InventoryWeightGauge, AddItemForm } from './ui';
+import { InventoryWeightGauge, AddItemForm, CoinWalletBar } from './ui';
+import {
+  getConsumableActionInfo,
+  evaluateLocalDiceFormula,
+} from './lib/consumable-helper';
 
 interface InventoryManagerProps {
   playerData: Character | null;
@@ -10,15 +21,23 @@ interface InventoryManagerProps {
 const CATEGORIES = ['all', 'Оружие', 'Броня', 'Зелья', 'Снаряжение', 'Квестовое'];
 
 export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
-  const { playerCharacterName, setPlayerData } = useRosterStore();
+  const {
+    playerCharacterName,
+    setPlayerData,
+    updatePlayerHp,
+    updateCurrency,
+    adjustCurrency,
+  } = useRosterStore();
+
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const items = useMemo(() => playerData?.inventory || [], [playerData?.inventory]);
 
-  // Calculate weights with memoization
-  const totalWeight = useMemo(
+  // Calculate items weight
+  const itemsWeight = useMemo(
     () =>
       items.reduce((acc, it) => {
         const q = it.quantity || 1;
@@ -27,6 +46,28 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       }, 0),
     [items]
   );
+
+  // Calculate coins weight (50 coins = 1 lb ≈ 0.45 kg, or ~0.009 kg per coin)
+  const currency = playerData?.currency;
+  const totalCoins = useMemo(() => {
+    if (!currency) return 0;
+    return (
+      (currency.pp || 0) +
+      (currency.gp || 0) +
+      (currency.ep || 0) +
+      (currency.sp || 0) +
+      (currency.cp || 0)
+    );
+  }, [currency]);
+
+  const coinsWeight = useMemo(() => {
+    return Math.round((totalCoins / 50) * 0.45 * 10) / 10;
+  }, [totalCoins]);
+
+  // Total carry weight: items + coins
+  const totalWeight = useMemo(() => {
+    return Math.round((itemsWeight + coinsWeight) * 10) / 10;
+  }, [itemsWeight, coinsWeight]);
 
   // Max carry weight: STR score * 7.5 kg (or 15 lbs)
   const maxWeight = useMemo(() => {
@@ -90,14 +131,105 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
     setIsAdding(false);
   };
 
+  /**
+   * Interactive Consumable Use (Healing Potions, Scrolls, Rations)
+   */
+  const handleUseConsumable = async (item: InventoryItem) => {
+    if (!playerData) return;
+    const charName = playerData.name || 'Персонаж';
+    const action = getConsumableActionInfo(item);
+
+    // 1. If item has dice formula (e.g. 2d4+2 for healing)
+    if (action.formula) {
+      let rollResult = 0;
+      if (taleSpireDriver.isReady()) {
+        try {
+          rollResult = await taleSpireDriver.rollForResult(
+            action.formula,
+            `${action.label}: ${item.name} (${charName})`
+          );
+        } catch {
+          rollResult = evaluateLocalDiceFormula(action.formula);
+        }
+      } else {
+        rollResult = evaluateLocalDiceFormula(action.formula);
+      }
+
+      // If it's a healing potion, apply HP restoration
+      if (action.isHealing) {
+        const currentHp = playerData.hp ?? 0;
+        const maxHp = playerData.hp_max ?? 20;
+        const missingHp = Math.max(0, maxHp - currentHp);
+        const actualHealed = Math.min(missingHp, rollResult);
+        const newHp = currentHp + actualHealed;
+
+        if (actualHealed > 0) {
+          updatePlayerHp(actualHealed);
+        }
+
+        useLogStore
+          .getState()
+          .addLog(
+            'roll',
+            `[Зелье] ${charName} выпил «${item.name}» (бросок ${action.formula} = ${rollResult}): восстановлено ${actualHealed} ХП (текущее: ${newHp}/${maxHp})`
+          );
+
+        setActionNotice(`+${actualHealed} ХП восстановлено (${item.name})`);
+        setTimeout(() => setActionNotice(null), 4000);
+      } else {
+        useLogStore
+          .getState()
+          .addLog(
+            'roll',
+            `[Расходник] ${charName} использовал «${item.name}» (бросок ${action.formula} = ${rollResult})`
+          );
+        setActionNotice(`Использовано: ${item.name} (бросок ${rollResult})`);
+        setTimeout(() => setActionNotice(null), 4000);
+      }
+    } else {
+      // General consumable without dice formula
+      useLogStore
+        .getState()
+        .addLog('action', `[Расходник] ${charName} использовал «${item.name}»`);
+      setActionNotice(`Использовано: ${item.name}`);
+      setTimeout(() => setActionNotice(null), 3000);
+    }
+
+    // 2. Consume item: reduce quantity by 1
+    handleUpdateQuantity(item.id, -1);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-2.5">
-      {/* Weight Gauge Panel */}
+      {/* Coin Wallet Bar */}
+      <CoinWalletBar
+        currency={playerData?.currency}
+        onUpdateCurrency={updateCurrency}
+        onAdjustCurrency={adjustCurrency}
+      />
+
+      {/* Weight Gauge Panel (Items + Coins) */}
       <InventoryWeightGauge
         totalWeight={totalWeight}
         maxWeight={maxWeight}
         weightPercent={weightPercent}
+        itemsWeight={itemsWeight}
+        coinsWeight={coinsWeight}
       />
+
+      {/* Action notification banner (e.g. +7 HP healed) */}
+      {actionNotice && (
+        <div className="bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between animate-in fade-in duration-150">
+          <span>{actionNotice}</span>
+          <button
+            type="button"
+            onClick={() => setActionNotice(null)}
+            className="text-emerald-400 hover:text-white text-xs cursor-pointer ml-2"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Controls: Search + Add Button */}
       <div className="flex items-center gap-2 shrink-0">
@@ -145,7 +277,9 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 scrollbar-thin">
         {filteredItems.length === 0 ? (
           <div className="text-center py-10 text-xs text-slate-500">
-            {items.length === 0 ? 'Инвентарь пуст. Добавьте предметы кнопкой выше.' : 'Предметы не найдены'}
+            {items.length === 0
+              ? 'Инвентарь пуст. Добавьте предметы кнопкой выше.'
+              : 'Предметы не найдены'}
           </div>
         ) : (
           filteredItems.map((item) => (
@@ -155,6 +289,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
               onToggleEquip={handleToggleEquip}
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDeleteItem}
+              onUseItem={handleUseConsumable}
             />
           ))
         )}
