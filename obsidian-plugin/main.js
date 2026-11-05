@@ -11073,6 +11073,26 @@ __export(plugin_exports, {
 });
 module.exports = __toCommonJS(plugin_exports);
 
+// packages/domain/dice.ts
+function cleanDiceFormula(raw) {
+  let value = String(raw || "1d20").replace(/\s+/g, "").toLowerCase();
+  if (/^[+-]?\d+$/.test(value))
+    value = `1d20${value.startsWith("-") || value.startsWith("+") ? "" : "+"}${value}`;
+  if (value.length > 200 || !/^\d*d\d+(?:(?:kh|kl)\d+)?(?:[+-](?:\d*d\d+(?:(?:kh|kl)\d+)?|\d+))*$/.test(value))
+    throw new Error("\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u0430\u044F \u0444\u043E\u0440\u043C\u0443\u043B\u0430 \u0431\u0440\u043E\u0441\u043A\u0430");
+  for (const match of value.matchAll(/(\d*)d(\d+)(?:(kh|kl)(\d+))?/g)) {
+    const count2 = Number(match[1] || 1), sides = Number(match[2]), keep = Number(match[4] || count2);
+    if (count2 < 1 || count2 > 100 || sides < 2 || sides > 1e3 || keep < 1 || keep > count2)
+      throw new Error("\u041D\u0435\u0434\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B\u0435 \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B \u043A\u0443\u0431\u0438\u043A\u043E\u0432");
+  }
+  return value;
+}
+function cleanUpcastDice(raw) {
+  const value = raw.replace(/\s+/g, "").toLowerCase();
+  if (!/^\d*d\d+$/.test(value)) throw new Error("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0434\u043E\u0431\u0430\u0432\u043E\u0447\u043D\u044B\u0435 \u043A\u0443\u0431\u0438\u043A\u0438, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 1d8 \u0438\u043B\u0438 2d6.");
+  return cleanDiceFormula(value);
+}
+
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
@@ -30857,7 +30877,15 @@ var stateSchema = external_exports.object({
       ritual: external_exports.boolean().optional(),
       desc: text.optional(),
       dmg: line.optional(),
-      prepared: external_exports.boolean().optional()
+      prepared: external_exports.boolean().optional(),
+      upcastDice: line.refine((value) => {
+        try {
+          cleanUpcastDice(value);
+          return true;
+        } catch {
+          return false;
+        }
+      }, "Expected extra dice such as 1d8").optional()
     })
   ).max(1e3).optional(),
   resources: external_exports.array(
@@ -31335,21 +31363,6 @@ function concentrationDamage(current, hp, damage) {
 
 // obsidian-plugin/src/application.ts
 var import_node_crypto5 = require("node:crypto");
-
-// packages/domain/dice.ts
-function cleanDiceFormula(raw) {
-  let value = String(raw || "1d20").replace(/\s+/g, "").toLowerCase();
-  if (/^[+-]?\d+$/.test(value))
-    value = `1d20${value.startsWith("-") || value.startsWith("+") ? "" : "+"}${value}`;
-  if (value.length > 200 || !/^\d*d\d+(?:(?:kh|kl)\d+)?(?:[+-](?:\d*d\d+(?:(?:kh|kl)\d+)?|\d+))*$/.test(value))
-    throw new Error("\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u0430\u044F \u0444\u043E\u0440\u043C\u0443\u043B\u0430 \u0431\u0440\u043E\u0441\u043A\u0430");
-  for (const match of value.matchAll(/(\d*)d(\d+)(?:(kh|kl)(\d+))?/g)) {
-    const count2 = Number(match[1] || 1), sides = Number(match[2]), keep = Number(match[4] || count2);
-    if (count2 < 1 || count2 > 100 || sides < 2 || sides > 1e3 || keep < 1 || keep > count2)
-      throw new Error("\u041D\u0435\u0434\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B\u0435 \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B \u043A\u0443\u0431\u0438\u043A\u043E\u0432");
-  }
-  return value;
-}
 
 // obsidian-plugin/src/vault/documents.ts
 var import_node_crypto4 = require("node:crypto");

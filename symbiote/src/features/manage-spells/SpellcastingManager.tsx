@@ -159,7 +159,7 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
     try {
       if (spell.dmg)
         formula = cleanDiceFormula(
-          scaleDiceFormula(spell.dmg, spell.level, selectedCircle, spell.desc),
+          scaleDiceFormula(spell.dmg, spell.level, selectedCircle, spell.desc, spell.upcastDice),
         );
     } catch {
       useLogStore

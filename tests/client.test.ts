@@ -1,3 +1,4 @@
+import { scaleDiceFormula } from '../symbiote/src/features/manage-spells/lib/spellScaling';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocketBridge } from '../symbiote/src/shared/api/websocket';
@@ -270,6 +271,40 @@ test('TaleSpire adapter ignores unrelated engine events and correlates official 
   } finally {
     driver.dispose();
     wsBridge.send = send;
+    Reflect.deleteProperty(globalThis, 'window');
+  }
+});
+
+test('upcast dice reach both TaleSpire API calls without losing additional dice', async () => {
+  const formulas: string[] = [];
+  const tray: unknown[] = [];
+  const win = {
+    TS: {
+      dice: {
+        makeRollDescriptors: async (formula: string) => {
+          formulas.push(formula);
+          return [{ name: '', roll: formula }];
+        },
+        putDiceInTray: async (descriptors: unknown) => {
+          tray.push(descriptors);
+          return 'engine-id';
+        },
+      },
+    },
+  };
+  Object.defineProperty(globalThis, 'window', { value: win, configurable: true });
+  const driver = new TaleSpireDriver();
+  try {
+    for (const level of [2, 3])
+      await driver.executeRoll({
+        formula: scaleDiceFormula('1d8', 1, level, 'ва', '1d8'),
+        name: 'ва',
+        rollId: 'test-' + level,
+      });
+    assert.deepEqual(formulas, ['2d8', '3d8']);
+    assert.deepEqual(tray, [[{ name: 'ва', roll: '2d8' }], [{ name: 'ва', roll: '3d8' }]]);
+  } finally {
+    driver.dispose();
     Reflect.deleteProperty(globalThis, 'window');
   }
 });

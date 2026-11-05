@@ -70,6 +70,7 @@ export interface Spell {
   desc?: string;
   dmg?: string;
   prepared?: boolean;
+  upcastDice?: string; // Additional dice per slot level above the base spell level.
 }
 
 export interface ExpendableResource {

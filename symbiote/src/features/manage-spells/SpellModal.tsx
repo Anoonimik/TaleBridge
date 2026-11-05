@@ -1,3 +1,4 @@
+import { cleanDiceFormula, cleanUpcastDice } from '../../../../packages/domain/dice';
 import React, { useState } from 'react';
 import { Spell, ModalShell } from '../../shared';
 
@@ -30,12 +31,25 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
   const [concentration, setConcentration] = useState(initialSpell?.concentration || false);
   const [ritual, setRitual] = useState(initialSpell?.ritual || false);
   const [dmg, setDmg] = useState(initialSpell?.dmg || '');
+  const [upcastDice, setUpcastDice] = useState(initialSpell?.upcastDice || '');
+  const [error, setError] = useState('');
   const [desc, setDesc] = useState(initialSpell?.desc || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
+    let formula: string | undefined;
+    let increment: string | undefined;
+    try {
+      formula = dmg.trim() ? cleanDiceFormula(dmg) : undefined;
+      increment = upcastDice.trim() ? cleanUpcastDice(upcastDice) : undefined;
+      if (increment && !formula)
+        throw new Error('Сначала укажите базовую формулу урона / лечения.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Проверьте формулы.');
+      return;
+    }
     onSave({
       id: initialSpell?.id || `spell_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       name: name.trim(),
@@ -47,7 +61,8 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
       duration,
       concentration,
       ritual,
-      dmg: dmg.trim() || undefined,
+      dmg: formula,
+      upcastDice: increment,
       desc: desc.trim() || undefined,
       prepared: true,
     });
@@ -61,7 +76,10 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
       title={initialSpell ? 'Редактировать заклинание' : 'Добавить заклинание'}
       maxWidthClass="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-3 overflow-y-auto scrollbar-thin">
+      <form
+        onSubmit={handleSubmit}
+        className="p-4 flex flex-col gap-3 overflow-y-auto scrollbar-thin"
+      >
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-2">
             <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
@@ -71,6 +89,7 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
               type="text"
               required
               placeholder="Огненный шар, Лечение ран..."
+              aria-label="Название заклинания"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-indigo-500"
@@ -177,13 +196,35 @@ export const SpellModal = ({ isOpen, onClose, onSave, initialSpell }: SpellModal
             </label>
             <input
               type="text"
-              placeholder="8d6 огонь или 1d8+3"
+              placeholder="8d6 или 1d8+3"
+              aria-label="Формула урона / лечения"
               value={dmg}
               onChange={(e) => setDmg(e.target.value)}
               className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-indigo-500"
             />
           </div>
         </div>
+
+        <div>
+          <label className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
+            Дополнительные кубики за каждый круг выше
+          </label>
+          <input
+            type="text"
+            aria-label="Дополнительные кубики за каждый круг выше"
+            value={upcastDice}
+            onChange={(e) => setUpcastDice(e.target.value)}
+            placeholder="Например, 1d8"
+            className="w-full px-2.5 py-1.5 bg-[#10111a] border border-[#262a3d] rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-indigo-500"
+          />
+          <p className="text-[11px] text-slate-400 mt-1">
+            Для 1d8 с добавкой 1d8: 2-й круг — 2d8, 3-й — 3d8. Пусто — правило из описания, если оно
+            распознано, иначе без усиления.
+          </p>
+        </div>
+        <p role="alert" className="text-xs text-rose-300">
+          {error}
+        </p>
 
         <div className="flex items-center gap-4 py-1">
           <label className="flex items-center gap-2 cursor-pointer select-none">
