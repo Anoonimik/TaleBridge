@@ -28,6 +28,7 @@ import {
   CluesArchive,
   PlayerNotesEditor,
   DeathSavesControl,
+  ConcentrationBanner,
   ClassResourcesManager,
   SpellcastingManager,
   SkillsListAccordion,
@@ -252,6 +253,8 @@ export const PlayerCockpit = () => {
           <>
             {activeSubTab === 'sheet' && (
               <div className="h-full overflow-y-auto p-3 flex flex-col gap-3 scrollbar-thin">
+                <ConcentrationBanner />
+
                 {/* 0. Active Conditions Banner (Blinded, Poisoned, etc. from Combat Tracker) */}
                 <PlayerConditionsBanner
                   conditions={activeConditions}
@@ -480,7 +483,8 @@ export const PlayerCockpit = () => {
 
             {/* Spells Sub-tab */}
             {activeSubTab === 'spells' && (
-              <div className="h-full overflow-y-auto p-3 scrollbar-thin">
+              <div className="h-full overflow-y-auto p-3 scrollbar-thin flex flex-col gap-3">
+                <ConcentrationBanner />
                 <SpellcastingManager
                   playerData={playerData}
                   onUpdateSpellSlots={updateSpellSlots}

@@ -7,6 +7,7 @@ import {
   computeProfBonus,
   taleSpireDriver,
   useLogStore,
+  useRosterStore,
 } from '../../shared';
 import { SpellModal } from './SpellModal';
 import { SpellcastingStatsHeader, SpellSlotsMatrix, SpellRow } from './ui';
@@ -110,29 +111,38 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
       if (spell.dmg) {
         taleSpireDriver.rollDice(spell.dmg, `${spell.name} (${charName})`);
       }
-      return;
-    }
-
-    const slot = spellSlots.find((s) => s.level === spell.level);
-    if (slot && slot.current > 0) {
-      onUseSpellSlot(spell.level);
-      useLogStore
-        .getState()
-        .addLog(
-          'roll',
-          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг). Израсходована ячейка (осталось: ${slot.current - 1}/${slot.max})`
-        );
     } else {
-      useLogStore
-        .getState()
-        .addLog(
-          'roll',
-          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг) [без доступных ячеек]`
-        );
+      const slot = spellSlots.find((s) => s.level === spell.level);
+      if (slot && slot.current > 0) {
+        onUseSpellSlot(spell.level);
+        useLogStore
+          .getState()
+          .addLog(
+            'roll',
+            `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг). Израсходована ячейка (осталось: ${slot.current - 1}/${slot.max})`
+          );
+      } else {
+        useLogStore
+          .getState()
+          .addLog(
+            'roll',
+            `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг) [без доступных ячеек]`
+          );
+      }
+
+      if (spell.dmg) {
+        taleSpireDriver.rollDice(spell.dmg, `${spell.name} (${charName})`);
+      }
     }
 
-    if (spell.dmg) {
-      taleSpireDriver.rollDice(spell.dmg, `${spell.name} (${charName})`);
+    if (spell.concentration) {
+      useRosterStore.getState().setConcentration({
+        spellId: spell.id,
+        spellName: spell.name,
+      });
+      useLogStore
+        .getState()
+        .addLog('roll', `[Концентрация] ${charName} удерживает концентрацию на «${spell.name}»`);
     }
   };
 

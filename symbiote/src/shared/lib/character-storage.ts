@@ -17,6 +17,7 @@ export interface StoredCharMeta {
   resources?: ExpendableResource[];
   hitDice?: HitDice;
   savingThrowsProficient?: string[];
+  activeConcentration?: { spellId?: string; spellName: string } | null;
 }
 
 export const DEFAULT_SLOTS: SpellSlot[] = [
@@ -96,6 +97,7 @@ export const mergeCharWithMeta = (
     },
     savingThrowsProficient:
       raw.savingThrowsProficient ?? meta?.savingThrowsProficient ?? [],
+    activeConcentration: raw.activeConcentration ?? meta?.activeConcentration ?? null,
   };
 };
 
@@ -112,6 +114,7 @@ export const persistPlayerData = (data: Character | null): void => {
         resources: data.resources,
         hitDice: data.hitDice,
         savingThrowsProficient: data.savingThrowsProficient,
+        activeConcentration: data.activeConcentration,
       });
     } else {
       localStorage.removeItem(STORAGE_KEYS.PLAYER_DATA);

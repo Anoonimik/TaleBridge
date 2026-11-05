@@ -70,6 +70,10 @@ interface RosterStore {
   setSpellcastingAbility: (ability: 'int' | 'wis' | 'cha') => void;
   updateCharacterBasics: (updates: CharacterBasicsUpdate) => void;
   performRest: (type: 'short' | 'long') => void;
+  activeConcentration: { spellId?: string; spellName: string } | null;
+  pendingConcentrationCheck: { dc: number; damage: number } | null;
+  setConcentration: (conc: { spellId?: string; spellName: string } | null) => void;
+  setPendingConcentrationCheck: (check: { dc: number; damage: number } | null) => void;
 }
 
 export const useRosterStore = create<RosterStore>((set, get) => ({
@@ -92,6 +96,13 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   })(),
   cluesArchive: getStoredArray<Clue>(STORAGE_KEYS.CLUES_ARCHIVE),
   pinnedNames: getStoredArray<string>(STORAGE_KEYS.PINNED_ROSTER),
+  activeConcentration: (() => {
+    const raw = getStoredJson<Character>(STORAGE_KEYS.PLAYER_DATA);
+    if (!raw) return null;
+    const meta = getStoredCharMeta(raw.name);
+    return raw.activeConcentration ?? meta?.activeConcentration ?? null;
+  })(),
+  pendingConcentrationCheck: null,
 
   setRoster: (roster) => set({ roster: Array.isArray(roster) ? roster : [] }),
   setSelectedToken: (selectedToken) => set({ selectedToken }),
@@ -129,10 +140,17 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
       const meta = getStoredCharMeta(incoming.name);
       const merged = mergeCharWithMeta(incoming, meta);
       persistPlayerData(merged);
-      set({ playerData: merged });
+      set({
+        playerData: merged,
+        activeConcentration: merged.activeConcentration ?? null,
+      });
     } else {
       persistPlayerData(null);
-      set({ playerData: null });
+      set({
+        playerData: null,
+        activeConcentration: null,
+        pendingConcentrationCheck: null,
+      });
     }
   },
 
@@ -223,7 +241,7 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
   },
 
   updatePlayerHp: (delta) => {
-    const { playerData } = get();
+    const { playerData, activeConcentration } = get();
     if (!playerData) return;
 
     const currentHp = playerData.hp ?? 20;
@@ -233,6 +251,12 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
     const updated = { ...playerData, hp: newHp };
     set({ playerData: updated });
     persistPlayerData(updated);
+
+    if (delta < 0 && activeConcentration) {
+      const damage = Math.abs(delta);
+      const dc = Math.max(10, Math.floor(damage / 2));
+      set({ pendingConcentrationCheck: { dc, damage } });
+    }
 
     if (get().playerCharacterName) {
       wsBridge.send('UPDATE_CHARACTER_HP', {
@@ -663,9 +687,14 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
         hitDice: nextHitDice,
         spellSlots: resetSlots,
         resources: resetRes,
+        activeConcentration: null,
       };
 
-      set({ playerData: updated });
+      set({
+        playerData: updated,
+        activeConcentration: null,
+        pendingConcentrationCheck: null,
+      });
       persistPlayerData(updated);
 
       if (get().playerCharacterName) {
@@ -683,5 +712,27 @@ export const useRosterStore = create<RosterStore>((set, get) => ({
           `[Длинный отдых] 8 часов завершены. ХП (${maxHp}/${maxHp}), ячейки заклинаний, кости хитов (+${regainedHitDiceCount}) и ресурсы полностью восстановлены (${charName}).`
         );
     }
+  },
+
+  setConcentration: (conc) => {
+    const { playerData } = get();
+    if (playerData) {
+      const updated = { ...playerData, activeConcentration: conc };
+      set({
+        activeConcentration: conc,
+        playerData: updated,
+        pendingConcentrationCheck: conc ? get().pendingConcentrationCheck : null,
+      });
+      persistPlayerData(updated);
+    } else {
+      set({
+        activeConcentration: conc,
+        pendingConcentrationCheck: conc ? get().pendingConcentrationCheck : null,
+      });
+    }
+  },
+
+  setPendingConcentrationCheck: (check) => {
+    set({ pendingConcentrationCheck: check });
   },
 }));

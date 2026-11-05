@@ -139,6 +139,7 @@ export interface Character {
   playerNotes?: string;
   conditions?: string[];
   skills?: Record<string, 'proficient' | 'expert' | 'none'>;
+  activeConcentration?: { spellId?: string; spellName: string } | null;
 }
 
 export interface Combatant {

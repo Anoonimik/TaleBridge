@@ -12,4 +12,5 @@ export * from './manage-saves-skills';
 export * from './manage-resources';
 export * from './manage-spells';
 export * from './manage-character-basics';
+export * from './manage-concentration';
 export * from './manage-connection';
