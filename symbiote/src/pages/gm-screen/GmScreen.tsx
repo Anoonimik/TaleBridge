@@ -1,3 +1,4 @@
+import { CluesArchive } from '../../features/archive-clues/CluesArchive';
 import { useShallow } from 'zustand/react/shallow';
 import React from 'react';
 import { useAppStore } from '../../shared/lib/useAppStore';
@@ -14,6 +15,7 @@ export const GmScreen = () => {
       {activeTab === 'story' && <StoryTracker />}
       {activeTab === 'characters' && <CharacterRoster />}
       {activeTab === 'combat' && <CombatTracker />}
+      {activeTab === 'clues' && <CluesArchive />}
       {activeTab === 'tools' && <ToolsPanel />}
     </div>
   );

@@ -26,6 +26,7 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
       title: clue.title,
       description: clue.text,
       active: true,
+      source: 'archive',
     });
   };
 
@@ -57,10 +58,15 @@ export const ClueCard = ({ clue, onDelete }: ClueCardProps) => {
               : 'w-6 bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
           }`}
           onClick={handleDelete}
+          aria-label={
+            isConfirmingDelete
+              ? `Подтвердить удаление «${clue.title}» у себя`
+              : `Удалить «${clue.title}» только у себя`
+          }
           title={
             isConfirmingDelete
               ? 'Нажмите еще раз для подтверждения'
-              : 'Удалить из архива (Shift+клик для мгновенного удаления)'
+              : 'Удалить только из моего архива (Shift+клик — сразу)'
           }
         >
           {isConfirmingDelete ? 'Удалить?' : '✕'}

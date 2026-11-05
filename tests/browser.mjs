@@ -1,3 +1,4 @@
+import { checkPersonalClues } from './browser-clues.mjs';
 import { checkCursors } from './browser-cursors.mjs';
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -172,6 +173,7 @@ const ready = new Promise((resolve, reject) => {
     await dialog.waitFor({ state: 'hidden' });
     await page.getByText('Private scene', { exact: false }).first().waitFor();
     await context.close();
+    await checkPersonalClues(browser);
     await fs.writeFile(
       'test-results/browser.json',
       JSON.stringify({ results, gmScene: true }, null, 2),

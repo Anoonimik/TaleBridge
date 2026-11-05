@@ -16,7 +16,8 @@ export const CluesArchive = () => {
             Архив полученных улик ({cluesArchive.length})
           </h3>
           <p className="text-xs text-slate-400 m-0">
-            Здесь сохраняются показанные Мастером арты, карты, свитки и улики
+            Полученные материалы сохраняются автоматически. Удаление действует только у вас на этом
+            устройстве.
           </p>
         </div>
       </div>
@@ -24,7 +25,8 @@ export const CluesArchive = () => {
       <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-2.5 scrollbar-thin">
         {cluesArchive.length === 0 ? (
           <div className="col-span-full text-center py-12 text-slate-500 text-sm">
-            Архив пуст. Когда Мастер покажет важную улику или письмо, нажмите «В архив улик».
+            Архив пуст. Во время показа материала нажмите «Сохранить у себя», чтобы добавить его
+            сюда.
           </div>
         ) : (
           cluesArchive.map((clue) => <ClueCard key={clue.id} clue={clue} onDelete={removeClue} />)
