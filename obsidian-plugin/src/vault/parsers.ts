@@ -69,15 +69,18 @@ export function parseInventory(content: string) {
       rest = rest.replace(/^\[\s*\]\s*/, '');
     }
 
-    if (persistedId && rest.startsWith('{')) {
+    const encoded = rest.endsWith(' <!-- talebridge-item-json:v1 -->');
+    if (persistedId && (encoded || /^\{\s*"/.test(rest))) {
+      const json = encoded ? rest.slice(0, -' <!-- talebridge-item-json:v1 -->'.length) : rest;
       try {
-        const parsed = inventorySchema.safeParse([{ ...JSON.parse(rest), id: persistedId }]);
-        if (parsed.success) {
-          items.push(parsed.data[0]);
-          continue;
-        }
+        const parsed = inventorySchema.safeParse([{ ...JSON.parse(json), id: persistedId }]);
+        if (!parsed.success) throw new Error('Invalid inventory fields');
+        items.push(parsed.data[0]);
+        continue;
       } catch {
-        /* Legacy text remains readable if a manual JSON edit is malformed. */
+        throw new Error(
+          `Повреждена запись предмета ${persistedId}. Исправьте JSON в заметке перед сохранением инвентаря.`,
+        );
       }
     }
     let description = '';
@@ -143,24 +146,40 @@ export function serializeInventory(items: InventoryItem[]) {
 
   const lines = ['## Инвентарь'];
   for (const it of items) {
-    if (
-      /[[\]()—–]|\s-\s|<!--/.test(it.name) ||
-      /[[\]\r\n]/.test(it.category || '') ||
-      /[\r\n]/.test(it.description || '')
-    ) {
-      lines.push(
-        `- ${it.equipped ? '[x]' : '[ ]'} ${JSON.stringify(it)} <!-- talebridge-item:${it.id} -->`,
-      );
-      continue;
-    }
     const check = it.equipped ? '[x]' : '[ ]';
     const qty = it.quantity || 1;
     const wt = it.weight !== undefined && it.weight !== null ? `, вес: ${it.weight} кг` : '';
     const cat = it.category ? ` [${it.category}]` : '';
     const desc = it.description ? ` — ${it.description}` : '';
-    lines.push(
-      `- ${check} ${it.name} (кол-во: ${qty}${wt})${cat}${desc} <!-- talebridge-item:${it.id} -->`,
-    );
+    const legacy = `- ${check} ${it.name} (кол-во: ${qty}${wt})${cat}${desc} <!-- talebridge-item:${it.id} -->`;
+    let parsed: InventoryItem | undefined;
+    try {
+      parsed = parseInventory(`## Инвентарь\n${legacy}`)[0];
+    } catch {
+      /* Use the explicit encoded representation. */
+    }
+    const expected = {
+      ...it,
+      equipped: Boolean(it.equipped),
+      quantity: it.quantity ?? 1,
+      weight: it.weight ?? 0,
+      category: it.category || 'Снаряжение',
+      description: it.description || '',
+    };
+    const fields = [
+      'id',
+      'name',
+      'equipped',
+      'quantity',
+      'weight',
+      'category',
+      'description',
+    ] as const;
+    if (parsed && fields.every((field) => parsed?.[field] === expected[field])) lines.push(legacy);
+    else
+      lines.push(
+        `- ${check} ${JSON.stringify(it)} <!-- talebridge-item-json:v1 --> <!-- talebridge-item:${it.id} -->`,
+      );
   }
   return lines.join('\n');
 }

@@ -9,6 +9,8 @@ import { taleSpireDriver } from '../src/shared/api/talespire';
 import type { InventoryItem } from '../../packages/domain/types';
 
 let saved: InventoryItem | undefined;
+let delaySave = false;
+const saves: { resolve: () => void; reject: (error: Error) => void }[] = [];
 const rolls: { resolve: (total: number) => void; reject: (error: Error) => void }[] = [];
 taleSpireDriver.rollForResult = () =>
   new Promise((resolve, reject) => rolls.push({ resolve, reject }));
@@ -38,6 +40,11 @@ function Harness() {
     reject: () => rolls.shift()?.reject(Error('Old request failed')),
     pending: () => rolls.length,
     saved: () => saved,
+    deferSave: (value) => {
+      delaySave = value;
+    },
+    resolveSave: () => saves.shift()?.resolve(),
+    rejectSave: () => saves.shift()?.reject(Error('Inventory save failed')),
   };
   return (
     <div data-epoch={epoch}>
@@ -45,7 +52,9 @@ function Harness() {
         isOpen={mode === 'item'}
         item={{ ...item }}
         onClose={() => setMode('none')}
-        onSave={(value) => {
+        onSave={async (value) => {
+          if (delaySave)
+            await new Promise<void>((resolve, reject) => saves.push({ resolve, reject }));
           saved = value;
         }}
       />
@@ -83,6 +92,9 @@ declare global {
       reject: () => void;
       pending: () => number;
       saved: () => InventoryItem | undefined;
+      deferSave: (value: boolean) => void;
+      resolveSave: () => void;
+      rejectSave: () => void;
     };
   }
 }
