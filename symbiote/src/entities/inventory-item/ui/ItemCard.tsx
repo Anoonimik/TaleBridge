@@ -1,6 +1,6 @@
 import React from 'react';
-import { HeartPulse, Sparkles, Trash2, Plus, Minus } from 'lucide-react';
-import { InventoryItem, useConfirmDelete } from '../../../shared';
+import { HeartPulse, Sparkles, Trash2, Plus, Minus, Swords } from 'lucide-react';
+import { InventoryItem, useConfirmDelete, isWeaponItem } from '../../../shared';
 import { getConsumableActionInfo } from '../../../features/manage-inventory/lib/consumable-helper';
 
 interface ItemCardProps {
@@ -8,6 +8,7 @@ interface ItemCardProps {
   onToggleEquip: (id: string, equipped: boolean) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onDelete: (id: string) => void;
+  onLinkToAttack?: (item: InventoryItem) => void;
   onUseItem?: (item: InventoryItem) => void;
 }
 
@@ -17,6 +18,7 @@ export const ItemCard = ({
   onUpdateQuantity,
   onDelete,
   onUseItem,
+  onLinkToAttack,
 }: ItemCardProps) => {
   const { isConfirming: isConfirmingDelete, handleDelete } = useConfirmDelete({
     onDelete: () => onDelete(item.id),
@@ -60,6 +62,16 @@ export const ItemCard = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {isWeaponItem(item) && onLinkToAttack && (
+            <button
+              type="button"
+              onClick={() => onLinkToAttack(item)}
+              title="Создать черновик атаки из оружия"
+              className="px-2 py-1 text-xs text-amber-300 border rounded"
+            >
+              <Swords className="w-3 h-3 inline" /> В атаки
+            </button>
+          )}
           {/* Quick Consumable Action (Выпить / Использовать) */}
           {actionInfo.isConsumable && onUseItem && (
             <button

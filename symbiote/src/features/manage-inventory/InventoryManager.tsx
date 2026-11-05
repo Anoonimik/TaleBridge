@@ -1,4 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
+import { ActionModal } from '../../entities/character/ui/ActionModal';
+import { createAttackFromWeapon } from '../../shared/lib/dnd-rules';
+import type { Attack } from '../../shared/types';
 import React, { useState, useMemo, useRef } from 'react';
 import {
   InventoryItem,
@@ -31,6 +34,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
     );
 
   const pendingItems = useRef(new Set<string>());
+  const [draft, setDraft] = useState<{ attack: Attack; owner: string | undefined } | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
@@ -152,11 +156,17 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
       // 1. If item has dice formula (e.g. 2d4+2 for healing)
       if (action.formula) {
         const rollResult = await taleSpireDriver.rollForResult(
-          action.formula, `${action.label}: ${item.name} (${charName})`,
+          action.formula,
+          `${action.label}: ${item.name} (${charName})`,
         );
 
         const latest = useRosterStore.getState().playerData;
-        if (!latest || latest.id !== playerData.id || !latest.inventory?.some((entry) => entry.id === item.id && (entry.quantity ?? 1) > 0)) return;
+        if (
+          !latest ||
+          latest.id !== playerData.id ||
+          !latest.inventory?.some((entry) => entry.id === item.id && (entry.quantity ?? 1) > 0)
+        )
+          return;
         // If it's a healing potion, apply HP restoration
         if (action.isHealing) {
           const currentHp = latest.hp ?? 0;
@@ -208,6 +218,17 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-2.5">
+      {draft && (
+        <ActionModal
+          isOpen
+          initialAttack={draft.attack}
+          onClose={() => setDraft(null)}
+          onSave={(attack) => {
+            const state = useRosterStore.getState();
+            if (state.playerData?.id === draft.owner) state.savePlayerAttack(attack);
+          }}
+        />
+      )}
       {/* Coin Wallet Bar */}
       <CoinWalletBar
         currency={playerData?.currency}
@@ -295,6 +316,13 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDeleteItem}
               onUseItem={handleUseConsumable}
+              onLinkToAttack={(item) => {
+                if (playerData)
+                  setDraft({
+                    attack: createAttackFromWeapon(item, playerData),
+                    owner: playerData.id,
+                  });
+              }}
             />
           ))
         )}
