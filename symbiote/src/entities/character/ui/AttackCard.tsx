@@ -1,0 +1,116 @@
+import React from 'react';
+import { Attack, taleSpireDriver, useConfirmDelete, normalizeHitBonus } from '../../../shared';
+
+interface AttackCardProps {
+  attack: Attack;
+  index: number;
+  canManage?: boolean;
+  onEdit?: (attack: Attack, index: number) => void;
+  onDelete?: (index: number) => void;
+}
+
+export const AttackCard = ({
+  attack,
+  index,
+  canManage = false,
+  onEdit,
+  onDelete,
+}: AttackCardProps) => {
+  const { isConfirming: isConfirmingDelete, handleDelete: handleDeleteClick } = useConfirmDelete({
+    onDelete: () => onDelete?.(index),
+  });
+
+  const handleRollHit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!attack.hit) return;
+    const bonus = normalizeHitBonus(attack.hit);
+    taleSpireDriver.rollDice(`1d20${bonus}`, `${attack.name} - Атака`);
+  };
+
+  const handleRollDamage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!attack.dmg) return;
+    taleSpireDriver.rollDice(attack.dmg, `${attack.name} - Урон`);
+  };
+
+  return (
+    <div className="bg-[#141622] border border-[#262a3d] hover:border-[#383d57] rounded-lg p-2.5 flex flex-col gap-2 transition-all shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <strong className="text-slate-100 text-sm font-semibold truncate" title={attack.name}>
+            {attack.name}
+          </strong>
+          {attack.type && (
+            <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
+              {attack.type}
+            </span>
+          )}
+        </div>
+
+        {canManage && (
+          <div className="flex items-center gap-1 shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1d2d] hover:bg-slate-700 text-slate-300 hover:text-white text-xs cursor-pointer transition-colors"
+                onClick={() => onEdit(attack, index)}
+                title="Редактировать действие"
+              >
+                ✎
+              </button>
+            )}
+
+            <button
+              type="button"
+              className={`px-2 h-7 flex items-center justify-center rounded text-xs cursor-pointer transition-colors font-medium ${
+                isConfirmingDelete
+                  ? 'bg-rose-600 text-white font-bold animate-pulse px-2.5'
+                  : 'bg-[#1a1d2d] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 w-7'
+              }`}
+              onClick={handleDeleteClick}
+              title={
+                isConfirmingDelete
+                  ? 'Нажмите еще раз для подтверждения удаления'
+                  : 'Удалить действие (Shift+клик для мгновенного удаления)'
+              }
+            >
+              {isConfirmingDelete ? 'Удалить?' : '✕'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {attack.desc && (
+        <p className="text-xs text-slate-300 leading-relaxed m-0 italic bg-[#10111a] p-2 rounded border border-[#1f2233]">
+          {attack.desc}
+        </p>
+      )}
+
+      <div className="flex items-center gap-2 pt-0.5">
+        {attack.hit && (
+          <button
+            type="button"
+            className="flex-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+            onClick={handleRollHit}
+            title="Бросок попадания"
+          >
+            <span>Атака</span>
+            <span className="font-mono text-xs font-bold">({attack.hit})</span>
+          </button>
+        )}
+
+        {attack.dmg && (
+          <button
+            type="button"
+            className="flex-1 px-2.5 py-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 rounded text-xs font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+            onClick={handleRollDamage}
+            title="Бросок урона"
+          >
+            <span>Урон</span>
+            <span className="font-mono text-xs font-bold">({attack.dmg})</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
