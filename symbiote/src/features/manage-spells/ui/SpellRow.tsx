@@ -59,9 +59,13 @@ export const SpellRow: React.FC<SpellRowProps> = ({
             type="button"
             onClick={() => onCast(spell)}
             className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold cursor-pointer transition-colors shadow-xs active:scale-95"
-            title={`Сотворить «${spell.name}» (автоматически расходует ячейку)`}
+            title={
+              (spell.level || 0) === 0
+                ? `Сотворить заговор «${spell.name}»`
+                : `Каст «${spell.name}» (выбор круга ячейки и усиление)`
+            }
           >
-            Сотворить
+            Каст
           </button>
 
           {/* Edit Button */}

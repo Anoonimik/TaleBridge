@@ -9,7 +9,8 @@ import {
   useLogStore,
 } from '../../shared';
 import { SpellModal } from './SpellModal';
-import { SpellcastingStatsHeader, SpellSlotsMatrix, SpellRow } from './ui';
+import { SpellcastingStatsHeader, SpellSlotsMatrix, SpellRow, SpellCastModal } from './ui';
+import { scaleDiceFormula } from './lib/spellScaling';
 
 interface SpellcastingManagerProps {
   playerData: Character | null;
@@ -42,6 +43,7 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSpell, setEditingSpell] = useState<Spell | null>(null);
+  const [castingSpell, setCastingSpell] = useState<Spell | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCircleFilter, setSelectedCircleFilter] = useState<number | 'all'>('all');
   const [expandedSpellId, setExpandedSpellId] = useState<string | null>(null);
@@ -113,27 +115,35 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
       return;
     }
 
-    const slot = spellSlots.find((s) => s.level === spell.level);
-    if (slot && slot.current > 0) {
-      onUseSpellSlot(spell.level);
-      useLogStore
-        .getState()
-        .addLog(
-          'roll',
-          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг). Израсходована ячейка (осталось: ${slot.current - 1}/${slot.max})`
-        );
-    } else {
-      useLogStore
-        .getState()
-        .addLog(
-          'roll',
-          `[Заклинание] ${charName} сотворил «${spell.name}» (${spell.level} круг) [без доступных ячеек]`
-        );
+    // Leveled spell: open SpellCastModal
+    setCastingSpell(spell);
+  };
+
+  const handleConfirmCastSpell = (spell: Spell, selectedCircle: number) => {
+    const charName = playerData.name || 'Персонаж';
+
+    // 1. Deduct slot
+    onUseSpellSlot(selectedCircle);
+
+    // 2. Roll scaled dice formula in TaleSpire if spell has dmg
+    if (spell.dmg) {
+      const scaledFormula = scaleDiceFormula(spell.dmg, spell.level, selectedCircle, spell.desc);
+      taleSpireDriver.rollDice(
+        scaledFormula,
+        `${spell.name} (${selectedCircle} круг) [${charName}]`
+      );
     }
 
-    if (spell.dmg) {
-      taleSpireDriver.rollDice(spell.dmg, `${spell.name} (${charName})`);
-    }
+    // 3. Log to useLogStore
+    useLogStore
+      .getState()
+      .addLog(
+        'roll',
+        `[Заклинание] ${charName} сотворил «${spell.name}» с ячейкой ${selectedCircle} круга (базовый: ${spell.level} круг).`
+      );
+
+    // 4. Close modal
+    setCastingSpell(null);
   };
 
   const handleAdjustMaxSlots = (circleLevel: number, delta: number) => {
@@ -302,6 +312,17 @@ export const SpellcastingManager: React.FC<SpellcastingManagerProps> = ({
             setIsModalOpen(false);
             setEditingSpell(null);
           }}
+        />
+      )}
+
+      {/* Upcast / Cast Leveled Spell Modal */}
+      {castingSpell && (
+        <SpellCastModal
+          isOpen={Boolean(castingSpell)}
+          spell={castingSpell}
+          spellSlots={spellSlots}
+          onCast={handleConfirmCastSpell}
+          onClose={() => setCastingSpell(null)}
         />
       )}
     </div>
