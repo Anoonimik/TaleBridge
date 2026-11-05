@@ -56,11 +56,16 @@ function SpellCastSession({
     spell.level,
     selectedCircle,
     spell.desc,
+    spell.upcastDice,
   );
 
   const selectedSlot = spellSlots.find((s) => s.level === selectedCircle);
   const canCast = Boolean(
-    selectedCircle >= baseLevel && selectedCircle <= 9 && selectedSlot && selectedSlot.current > 0,
+    selectedCircle >= baseLevel &&
+    selectedCircle <= 9 &&
+    selectedSlot &&
+    selectedSlot.current > 0 &&
+    !scalingPreview?.error,
   );
 
   return (
@@ -202,6 +207,16 @@ function SpellCastSession({
             <div className="text-xs text-slate-200 font-mono bg-[#0c0d14] px-2.5 py-1.5 rounded border border-[#1e2233]">
               {scalingPreview.previewText}
             </div>
+            {scalingPreview.error ? (
+              <p role="alert" className="text-xs text-rose-300">
+                {scalingPreview.error}
+              </p>
+            ) : selectedCircle > baseLevel && !scalingPreview.hasScaling ? (
+              <p role="status" className="text-xs text-amber-300">
+                Усиление не задано: будет брошена базовая формула. Укажите дополнительные кубики за
+                круг в редакторе заклинания, если оно усиливается.
+              </p>
+            ) : null}
           </div>
         )}
 
@@ -226,7 +241,7 @@ function SpellCastSession({
             title={
               canCast
                 ? `Сотворить «${spell.name}» с ячейкой ${selectedCircle} круга`
-                : `Нет доступных ячеек ${selectedCircle} круга`
+                : scalingPreview?.error || `Нет доступных ячеек ${selectedCircle} круга`
             }
           >
             Сотворить заклинание ({selectedCircle} круг)

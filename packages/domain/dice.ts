@@ -19,3 +19,10 @@ export function cleanDiceFormula(raw: string): string {
   }
   return value;
 }
+
+/** Per-slot damage increments are dice, not an implicit d20 modifier or a keep roll. */
+export function cleanUpcastDice(raw: string): string {
+  const value = raw.replace(/\s+/g, '').toLowerCase();
+  if (!/^\d*d\d+$/.test(value)) throw new Error('Укажите добавочные кубики, например 1d8 или 2d6.');
+  return cleanDiceFormula(value);
+}

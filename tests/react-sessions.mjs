@@ -117,9 +117,42 @@ try {
     await page.getByRole('button', { name: 'Спасбросок Телосложения', exact: true }).isEnabled(),
   );
   assert.equal(await page.getByText('Old request failed', { exact: true }).count(), 0);
+  await page.evaluate(() => window.reactSessions.startSpellCast());
+  await page.getByRole('button', { name: 'Каст', exact: true }).click();
+  await spell.getByTitle('Выбрать 2 круг (3/3)', { exact: true }).click();
+  await spell.getByRole('status').getByText('Усиление не задано:', { exact: false }).waitFor();
+  await spell.getByRole('button', { name: 'Отмена', exact: true }).click();
+  await page.getByTitle('Редактировать заклинание', { exact: true }).click();
+  const editSpell = page.getByRole('dialog', { name: 'Редактировать заклинание' });
+  await editSpell
+    .getByLabel('Дополнительные кубики за каждый круг выше', { exact: true })
+    .fill('1d8+3');
+  await editSpell.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+  assert.ok(await editSpell.isVisible());
+  await editSpell
+    .getByLabel('Дополнительные кубики за каждый круг выше', { exact: true })
+    .fill('1d8');
+  await editSpell.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+  await editSpell.waitFor({ state: 'hidden' });
+  for (const [circle, count, formula] of [
+    [2, '3/3', '2d8'],
+    [3, '2/2', '3d8'],
+  ]) {
+    await page.getByRole('button', { name: 'Каст', exact: true }).click();
+    await spell.getByTitle(`Выбрать ${circle} круг (${count})`, { exact: true }).click();
+    await spell
+      .getByText(`Базовый урон: 1d8 -> При касте ${circle} кругом: ${formula}`, { exact: true })
+      .waitFor();
+    await spell
+      .getByRole('button', { name: `Сотворить заклинание (${circle} круг)`, exact: true })
+      .click();
+    await spell.waitFor({ state: 'hidden' });
+  }
+  assert.deepEqual(await page.evaluate(() => window.reactSessions.spellRolls()), ['2d8', '3d8']);
+  assert.equal(await page.evaluate(() => window.reactSessions.slotsUsed()), 2);
   assert.deepEqual(errors, []);
   console.log(
-    'React StrictMode regression scenarios passed: draft preservation, acknowledged saves and retry, session reset, slot selection, stale async results.',
+    'React StrictMode regression scenarios passed: draft preservation, acknowledged saves and retry, session reset, slot selection, stale async results, upcast configuration and complete dice formulas.',
   );
 } finally {
   await browser?.close();

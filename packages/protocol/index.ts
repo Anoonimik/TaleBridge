@@ -1,3 +1,4 @@
+import { cleanUpcastDice } from '../domain/dice';
 import { z } from 'zod';
 
 export const PROTOCOL_VERSION = 1;
@@ -90,6 +91,16 @@ export const stateSchema = z.object({
         desc: text.optional(),
         dmg: line.optional(),
         prepared: z.boolean().optional(),
+        upcastDice: line
+          .refine((value) => {
+            try {
+              cleanUpcastDice(value);
+              return true;
+            } catch {
+              return false;
+            }
+          }, 'Expected extra dice such as 1d8')
+          .optional(),
       }),
     )
     .max(1000)

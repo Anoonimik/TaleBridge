@@ -1,3 +1,4 @@
+import { SpellcastingManager } from '../src/features/manage-spells/SpellcastingManager';
 import React, { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { EditItemModal } from '../src/features/manage-inventory/ui/EditItemModal';
@@ -9,6 +10,11 @@ import { taleSpireDriver } from '../src/shared/api/talespire';
 import type { InventoryItem } from '../../packages/domain/types';
 
 let saved: InventoryItem | undefined;
+const spellRolls: string[] = [];
+let slotsUsed = 0;
+taleSpireDriver.rollDice = async (formula) => {
+  spellRolls.push(formula);
+};
 let delaySave = false;
 const saves: { resolve: () => void; reject: (error: Error) => void }[] = [];
 const rolls: { resolve: (total: number) => void; reject: (error: Error) => void }[] = [];
@@ -28,9 +34,29 @@ function Harness() {
   const [epoch, setEpoch] = useState(0);
   const [spellId, setSpellId] = useState('spell');
   const [exhausted, setExhausted] = useState(false);
-  const owner = useRosterStore((state) => state.playerData?.id);
+  const playerData = useRosterStore((state) => state.playerData);
+  const owner = playerData?.id;
   window.reactSessions = {
     open: setMode,
+    startSpellCast: () => {
+      spellRolls.length = 0;
+      slotsUsed = 0;
+      useRosterStore.setState({
+        playerData: {
+          id: 'alice',
+          name: 'Alice',
+          spells: [{ id: 'test', name: 'ва', level: 1, dmg: '1d8', desc: 'ва' }],
+          spellSlots: [
+            { level: 1, current: 4, max: 4 },
+            { level: 2, current: 3, max: 3 },
+            { level: 3, current: 2, max: 2 },
+          ],
+        },
+      });
+      setMode('casting');
+    },
+    spellRolls: () => spellRolls,
+    slotsUsed: () => slotsUsed,
     refresh: () => setEpoch((n) => n + 1),
     refreshItem: () => setItem({ ...item, name: 'Server rope' }),
     changeSpell: () => setSpellId('second-spell'),
@@ -68,6 +94,32 @@ function Harness() {
         onClose={() => setMode('none')}
         onCast={() => setMode('none')}
       />
+      {mode === 'casting' && (
+        <SpellcastingManager
+          playerData={playerData}
+          onUseSpellSlot={(level) => {
+            slotsUsed++;
+            const current = useRosterStore.getState().playerData!;
+            useRosterStore.setState({
+              playerData: {
+                ...current,
+                spellSlots: current.spellSlots!.map((slot) =>
+                  slot.level === level ? { ...slot, current: slot.current - 1 } : slot,
+                ),
+              },
+            });
+          }}
+          onSaveSpell={(spell) => {
+            const current = useRosterStore.getState().playerData!;
+            useRosterStore.setState({ playerData: { ...current, spells: [spell] } });
+          }}
+          onUpdateSpellSlots={() => {}}
+          onRegainSpellSlot={() => {}}
+          onResetAllSpellSlots={() => {}}
+          onDeleteSpell={() => {}}
+          onSetSpellcastingAbility={() => {}}
+        />
+      )}
       {mode === 'attack' && (
         <AttackCard
           attack={{ name: 'Sword', hit: '+5', dmg: '1d8+3' }}
@@ -83,6 +135,9 @@ declare global {
   interface Window {
     reactSessions: {
       open: (mode: string) => void;
+      startSpellCast: () => void;
+      spellRolls: () => string[];
+      slotsUsed: () => number;
       refresh: () => void;
       refreshItem: () => void;
       changeSpell: () => void;
