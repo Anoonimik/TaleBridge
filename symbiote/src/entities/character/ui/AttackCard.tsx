@@ -1,38 +1,50 @@
+import { useShallow } from 'zustand/react/shallow';
+import { useAsyncAction } from '../../../shared/lib/hooks/useAsyncAction';
 import { resolveAttackRoll } from '../../../shared/lib/dnd-rules';
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Attack,
-  taleSpireDriver,
-  useConfirmDelete,
-  normalizeHitBonus,
-  doubleDamageDice,
-  useRosterStore,
-  useLogStore,
-} from '../../../shared';
+import React, { useState } from 'react';
+import type { Attack } from '../../../../../packages/domain/types';
+import { taleSpireDriver } from '../../../shared/api/talespire';
+import { useConfirmDelete } from '../../../shared/lib/hooks/useConfirmDelete';
+import { normalizeHitBonus, doubleDamageDice } from '../../../shared/lib/dnd-rules';
+import { useRosterStore } from '../model/store';
+import { useLogStore } from '../../../shared/lib/useLogStore';
 
 interface AttackCardProps {
   attack: Attack;
   index: number;
   canManage?: boolean;
   characterName?: string;
+  characterId?: string;
   onEdit?: (attack: Attack, index: number) => void;
   onDelete?: (index: number) => void;
 }
 
-export const AttackCard = ({
+export const AttackCard = (props: AttackCardProps) => {
+  const character = useRosterStore(
+    useShallow((state) => ({ id: state.playerData?.id, name: state.playerData?.name })),
+  );
+  const charName = props.characterName || character.name || 'Персонаж';
+  const identity = JSON.stringify([
+    props.characterId || character.id,
+    charName,
+    props.attack.name,
+    props.attack.hit,
+    props.attack.dmg,
+  ]);
+  return <AttackSession key={identity} {...props} charName={charName} />;
+};
+
+function AttackSession({
   attack,
   index,
   canManage = false,
-  characterName,
   onEdit,
   onDelete,
-}: AttackCardProps) => {
-  const { playerData } = useRosterStore();
-  const charName = characterName || playerData?.name || 'Персонаж';
-
-  const [isCritical, setIsCritical] = useState(false);
+  charName,
+}: AttackCardProps & { charName: string }) {
   const [lastRoll, setLastRoll] = useState<{ d20: number; isCrit: boolean } | null>(null);
-  const waitingForDiceRef = useRef(false);
+  const isCritical = lastRoll?.isCrit ?? false;
+  const { pending: busy, error, run } = useAsyncAction();
 
   const { isConfirming: isConfirmingDelete, handleDelete: handleDeleteClick } = useConfirmDelete({
     onDelete: () => onDelete?.(index),
@@ -41,31 +53,22 @@ export const AttackCard = ({
   const bonus = normalizeHitBonus(attack.hit);
   const bonusNum = parseInt(bonus, 10) || 0;
 
-  const [busy, setBusy] = useState(false);
-  const generation = useRef(0);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    const epoch = ++generation.current;
-    setIsCritical(false);
-    setLastRoll(null);
-    return () => {
-      generation.current = epoch + 1;
-    };
-  }, [attack.name, attack.hit, attack.dmg, charName, playerData?.id]);
-  const rollAttack = async (damage: boolean) => {
-    if (waitingForDiceRef.current) return;
-    waitingForDiceRef.current = true;
-    setBusy(true);
-    setError('');
-    setIsCritical(false);
-    setLastRoll(null);
-    const current = generation.current;
-    try {
+  const rollDamage = async (critical: boolean, isCurrent: () => boolean) => {
+    if (!attack.dmg) return;
+    const formula = critical ? doubleDamageDice(attack.dmg) : attack.dmg;
+    const total = await taleSpireDriver.rollForResult(formula, `${attack.name} - Урон`);
+    if (isCurrent())
+      useLogStore
+        .getState()
+        .addLog('roll', `${charName}: ${attack.name}, урон ${total} (${formula})`);
+  };
+  const rollAttack = (damage: boolean) =>
+    run(async (isCurrent) => {
+      setLastRoll(null);
       if (!/^[+-]\d+$/.test(bonus)) throw new Error('Бонус атаки должен быть целым числом');
       const total = await taleSpireDriver.rollForResult(`1d20${bonus}`, `${attack.name} - Атака`);
-      if (current !== generation.current) return;
+      if (!isCurrent()) return;
       const { natural, critical } = resolveAttackRoll(total, bonusNum);
-      setIsCritical(critical);
       setLastRoll({ d20: natural, isCrit: critical });
       useLogStore
         .getState()
@@ -73,19 +76,8 @@ export const AttackCard = ({
           'roll',
           `${charName}: ${attack.name}, d20=${natural}, итог ${total}${critical ? ' — критическое попадание' : ''}`,
         );
-      if (damage && attack.dmg && natural !== 1)
-        await taleSpireDriver.rollDice(
-          critical ? doubleDamageDice(attack.dmg) : attack.dmg,
-          `${attack.name} - ${critical ? 'Критический урон' : 'Урон'}`,
-        );
-    } catch (cause) {
-      if (current === generation.current)
-        setError(cause instanceof Error ? cause.message : 'Ошибка броска');
-    } finally {
-      waitingForDiceRef.current = false;
-      setBusy(false);
-    }
-  };
+      if (damage && natural !== 1) await rollDamage(critical, isCurrent);
+    });
   const handleRollHit = (event: React.MouseEvent) => {
     event.stopPropagation();
     void rollAttack(false);
@@ -96,15 +88,7 @@ export const AttackCard = ({
   };
   const handleRollDamage = (event: React.MouseEvent) => {
     event.stopPropagation();
-    if (!attack.dmg || waitingForDiceRef.current) return;
-    try {
-      void taleSpireDriver.rollDice(
-        isCritical ? doubleDamageDice(attack.dmg) : attack.dmg,
-        `${attack.name} - Урон`,
-      );
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Ошибка формулы');
-    }
+    void run((isCurrent) => rollDamage(isCritical, isCurrent));
   };
 
   return (
@@ -175,7 +159,7 @@ export const AttackCard = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setIsCritical(false);
+              setLastRoll((previous) => (previous ? { ...previous, isCrit: false } : null));
             }}
             className="text-amber-400/80 hover:text-white cursor-pointer ml-1 text-xs px-1"
             title="Сбросить статус крита"
@@ -250,4 +234,4 @@ export const AttackCard = ({
       )}
     </div>
   );
-};
+}

@@ -1,16 +1,26 @@
-import React, { useRef, useState } from 'react';
+import type { Character } from '../../../../../packages/domain/types';
+import { useAsyncAction } from '../../../shared/lib/hooks/useAsyncAction';
+import { useLogStore } from '../../../shared/lib/useLogStore';
+import React, { useState } from 'react';
 import { useRosterStore } from '../../../entities/character/model/store';
 import { taleSpireDriver } from '../../../shared/api/talespire';
 import { computeProfBonus } from '../../../shared/lib/dnd-rules';
 import { parseModifier } from '../../../shared/lib/text-utils';
 export const ConcentrationBanner = () => {
   const character = useRosterStore((s) => s.playerData);
-  const [busy, setBusy] = useState(false);
+  if (!character?.activeConcentration) return null;
+  return (
+    <ConcentrationSession
+      key={`${character.id}:${character.activeConcentration.instanceId}`}
+      character={character}
+    />
+  );
+};
+function ConcentrationSession({ character }: { character: Character }) {
+  const { pending: busy, error, run } = useAsyncAction();
   const [notice, setNotice] = useState('');
-  const rolling = useRef(false);
-  const concentration = character?.activeConcentration;
-  const check = character?.concentrationChecks?.[0];
-  if (!character || !concentration) return null;
+  const concentration = character.activeConcentration!;
+  const check = character.concentrationChecks?.[0];
   const drop = () => {
     const state = useRosterStore.getState();
     if (state.playerData && state.playerData.id === character.id)
@@ -20,22 +30,21 @@ export const ConcentrationBanner = () => {
         concentrationChecks: [],
       });
   };
-  const roll = async () => {
-    if (!check || rolling.current) return;
-    rolling.current = true;
-    setBusy(true);
-    setNotice('');
-    const bonus =
-      parseModifier(character.stats?.con || '10') +
-      (character.savingThrowsProficient?.includes('con')
-        ? computeProfBonus(character.level || 1)
-        : 0);
-    try {
+  const roll = () =>
+    run(async (isCurrent) => {
+      if (!check) return;
+      setNotice('');
+      const bonus =
+        parseModifier(character.stats?.con || '10') +
+        (character.savingThrowsProficient?.includes('con')
+          ? computeProfBonus(character.level || 1)
+          : 0);
       const total = await taleSpireDriver.rollForResult(
         `1d20${bonus >= 0 ? '+' : ''}${bonus}`,
         `Концентрация: ${character.name} (СЛ ${check.dc})`,
         false,
       );
+      if (!isCurrent()) return;
       const state = useRosterStore.getState();
       const latest = state.playerData;
       if (
@@ -53,13 +62,14 @@ export const ConcentrationBanner = () => {
       setNotice(
         `${total} / СЛ ${check.dc}: ${success ? 'концентрация сохранена' : 'концентрация потеряна'}`,
       );
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Бросок не завершен. Повторите проверку.');
-    } finally {
-      rolling.current = false;
-      setBusy(false);
-    }
-  };
+      useLogStore
+        .getState()
+        .addLog(
+          'roll',
+          `${character.name}: концентрация ${success ? 'сохранена' : 'потеряна'} (${total} / СЛ ${check.dc})`,
+        );
+    });
+
   return (
     <section
       aria-label="Концентрация"
@@ -86,7 +96,7 @@ export const ConcentrationBanner = () => {
       <button type="button" onClick={drop}>
         Прекратить концентрацию
       </button>
-      <span role="status">{notice}</span>
+      <span role="status">{error || notice}</span>
     </section>
   );
-};
+}

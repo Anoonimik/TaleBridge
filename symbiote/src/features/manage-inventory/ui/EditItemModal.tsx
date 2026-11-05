@@ -1,7 +1,8 @@
 import { inventorySchema } from '../../../../../packages/protocol';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Package, Save } from 'lucide-react';
-import { InventoryItem, ModalShell } from '../../../shared';
+import type { InventoryItem } from '../../../../../packages/domain/types';
+import { ModalShell } from '../../../shared/ui/ModalShell';
 
 export interface EditItemModalProps {
   isOpen: boolean;
@@ -12,28 +13,23 @@ export interface EditItemModalProps {
 
 const CATEGORIES = ['Снаряжение', 'Оружие', 'Броня', 'Зелья', 'Квестовое'];
 
-export const EditItemModal: React.FC<EditItemModalProps> = ({ isOpen, onClose, onSave, item }) => {
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('Снаряжение');
-  const [quantity, setQuantity] = useState('1');
-  const [weight, setWeight] = useState('0');
+export const EditItemModal = (props: EditItemModalProps) => {
+  if (!props.isOpen || !props.item) return null;
+  return <EditItemForm key={props.item.id} {...props} item={props.item} />;
+};
+
+function EditItemForm({
+  onClose,
+  onSave,
+  item,
+}: Omit<EditItemModalProps, 'item'> & { item: InventoryItem }) {
+  const [name, setName] = useState(item.name);
+  const [category, setCategory] = useState(item.category || 'Снаряжение');
+  const [quantity, setQuantity] = useState(String(item.quantity ?? 1));
+  const [weight, setWeight] = useState(String(item.weight ?? 0));
   const [error, setError] = useState('');
-  const [equipped, setEquipped] = useState(false);
-  const [description, setDescription] = useState('');
-
-  useEffect(() => {
-    if (item) {
-      setName(item.name || '');
-      setCategory(item.category || 'Снаряжение');
-      setQuantity(String(item.quantity ?? 1));
-      setError('');
-      setWeight(String(item.weight ?? 0));
-      setEquipped(Boolean(item.equipped));
-      setDescription(item.description || '');
-    }
-  }, [item, isOpen]);
-
-  if (!item) return null;
+  const [equipped, setEquipped] = useState(Boolean(item.equipped));
+  const [description, setDescription] = useState(item.description || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +63,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ isOpen, onClose, o
 
   return (
     <ModalShell
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title={
         <div className="flex items-center gap-2">
@@ -208,4 +204,4 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ isOpen, onClose, o
       </form>
     </ModalShell>
   );
-};
+}
