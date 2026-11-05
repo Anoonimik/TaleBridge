@@ -1,13 +1,15 @@
+import { useShallow } from 'zustand/react/shallow';
 import React from 'react';
 import { WifiOff, Settings2 } from 'lucide-react';
-import { useAppStore, wsBridge } from '../../../shared';
+import { useAppStore } from '../../../shared/lib/useAppStore';
+import { wsBridge } from '../../../shared/api/websocket';
 
 interface OfflineBannerProps {
   onOpenSettings: () => void;
 }
 
 export const OfflineBanner: React.FC<OfflineBannerProps> = ({ onOpenSettings }) => {
-  const { connected } = useAppStore();
+  const { connected } = useAppStore(useShallow((s) => ({ connected: s.connected })));
   const info = wsBridge.getServerInfo();
 
   if (connected) return null;
@@ -18,7 +20,11 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ onOpenSettings }) 
         <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
         <WifiOff className="w-3.5 h-3.5 text-rose-400 shrink-0" />
         <span className="truncate">
-          Ожидание связи с сервером Мастера (<code>{info.host}:{info.port}</code>)
+          Ожидание связи с сервером Мастера (
+          <code>
+            {info.host}:{info.port}
+          </code>
+          )
         </span>
       </div>
 

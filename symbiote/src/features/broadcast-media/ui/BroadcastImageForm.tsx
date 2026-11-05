@@ -1,5 +1,5 @@
 import React from 'react';
-import { VaultImage } from '../../../shared';
+import { VaultImage } from '../../../shared/lib/useAppStore';
 
 interface BroadcastImageFormProps {
   vaultImages: VaultImage[];
@@ -63,9 +63,7 @@ export const BroadcastImageForm: React.FC<BroadcastImageFormProps> = ({
       {/* Quick Public Pills */}
       {publicImages.length > 0 && (
         <div>
-          <span className="text-[10px] text-slate-400 block mb-1">
-            Быстрый выбор из public/:
-          </span>
+          <span className="text-[10px] text-slate-400 block mb-1">Быстрый выбор из public/:</span>
           <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-thin">
             {publicImages.slice(0, 10).map((img) => (
               <button

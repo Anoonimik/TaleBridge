@@ -3,11 +3,13 @@
   "name": "TaleBridge",
   "summary": "Obsidian Companion & Bridge for TaleSpire",
   "descriptionFilePath": "/README.md",
-  "version": "0.4.4",
-  "license": "MIT",
+  "version": "0.7.0",
+  "license": "GPL-3.0-only",
   "about": {
-    "website": "",
-    "authors": ["GM"]
+    "website": "https://github.com/Anoonimik/TaleBridge",
+    "authors": [
+      "GM"
+    ]
   },
   "kind": "webView",
   "entryPoint": "/dist/index.html",

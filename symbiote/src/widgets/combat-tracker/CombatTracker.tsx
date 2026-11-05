@@ -1,12 +1,11 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect } from 'react';
 import { Combatant, taleSpireDriver, useRosterStore } from '../../shared';
-import { useCombatStore } from '../../shared';
-import { CombatantCard } from '../../entities';
-import {
-  CombatRosterDropdown,
-  CombatSideMenu,
-  ConditionsPickerModal,
-} from '../../features';
+import { useCombatStore } from '../../entities/combatant/model/store';
+import { CombatantCard } from '../../entities/combatant/ui/CombatantCard';
+import { CombatRosterDropdown } from '../../features/manage-combat/CombatRosterDropdown';
+import { CombatSideMenu } from '../../features/manage-combat/CombatSideMenu';
+import { ConditionsPickerModal } from '../../features/manage-combat/ConditionsPickerModal';
 
 export const CombatTracker = () => {
   const {
@@ -21,9 +20,23 @@ export const CombatTracker = () => {
     rollAllInitiatives,
     sortByInitiative,
     clearCombat,
-  } = useCombatStore();
+  } = useCombatStore(
+    useShallow((s) => ({
+      active: s.active,
+      round: s.round,
+      turnIndex: s.turnIndex,
+      combatants: s.combatants,
+      startCombat: s.startCombat,
+      endCombat: s.endCombat,
+      nextTurn: s.nextTurn,
+      prevTurn: s.prevTurn,
+      rollAllInitiatives: s.rollAllInitiatives,
+      sortByInitiative: s.sortByInitiative,
+      clearCombat: s.clearCombat,
+    })),
+  );
 
-  const { roster } = useRosterStore();
+  const { roster } = useRosterStore(useShallow((s) => ({ roster: s.roster })));
 
   const [showRosterDropdown, setShowRosterDropdown] = useState(false);
   const [conditionsCombatantId, setConditionsCombatantId] = useState<string | null>(null);
@@ -54,7 +67,8 @@ export const CombatTracker = () => {
         const attacks =
           curCombatant.attacks && curCombatant.attacks.length > 0
             ? curCombatant.attacks
-            : roster.find((r) => r.name.toLowerCase() === curCombatant.name.toLowerCase())?.attacks || [];
+            : roster.find((r) => r.name.toLowerCase() === curCombatant.name.toLowerCase())
+                ?.attacks || [];
 
         const atk = attacks[num - 1];
         if (atk) {
@@ -62,7 +76,7 @@ export const CombatTracker = () => {
           if (e.shiftKey && atk.dmg) {
             taleSpireDriver.rollDice(
               atk.dmg,
-              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`
+              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`,
             );
           } else if (atk.hit) {
             const bonus =
@@ -71,7 +85,7 @@ export const CombatTracker = () => {
           } else if (atk.dmg) {
             taleSpireDriver.rollDice(
               atk.dmg,
-              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`
+              `${curCombatant.name}: ${atk.name} (Урон${atk.type ? ` - ${atk.type}` : ''})`,
             );
           }
         }

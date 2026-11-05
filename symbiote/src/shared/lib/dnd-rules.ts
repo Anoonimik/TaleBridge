@@ -1,4 +1,9 @@
-import { CombatSide, Attack, Character, InventoryItem } from '../types';
+import type {
+  CombatSide,
+  Attack,
+  Character,
+  InventoryItem,
+} from '../../../../packages/domain/types';
 import { parseModifier, formatModifier } from './text-utils';
 
 /**
@@ -16,7 +21,10 @@ export function computeProfBonus(level: number | undefined | null): number {
  * 26% - 50%: amber (wounded)
  * <= 25%: rose (critical)
  */
-export function getHpColorClass(curHp: number, maxHp: number): {
+export function getHpColorClass(
+  curHp: number,
+  maxHp: number,
+): {
   color: string;
   textClass: string;
   bgClass: string;
@@ -114,7 +122,9 @@ export function doubleDamageDice(formula: string | undefined | null): string {
 export const COMMON_WEAPON_REGEX =
   /(?:меч|топор|лук|кинжал|арбалет|молот|булава|посох|коп[ьъ]?[её]|рапира|ятаган|клинок|дубина|алебарда|пика|трезубец|кнут|дротик|праща|серп|моргенштерн|секира|глефа)/i;
 
-export function isWeaponItem(item: { name?: string; category?: string } | null | undefined): boolean {
+export function isWeaponItem(
+  item: { name?: string; category?: string } | null | undefined,
+): boolean {
   if (!item) return false;
   if (item.category && item.category.trim().toLowerCase() === 'оружие') return true;
   if (item.name && COMMON_WEAPON_REGEX.test(item.name)) return true;
@@ -137,9 +147,16 @@ export function suggestWeaponDamageDice(name: string, description?: string): str
   }
 
   const lower = name.toLowerCase();
+  if (
+    /коротк[а-я]*\s+(?:меч|лук)|ручн[а-я]*\s+арбалет|shortsword|shortbow|hand crossbow/i.test(lower)
+  )
+    return '1d6';
 
   // 2d6: двуручный меч, двуручный молот
-  if (/двуручн(?:ый|ого|ому)?\s+меч/i.test(lower) || /двуручн(?:ый|ого|ому)?\s+молот/i.test(lower)) {
+  if (
+    /двуручн(?:ый|ого|ому)?\s+меч/i.test(lower) ||
+    /двуручн(?:ый|ого|ому)?\s+молот/i.test(lower)
+  ) {
     return '2d6';
   }
 
@@ -154,7 +171,9 @@ export function suggestWeaponDamageDice(name: string, description?: string): str
   }
 
   // 1d8: длинный меч, меч, боевой топор, боевой молот, длинный лук, лук, рапира, арбалет
-  if (/длинн(?:ый|ого)?\s+меч|рапир|длинн(?:ый|ого)?\s+лук|боевой\s+топор|боевой\s+молот/i.test(lower)) {
+  if (
+    /длинн(?:ый|ого)?\s+меч|рапир|длинн(?:ый|ого)?\s+лук|боевой\s+топор|боевой\s+молот/i.test(lower)
+  ) {
     return '1d8';
   }
   if (/меч|лук|арбалет/i.test(lower)) {
@@ -164,7 +183,7 @@ export function suggestWeaponDamageDice(name: string, description?: string): str
   // 1d6: короткий меч, короткий лук, булава, посох, копье, копьё, ручной топор, ятаган, скимитар, ручной арбалет
   if (
     /коротк(?:ий|ого)?\s+меч|коротк(?:ий|ого)?\s+лук|ручн(?:ой|ого)?\s+топор|ручн(?:ой|ого)?\s+арбалет|булав|посох|коп[ьъ]?[её]|ятаган|скимитар|трезубец/i.test(
-      lower
+      lower,
     )
   ) {
     return '1d6';
@@ -185,10 +204,7 @@ export function suggestWeaponDamageDice(name: string, description?: string): str
  * Creates an Attack object from an inventory weapon item, calculating attack bonus
  * based on character's STR or DEX mod + proficiency bonus.
  */
-export function createAttackFromWeapon(
-  item: InventoryItem,
-  character: Character | null
-): Attack {
+export function createAttackFromWeapon(item: InventoryItem, character: Character | null): Attack {
   const level = character?.level || 1;
   const profBonus = computeProfBonus(level);
   const strMod = parseModifier(character?.stats?.str || '10');
@@ -202,7 +218,7 @@ export function createAttackFromWeapon(
 
   let abilityMod = strMod;
   if (isRanged) {
-    abilityMod = dexMod;
+    abilityMod = /дротик/i.test(lower) ? Math.max(strMod, dexMod) : dexMod;
   } else if (isFinesse) {
     abilityMod = Math.max(strMod, dexMod);
   }
@@ -229,4 +245,12 @@ export function createAttackFromWeapon(
     type: attackType,
     desc: item.description ? item.description.slice(0, 150) : undefined,
   };
+}
+
+/** The requested attack is exactly 1d20 plus an integer modifier. */
+export function resolveAttackRoll(total: number, bonus: number) {
+  const natural = total - bonus;
+  if (!Number.isInteger(natural) || natural < 1 || natural > 20)
+    throw new Error('Некорректный результат d20');
+  return { natural, critical: natural === 20 };
 }

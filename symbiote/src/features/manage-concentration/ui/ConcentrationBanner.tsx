@@ -1,0 +1,92 @@
+import React, { useRef, useState } from 'react';
+import { useRosterStore } from '../../../entities/character/model/store';
+import { taleSpireDriver } from '../../../shared/api/talespire';
+import { computeProfBonus } from '../../../shared/lib/dnd-rules';
+import { parseModifier } from '../../../shared/lib/text-utils';
+export const ConcentrationBanner = () => {
+  const character = useRosterStore((s) => s.playerData);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const rolling = useRef(false);
+  const concentration = character?.activeConcentration;
+  const check = character?.concentrationChecks?.[0];
+  if (!character || !concentration) return null;
+  const drop = () => {
+    const state = useRosterStore.getState();
+    if (state.playerData && state.playerData.id === character.id)
+      state.setPlayerData({
+        ...state.playerData,
+        activeConcentration: null,
+        concentrationChecks: [],
+      });
+  };
+  const roll = async () => {
+    if (!check || rolling.current) return;
+    rolling.current = true;
+    setBusy(true);
+    setNotice('');
+    const bonus =
+      parseModifier(character.stats?.con || '10') +
+      (character.savingThrowsProficient?.includes('con')
+        ? computeProfBonus(character.level || 1)
+        : 0);
+    try {
+      const total = await taleSpireDriver.rollForResult(
+        `1d20${bonus >= 0 ? '+' : ''}${bonus}`,
+        `Концентрация: ${character.name} (СЛ ${check.dc})`,
+        false,
+      );
+      const state = useRosterStore.getState();
+      const latest = state.playerData;
+      if (
+        latest?.id !== character.id ||
+        latest?.activeConcentration?.instanceId !== concentration.instanceId ||
+        latest?.concentrationChecks?.[0]?.id !== check.id
+      )
+        return;
+      const success = total >= check.dc;
+      state.setPlayerData({
+        ...latest,
+        activeConcentration: success ? latest.activeConcentration : null,
+        concentrationChecks: success ? latest.concentrationChecks.slice(1) : [],
+      });
+      setNotice(
+        `${total} / СЛ ${check.dc}: ${success ? 'концентрация сохранена' : 'концентрация потеряна'}`,
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Бросок не завершен. Повторите проверку.');
+    } finally {
+      rolling.current = false;
+      setBusy(false);
+    }
+  };
+  return (
+    <section
+      aria-label="Концентрация"
+      className="p-3 rounded border border-amber-500 text-amber-200 text-xs flex flex-col gap-2"
+    >
+      <span>Концентрация: {concentration.spellName}</span>
+      {check && (
+        <>
+          <span>
+            Урон: {check.damage}. СЛ {check.dc}. Ожидает проверок:{' '}
+            {character.concentrationChecks?.length}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              void roll();
+            }}
+          >
+            {busy ? 'Ожидание кубиков…' : 'Спасбросок Телосложения'}
+          </button>
+        </>
+      )}
+      <button type="button" onClick={drop}>
+        Прекратить концентрацию
+      </button>
+      <span role="status">{notice}</span>
+    </section>
+  );
+};

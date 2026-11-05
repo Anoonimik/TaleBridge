@@ -1,9 +1,12 @@
+import { useShallow } from 'zustand/react/shallow';
 import React from 'react';
-import { useRosterStore } from '../../shared';
-import { ClueCard } from '../../entities';
+import { useRosterStore } from '../../entities/character/model/store';
+import { ClueCard } from '../../entities/clue/ui/ClueCard';
 
 export const CluesArchive = () => {
-  const { cluesArchive, removeClue } = useRosterStore();
+  const { cluesArchive, removeClue } = useRosterStore(
+    useShallow((s) => ({ cluesArchive: s.cluesArchive, removeClue: s.removeClue })),
+  );
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#0c0d14] p-3 gap-3">
@@ -24,9 +27,7 @@ export const CluesArchive = () => {
             Архив пуст. Когда Мастер покажет важную улику или письмо, нажмите «В архив улик».
           </div>
         ) : (
-          cluesArchive.map((clue) => (
-            <ClueCard key={clue.id} clue={clue} onDelete={removeClue} />
-          ))
+          cluesArchive.map((clue) => <ClueCard key={clue.id} clue={clue} onDelete={removeClue} />)
         )}
       </div>
     </div>

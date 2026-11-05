@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Sliders,
@@ -21,24 +22,27 @@ import {
   computeProfBonus,
   taleSpireDriver,
 } from '../../shared';
-import { AbilityCell, AttackCard, ActionModal, PlayerConditionsBanner } from '../../entities';
-import {
-  ApplyDamageControl,
-  InventoryManager,
-  CluesArchive,
-  PlayerNotesEditor,
-  DeathSavesControl,
-  ClassResourcesManager,
-  SpellcastingManager,
-  SkillsListAccordion,
-  EditCharacterBasicsModal,
-} from '../../features';
+import { AbilityCell } from '../../entities/character/ui/AbilityCell';
+import { AttackCard } from '../../entities/character/ui/AttackCard';
+import { ActionModal } from '../../entities/character/ui/ActionModal';
+import { PlayerConditionsBanner } from '../../entities/character/ui/PlayerConditionsBanner';
+import { ConcentrationBanner } from '../../features/manage-concentration/ui/ConcentrationBanner';
+import { ApplyDamageControl } from '../../features/apply-damage/ApplyDamageControl';
+import { InventoryManager } from '../../features/manage-inventory/InventoryManager';
+import { CluesArchive } from '../../features/archive-clues/CluesArchive';
+import { PlayerNotesEditor } from '../../features/save-notes/PlayerNotesEditor';
+import { DeathSavesControl } from '../../features/death-saves/DeathSavesControl';
+import { ClassResourcesManager } from '../../features/manage-resources/ClassResourcesManager';
+import { SpellcastingManager } from '../../features/manage-spells/SpellcastingManager';
+import { SkillsListAccordion } from '../../features/manage-saves-skills/SkillsListAccordion';
+import { EditCharacterBasicsModal } from '../../features/manage-character-basics/ui/EditCharacterBasicsModal';
 
 type CockpitSubTab = 'sheet' | 'spells' | 'inventory' | 'clues' | 'notes';
 
 export const PlayerCockpit = () => {
   const {
     playerCharacterName,
+    playerCharacterId,
     playerData,
     roster,
     selectedToken,
@@ -66,19 +70,53 @@ export const PlayerCockpit = () => {
     setSpellcastingAbility,
     updateCharacterBasics,
     performRest,
-  } = useRosterStore();
+  } = useRosterStore(
+    useShallow((s) => ({
+      playerCharacterName: s.playerCharacterName,
+      playerCharacterId: s.playerCharacterId,
+      playerData: s.playerData,
+      roster: s.roster,
+      selectedToken: s.selectedToken,
+      setPlayerCharacterName: s.setPlayerCharacterName,
+      deletePlayerAttack: s.deletePlayerAttack,
+      savePlayerAttack: s.savePlayerAttack,
+      updatePlayerHp: s.updatePlayerHp,
+      updateDeathSaves: s.updateDeathSaves,
+      rollDeathSave: s.rollDeathSave,
+      applyDeathSaveRoll: s.applyDeathSaveRoll,
+      resetDeathSaves: s.resetDeathSaves,
+      toggleInspiration: s.toggleInspiration,
+      updateSpellSlots: s.updateSpellSlots,
+      useSpellSlot: s.useSpellSlot,
+      regainSpellSlot: s.regainSpellSlot,
+      resetAllSpellSlots: s.resetAllSpellSlots,
+      saveSpell: s.saveSpell,
+      deleteSpell: s.deleteSpell,
+      updateResources: s.updateResources,
+      updateHitDice: s.updateHitDice,
+      spendHitDice: s.spendHitDice,
+      toggleSavingThrowProficiency: s.toggleSavingThrowProficiency,
+      toggleSkillProficiency: s.toggleSkillProficiency,
+      setSkillProficiency: s.setSkillProficiency,
+      setSpellcastingAbility: s.setSpellcastingAbility,
+      updateCharacterBasics: s.updateCharacterBasics,
+      performRest: s.performRest,
+    })),
+  );
 
-  const { combatants, active: inCombat } = useCombatStore();
+  const { combatants, active: inCombat } = useCombatStore(
+    useShallow((s) => ({ combatants: s.combatants, active: s.active })),
+  );
 
   const [activeSubTab, setActiveSubTab] = useState<CockpitSubTab>('sheet');
   const [modalAttack, setModalAttack] = useState<{ attack: Attack | null; index?: number } | null>(
-    null
+    null,
   );
   const [isEditBasicsOpen, setIsEditBasicsOpen] = useState(false);
 
   const pcList = useMemo(
     () => roster.filter((r) => r.playable || r.category === 'Игроки'),
-    [roster]
+    [roster],
   );
 
   useEffect(() => {
@@ -92,8 +130,14 @@ export const PlayerCockpit = () => {
   const curHp = playerData?.hp ?? 20;
   const maxHp = playerData?.hp_max ?? curHp;
 
-  const dexMod = useMemo(() => parseModifier(playerData?.stats?.dex || '10'), [playerData?.stats?.dex]);
-  const wisMod = useMemo(() => parseModifier(playerData?.stats?.wis || '10'), [playerData?.stats?.wis]);
+  const dexMod = useMemo(
+    () => parseModifier(playerData?.stats?.dex || '10'),
+    [playerData?.stats?.dex],
+  );
+  const wisMod = useMemo(
+    () => parseModifier(playerData?.stats?.wis || '10'),
+    [playerData?.stats?.wis],
+  );
   const level = playerData?.level || 1;
   const profBonus = useMemo(() => computeProfBonus(level), [level]);
   const isWisProf = playerData?.savingThrowsProficient?.includes('wis') || false;
@@ -106,8 +150,10 @@ export const PlayerCockpit = () => {
     }
     const combatMatch = combatants.find(
       (c) =>
-        (c.name && playerCharacterName && c.name.toLowerCase() === playerCharacterName.toLowerCase()) ||
-        (c.talespireId && playerData?.talespire_id && c.talespireId === playerData.talespire_id)
+        (c.name &&
+          playerCharacterName &&
+          c.name.toLowerCase() === playerCharacterName.toLowerCase()) ||
+        (c.talespireId && playerData?.talespire_id && c.talespireId === playerData.talespire_id),
     );
     if (combatMatch?.conditions) {
       combatMatch.conditions.forEach((c) => {
@@ -125,10 +171,13 @@ export const PlayerCockpit = () => {
     setModalAttack({ attack: null });
   }, []);
 
-  const handleSaveAttack = useCallback((atk: Attack, idx?: number) => {
-    savePlayerAttack(atk, idx);
-    setModalAttack(null);
-  }, [savePlayerAttack]);
+  const handleSaveAttack = useCallback(
+    (atk: Attack, idx?: number) => {
+      savePlayerAttack(atk, idx);
+      setModalAttack(null);
+    },
+    [savePlayerAttack],
+  );
 
   const handleRollInitiative = useCallback(() => {
     if (!playerData) return;
@@ -141,18 +190,21 @@ export const PlayerCockpit = () => {
       {/* Cockpit Top Bar: Character Select & Tabs */}
       <div className="bg-[#141622] border-b border-[#262a3d] px-3 py-2 flex items-center justify-between gap-2 shrink-0 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
-          <label htmlFor="hero-select" className="text-xs uppercase font-bold text-slate-400 shrink-0">
+          <label
+            htmlFor="hero-select"
+            className="text-xs uppercase font-bold text-slate-400 shrink-0"
+          >
             Герой:
           </label>
           <select
             id="hero-select"
-            value={playerCharacterName}
+            value={playerCharacterId || playerCharacterName}
             onChange={(e) => setPlayerCharacterName(e.target.value)}
             className="bg-[#10111a] border border-[#262a3d] text-slate-100 text-sm rounded px-2.5 py-1 focus:outline-none focus:border-indigo-500 max-w-[170px] truncate cursor-pointer font-medium"
           >
             <option value="">Выберите героя...</option>
             {pcList.map((pc) => (
-              <option key={pc.name} value={pc.name}>
+              <option key={pc.id || pc.name} value={pc.id || pc.name}>
                 {pc.name}
               </option>
             ))}
@@ -180,9 +232,12 @@ export const PlayerCockpit = () => {
           )}
 
           {/* Quick link TaleSpire token if selected */}
-          {selectedToken && playerData && (
-            selectedToken.id === playerData.talespire_id ||
-            (selectedToken.name && playerData.name && selectedToken.name.toLowerCase() === playerData.name.toLowerCase()) ? (
+          {selectedToken &&
+            playerData &&
+            (selectedToken.id === playerData.talespire_id ||
+            (selectedToken.name &&
+              playerData.name &&
+              selectedToken.name.toLowerCase() === playerData.name.toLowerCase()) ? (
               <span
                 className="hidden md:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-medium"
                 title={`Токен TaleSpire "${selectedToken.name}" привязан к персонажу`}
@@ -195,7 +250,10 @@ export const PlayerCockpit = () => {
                 type="button"
                 onClick={() => {
                   if (playerData.path) {
-                    wsBridge.send('OPEN_IN_OBSIDIAN', { path: playerData.path, name: playerData.name });
+                    wsBridge.send('OPEN_IN_OBSIDIAN', {
+                      path: playerData.path,
+                      name: playerData.name,
+                    });
                     wsBridge.send('OPEN_NOTE', { path: playerData.path, name: playerData.name });
                   }
                   wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken });
@@ -206,8 +264,7 @@ export const PlayerCockpit = () => {
                 <Link2 className="w-3 h-3 text-indigo-300 shrink-0" />
                 <span>Привязать токен «{selectedToken.name}»</span>
               </button>
-            )
-          )}
+            ))}
         </div>
 
         {/* Sub-tabs */}
@@ -253,12 +310,10 @@ export const PlayerCockpit = () => {
             {activeSubTab === 'sheet' && (
               <div className="h-full overflow-y-auto p-3 flex flex-col gap-3 scrollbar-thin">
                 {/* 0. Active Conditions Banner (Blinded, Poisoned, etc. from Combat Tracker) */}
-                <PlayerConditionsBanner
-                  conditions={activeConditions}
-                  isCombatActive={inCombat}
-                />
+                <PlayerConditionsBanner conditions={activeConditions} isCombatActive={inCombat} />
 
                 {/* 1. Death Saves (appears prominently when dying or if manually toggled) */}
+                <ConcentrationBanner />
                 <DeathSavesControl
                   hp={curHp}
                   deathSaves={playerData?.deathSaves || { successes: 0, failures: 0 }}
@@ -318,9 +373,7 @@ export const PlayerCockpit = () => {
                       <Sparkles className="w-3 h-3 text-slate-400 shrink-0" />
                       <span className="text-[10px] uppercase font-bold">Мастерство</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-200 font-mono">
-                      +{profBonus}
-                    </span>
+                    <span className="text-sm font-bold text-slate-200 font-mono">+{profBonus}</span>
                   </div>
 
                   <div className="flex flex-col items-center justify-center p-1 bg-[#10111a] rounded border border-[#262a3d] col-span-2 sm:col-span-1">
@@ -459,7 +512,8 @@ export const PlayerCockpit = () => {
                   <div className="flex flex-col gap-2">
                     {!playerData?.attacks || playerData.attacks.length === 0 ? (
                       <div className="text-center py-6 text-slate-500 text-xs">
-                        Нет добавленных атак. Нажмите «+ Действие» чтобы добавить оружие или заклинание.
+                        Нет добавленных атак. Нажмите «+ Действие» чтобы добавить оружие или
+                        заклинание.
                       </div>
                     ) : (
                       playerData.attacks.map((atk, idx) => (

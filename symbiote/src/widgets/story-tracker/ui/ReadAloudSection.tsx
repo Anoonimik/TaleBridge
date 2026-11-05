@@ -1,5 +1,7 @@
 import React from 'react';
-import { formatInlineText, useAppStore, wsBridge } from '../../../shared';
+import { formatInlineText } from '../../../shared/lib/format-text';
+import { useAppStore } from '../../../shared/lib/useAppStore';
+import { wsBridge } from '../../../shared/api/websocket';
 
 interface ReadAloudSectionProps {
   sceneTitle?: string;

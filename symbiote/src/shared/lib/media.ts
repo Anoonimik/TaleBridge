@@ -1,8 +1,12 @@
+import { httpBase, serverInfo } from '../api/endpoint';
+let mediaLinks: Record<string, string> = {};
+export const setMediaLinks = (links: Record<string, string>) => {
+  mediaLinks = links;
+};
 // TaleBridge Media Helper Utilities
-import { DEFAULT_WS_PORT } from '../config/constants';
 
 export function getWebSocketPort(): number {
-  return DEFAULT_WS_PORT;
+  return serverInfo().port;
 }
 
 /**
@@ -16,15 +20,16 @@ export function resolveMediaUrl(url: string | undefined | null): string {
   if (
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:') ||
     trimmed.startsWith('blob:')
   ) {
     return trimmed;
   }
 
-  // Local Obsidian vault file served via TaleBridge HTTP host (default 30123)
-  const port = getWebSocketPort();
-  return `http://127.0.0.1:${port}/vault-file?path=${encodeURIComponent(trimmed)}`;
+  if (trimmed.startsWith('/media/')) {
+    const id = trimmed.split('/media/')[1].split('?')[0];
+    return httpBase() + (mediaLinks[id] || trimmed);
+  }
+  return ''; // Private vault paths are not HTTP resources.
 }
 
 /**
@@ -32,9 +37,11 @@ export function resolveMediaUrl(url: string | undefined | null): string {
  */
 export function getYouTubeVideoId(url: string | undefined | null): string | null {
   if (!url) return null;
-  const match = url.trim().match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
-  );
+  const match = url
+    .trim()
+    .match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/,
+    );
   return match ? match[1] : null;
 }
 
@@ -60,7 +67,7 @@ export function getYouTubeThumbnailUrl(url: string | undefined | null): string |
  * Automatically detects media type based on URL / path.
  */
 export function detectMediaType(
-  url: string | undefined | null
+  url: string | undefined | null,
 ): 'image' | 'video' | 'audio' | 'text' {
   if (!url) return 'image';
   const clean = url.trim().toLowerCase();

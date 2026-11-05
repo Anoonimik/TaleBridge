@@ -1,5 +1,5 @@
 import React from 'react';
-import { CONDITIONS } from '../../../shared';
+import { CONDITIONS } from '../../../shared/config/constants';
 
 interface CombatantConditionsListProps {
   combatantId: string;
