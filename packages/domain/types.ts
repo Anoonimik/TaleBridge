@@ -161,6 +161,7 @@ export interface Combatant {
   category?: string;
   path?: string | null;
   talespireId?: string | null;
+  cameraBookmarkId?: string | null;
   stats?: AbilityScores | null;
   dexMod?: number;
   attacks?: Attack[];

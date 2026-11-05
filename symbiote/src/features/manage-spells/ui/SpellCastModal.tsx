@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Spell, SpellSlot, ModalShell } from '../../../shared';
+import React, { useState } from 'react';
+import type { Spell, SpellSlot } from '../../../../../packages/domain/types';
+import { ModalShell } from '../../../shared/ui/ModalShell';
 import { getFormulaScalingPreview } from '../lib/spellScaling';
 
 export interface SpellCastModalProps {
@@ -24,46 +25,47 @@ function getInitialCircle(spellLevel: number, slots: SpellSlot[]): number {
   return spellLevel;
 }
 
-export const SpellCastModal: React.FC<SpellCastModalProps> = ({
-  isOpen,
+export const SpellCastModal = (props: SpellCastModalProps) => {
+  if (!props.isOpen || !props.spell) return null;
+  return (
+    <SpellCastSession
+      key={`${props.spell.id}:${props.spell.level}`}
+      {...props}
+      spell={props.spell}
+    />
+  );
+};
+
+function SpellCastSession({
   spell,
   spellSlots,
   onClose,
   onCast,
-}) => {
-  const baseLevel = spell?.level ?? 1;
-
-  const [selectedCircle, setSelectedCircle] = useState<number>(() =>
+}: Omit<SpellCastModalProps, 'spell'> & { spell: Spell }) {
+  const baseLevel = spell.level;
+  const [selectedCircle, setSelectedCircle] = useState(() =>
     getInitialCircle(baseLevel, spellSlots),
   );
 
-  useEffect(() => {
-    if (spell && isOpen) {
-      setSelectedCircle(getInitialCircle(spell.level, spellSlots));
-    }
-  }, [spell, isOpen, spellSlots]);
-
-  const circleOptions = useMemo(() => {
-    const options: number[] = [];
-    for (let lvl = baseLevel; lvl <= 9; lvl++) {
-      options.push(lvl);
-    }
-    return options;
-  }, [baseLevel]);
-
-  const scalingPreview = useMemo(() => {
-    if (!spell) return null;
-    return getFormulaScalingPreview(spell.dmg, spell.level, selectedCircle, spell.desc);
-  }, [spell, selectedCircle]);
-
-  if (!isOpen || !spell) return null;
+  const circleOptions = Array.from(
+    { length: Math.max(0, 10 - baseLevel) },
+    (_, index) => baseLevel + index,
+  );
+  const scalingPreview = getFormulaScalingPreview(
+    spell.dmg,
+    spell.level,
+    selectedCircle,
+    spell.desc,
+  );
 
   const selectedSlot = spellSlots.find((s) => s.level === selectedCircle);
-  const canCast = Boolean(selectedSlot && selectedSlot.current > 0);
+  const canCast = Boolean(
+    selectedCircle >= baseLevel && selectedCircle <= 9 && selectedSlot && selectedSlot.current > 0,
+  );
 
   return (
     <ModalShell
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title="Сотворение заклинания"
       subtitle={`${spell.name} (${spell.level} круг)`}
@@ -233,4 +235,4 @@ export const SpellCastModal: React.FC<SpellCastModalProps> = ({
       </div>
     </ModalShell>
   );
-};
+}

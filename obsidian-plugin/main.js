@@ -30821,7 +30821,7 @@ var inventorySchema = external_exports.array(
     quantity: count.min(1).optional(),
     weight: amount.optional(),
     category: line.optional(),
-    description: line.optional()
+    description: text.optional()
   })
 ).max(1e3).refine(
   (items) => new Set(items.map((item) => item.id)).size === items.length,
@@ -30888,6 +30888,7 @@ var combatantSchema = external_exports.object({
   category: line.optional(),
   path: line.nullish(),
   talespireId: line.nullish(),
+  cameraBookmarkId: line.nullish(),
   stats: ability.nullish(),
   dexMod: external_exports.number().min(-30).max(30).optional(),
   attacks: external_exports.array(attackSchema).max(100).optional()
@@ -31292,6 +31293,15 @@ var SessionManager = class {
   }
 };
 
+// packages/domain/turn-camera.ts
+function turnCameraBookmark(previous, next) {
+  if (!next.active) return null;
+  const id = next.activeCombatantId || next.combatants[next.turnIndex]?.id;
+  const oldId = previous.activeCombatantId || previous.combatants[previous.turnIndex]?.id;
+  if (previous.active && oldId === id && previous.round === next.round) return null;
+  return next.combatants.find((entry) => entry.id === id)?.cameraBookmarkId || null;
+}
+
 // packages/domain/id.ts
 function createId() {
   const bytes = new Uint8Array(16);
@@ -31399,6 +31409,20 @@ function parseInventory(content) {
       equipped = false;
       rest = rest.replace(/^\[\s*\]\s*/, "");
     }
+    const encoded = rest.endsWith(" <!-- talebridge-item-json:v1 -->");
+    if (persistedId && (encoded || /^\{\s*"/.test(rest))) {
+      const json2 = encoded ? rest.slice(0, -" <!-- talebridge-item-json:v1 -->".length) : rest;
+      try {
+        const parsed = inventorySchema.safeParse([{ ...JSON.parse(json2), id: persistedId }]);
+        if (!parsed.success) throw new Error("Invalid inventory fields");
+        items.push(parsed.data[0]);
+        continue;
+      } catch {
+        throw new Error(
+          `\u041F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C \u043F\u0440\u0435\u0434\u043C\u0435\u0442\u0430 ${persistedId}. \u0418\u0441\u043F\u0440\u0430\u0432\u044C\u0442\u0435 JSON \u0432 \u0437\u0430\u043C\u0435\u0442\u043A\u0435 \u043F\u0435\u0440\u0435\u0434 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435\u043C \u0438\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u044F.`
+        );
+      }
+    }
     let description = "";
     const descMatch = rest.match(/\s+[—–-]\s+(.*)$/);
     if (descMatch) {
@@ -31448,9 +31472,35 @@ function serializeInventory(items) {
     const wt = it.weight !== void 0 && it.weight !== null ? `, \u0432\u0435\u0441: ${it.weight} \u043A\u0433` : "";
     const cat = it.category ? ` [${it.category}]` : "";
     const desc = it.description ? ` \u2014 ${it.description}` : "";
-    lines.push(
-      `- ${check2} ${it.name} (\u043A\u043E\u043B-\u0432\u043E: ${qty}${wt})${cat}${desc} <!-- talebridge-item:${it.id} -->`
-    );
+    const legacy = `- ${check2} ${it.name} (\u043A\u043E\u043B-\u0432\u043E: ${qty}${wt})${cat}${desc} <!-- talebridge-item:${it.id} -->`;
+    let parsed;
+    try {
+      parsed = parseInventory(`## \u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u044C
+${legacy}`)[0];
+    } catch {
+    }
+    const expected = {
+      ...it,
+      equipped: Boolean(it.equipped),
+      quantity: it.quantity ?? 1,
+      weight: it.weight ?? 0,
+      category: it.category || "\u0421\u043D\u0430\u0440\u044F\u0436\u0435\u043D\u0438\u0435",
+      description: it.description || ""
+    };
+    const fields = [
+      "id",
+      "name",
+      "equipped",
+      "quantity",
+      "weight",
+      "category",
+      "description"
+    ];
+    if (parsed && fields.every((field) => parsed?.[field] === expected[field])) lines.push(legacy);
+    else
+      lines.push(
+        `- ${check2} ${JSON.stringify(it)} <!-- talebridge-item-json:v1 --> <!-- talebridge-item:${it.id} -->`
+      );
   }
   return lines.join("\n");
 }
@@ -32136,7 +32186,13 @@ var BridgeApplication = class {
     const id = next.combatants[turnIndex]?.id || null;
     const state = { ...next, activeCombatantId: id, turnIndex, revision: (0, import_node_crypto5.randomUUID)() };
     await this.ports.saveCombat(state);
+    const cameraBookmark = turnCameraBookmark(this.combat, state);
     this.combat = state;
+    const cameraDriver = this.members().find(
+      (member) => member.session?.role === "gm" && member.session.driver
+    );
+    if (cameraBookmark && cameraDriver && this.bookmarks.some((bookmark) => bookmark.id === cameraBookmark))
+      this.send(cameraDriver, "GOTO_BOOKMARK", { id: cameraBookmark });
     for (const c of this.members()) this.send(c, "COMBAT_STATE_UPDATE", this.projectCombat(c));
   }
   async execute(command, client) {

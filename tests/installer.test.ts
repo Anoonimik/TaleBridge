@@ -71,7 +71,7 @@ test(
       assert.equal(backupLinks.filter(Boolean).length, 1);
       assert.equal(await readFile(path.join(root, 'symbiote/node_modules/do-not-install.txt'), 'utf8'), 'development only');
       const failure = spawnSync(
-        'pwsh',
+        pwshBin,
         [
           '-NoProfile',
           '-NonInteractive',
@@ -84,7 +84,8 @@ test(
         ],
         { encoding: 'utf8', windowsHide: true },
       );
-      assert.notEqual(failure.status, 0);
+      assert.equal(failure.error, undefined);
+      assert.equal(failure.status, 1, failure.stderr);
       assert.equal(
         await readFile(path.join(installed, 'data.json'), 'utf8'),
         '{"keep":"secret-settings"}',

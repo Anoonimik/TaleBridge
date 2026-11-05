@@ -26,6 +26,8 @@ interface CombatStore {
   toggleCondition: (id: string, condition: string) => void;
   setConditions: (id: string, conditions: string[]) => void;
   clearCombat: () => void;
+  setMiniature: (id: string, miniature: string | null) => void;
+  setCameraBookmark: (id: string, bookmark: string | null) => void;
   syncWithObsidian: () => void;
   setFromSync: (state: {
     active: boolean;
@@ -36,6 +38,24 @@ interface CombatStore {
 }
 
 export const useCombatStore = create<CombatStore>((set, get) => ({
+  setMiniature: (id, miniature) => {
+    if (!get().combatants.some((entry) => entry.id === id)) return;
+    set({
+      combatants: get().combatants.map((entry) =>
+        entry.id === id ? { ...entry, talespireId: miniature } : entry,
+      ),
+    });
+    get().syncWithObsidian();
+  },
+  setCameraBookmark: (id, bookmark) => {
+    if (!get().combatants.some((entry) => entry.id === id)) return;
+    set({
+      combatants: get().combatants.map((entry) =>
+        entry.id === id ? { ...entry, cameraBookmarkId: bookmark } : entry,
+      ),
+    });
+    get().syncWithObsidian();
+  },
   active: false,
   round: 1,
   turnIndex: 0,

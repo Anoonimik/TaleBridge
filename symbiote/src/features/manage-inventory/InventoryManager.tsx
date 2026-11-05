@@ -2,6 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ActionModal } from '../../entities/character/ui/ActionModal';
 import { createAttackFromWeapon } from '../../shared/lib/dnd-rules';
 import type { Attack } from '../../shared/types';
+import { mergeInventoryEdit } from '../../../../packages/domain/inventory-edit';
 import React, { useState, useMemo, useRef } from 'react';
 import {
   InventoryItem,
@@ -12,7 +13,7 @@ import {
   useLogStore,
 } from '../../shared';
 import { ItemCard } from '../../entities/inventory-item/ui/ItemCard';
-import { InventoryWeightGauge, AddItemForm, CoinWalletBar } from './ui';
+import { InventoryWeightGauge, AddItemForm, CoinWalletBar, EditItemModal } from './ui';
 import { getConsumableActionInfo } from './lib/consumable-helper';
 
 interface InventoryManagerProps {
@@ -38,6 +39,10 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingItem, setEditingItem] = useState<{
+    item: InventoryItem;
+    owner: string | undefined;
+  } | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const items = useMemo(() => playerData?.inventory || [], [playerData?.inventory]);
@@ -141,6 +146,33 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
   const handleAddItem = (newItem: InventoryItem) => {
     saveInventory([newItem, ...items]);
     setIsAdding(false);
+  };
+
+  const handleSaveEdit = async (updatedItem: InventoryItem) => {
+    const latest = useRosterStore.getState().playerData;
+    if (
+      !editingItem ||
+      !latest ||
+      latest.id !== editingItem.owner ||
+      playerData?.id !== editingItem.owner
+    )
+      throw new Error('Выбран другой персонаж. Закройте окно и откройте предмет заново.');
+    const merged = mergeInventoryEdit(
+      editingItem.item,
+      latest.inventory?.find((entry) => entry.id === updatedItem.id),
+      updatedItem,
+    );
+    const items = (latest.inventory || []).map((entry) =>
+      entry.id === merged.id ? merged : entry,
+    );
+    const saved = await wsBridge.request<{ revision: string }>(
+      'UPDATE_INVENTORY',
+      { characterId: latest.id, items },
+      { expectedRevision: latest.revision },
+    );
+    const current = useRosterStore.getState().playerData;
+    if (current && current.id === editingItem.owner)
+      setPlayerData({ ...current, inventory: items, revision: saved.revision });
   };
 
   /**
@@ -316,6 +348,7 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDeleteItem}
               onUseItem={handleUseConsumable}
+              onEdit={(it) => setEditingItem({ item: { ...it }, owner: playerData?.id })}
               onLinkToAttack={(item) => {
                 if (playerData)
                   setDraft({
@@ -327,6 +360,15 @@ export const InventoryManager = ({ playerData }: InventoryManagerProps) => {
           ))
         )}
       </div>
+
+      {/* Edit Item Modal */}
+      <EditItemModal
+        key={editingItem?.owner || 'no-character'}
+        isOpen={Boolean(editingItem)}
+        item={editingItem?.item || null}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };

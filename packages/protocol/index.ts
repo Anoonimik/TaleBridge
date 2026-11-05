@@ -34,7 +34,7 @@ export const inventorySchema = z
       quantity: count.min(1).optional(),
       weight: amount.optional(),
       category: line.optional(),
-      description: line.optional(),
+      description: text.optional(),
     }),
   )
   .max(1000)
@@ -131,6 +131,7 @@ export const combatantSchema = z
     category: line.optional(),
     path: line.nullish(),
     talespireId: line.nullish(),
+    cameraBookmarkId: line.nullish(),
     stats: ability.nullish(),
     dexMod: z.number().min(-30).max(30).optional(),
     attacks: z.array(attackSchema).max(100).optional(),

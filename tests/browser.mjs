@@ -1,3 +1,4 @@
+import { checkCursors } from './browser-cursors.mjs';
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -47,6 +48,7 @@ const ready = new Promise((resolve, reject) => {
       await page.goto(url);
       const dialog = page.getByRole('dialog', { name: 'Подключение к Мастеру' });
       await dialog.waitFor();
+      await checkCursors(page);
       await dialog.click({ position: { x: 1, y: 1 } });
       assert.ok(await dialog.isVisible(), 'Backdrop must not dismiss the login dialog');
       await page.keyboard.press('Escape');
@@ -75,6 +77,28 @@ const ready = new Promise((resolve, reject) => {
         'Alice',
       ]);
       assert.ok(!(await page.locator('body').innerText()).includes('GM secret'));
+      await page.getByRole('button', { name: 'Инвентарь', exact: true }).click();
+      await page.locator('button[title="Редактировать предмет"]').first().click();
+      const editor = page.getByRole('dialog', { name: 'Редактировать предмет' });
+      await editor.waitFor();
+      const itemName = `Rope (${width}) [edited]`;
+      const itemDescription = `Description ${width}\n## Heading inside description\nLiteral $&`;
+      await editor.getByLabel('Название предмета', { exact: true }).fill(itemName);
+      await editor.getByLabel('Количество предметов', { exact: true }).fill('3');
+      await editor.getByLabel('Вес одного предмета (кг)', { exact: true }).fill('0.025');
+      await editor.getByLabel('Описание предмета', { exact: true }).fill(itemDescription);
+      await editor.getByRole('button', { name: 'Сохранить', exact: true }).click();
+      await editor.waitFor({ state: 'hidden' });
+      await page.reload();
+      await page.getByRole('dialog').waitFor({ state: 'hidden' });
+      await page.getByRole('button', { name: 'Инвентарь', exact: true }).click();
+      await page.locator('button[title="Редактировать предмет"]').first().click();
+      await editor.waitFor();
+      assert.equal(await editor.getByLabel('Название предмета', { exact: true }).inputValue(), itemName);
+      assert.equal(await editor.getByLabel('Описание предмета', { exact: true }).inputValue(), itemDescription);
+      assert.equal(await editor.getByLabel('Вес одного предмета (кг)', { exact: true }).inputValue(), '0.025');
+      await editor.getByRole('button', { name: 'Отмена', exact: true }).click();
+      await editor.waitFor({ state: 'hidden' });
       await page.getByRole('button', { name: 'Журнал', exact: true }).click();
       const notes = page.getByLabel('Личный журнал: Alice');
       const content = `Audit notes ${width}\n## Heading within notes\nLiteral $& $1`;
