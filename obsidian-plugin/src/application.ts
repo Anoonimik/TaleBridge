@@ -32,7 +32,7 @@ export interface ApplicationPorts {
   listScenes(): Promise<Scene[]>;
   readNote(path: string): Promise<string>;
   openNote(path: string): Promise<void>;
-  linkCreature(id: string, name: string): Promise<void>;
+  linkCreature(id: string, name: string, path?: string): Promise<void>;
   selectedCreature?(id: string, name: string): Promise<void>;
   images(): { name: string; path: string }[];
   readAsset(path: string): Promise<Buffer>;
@@ -386,7 +386,12 @@ export class BridgeApplication {
       }
       case 'LINK_CREATURE_TO_NOTE':
         this.gm(client);
-        await this.ports.linkCreature(command.payload.creature.id, command.payload.creature.name);
+        await this.ports.linkCreature(
+          command.payload.creature.id,
+          command.payload.creature.name,
+          command.payload.path,
+        );
+        for (const member of this.members()) await this.sendRoster(member);
         return;
       case 'CREATURE_SELECTED':
         this.gm(client);

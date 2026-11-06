@@ -243,7 +243,10 @@ export const commandPayloads = {
       ),
     })
     .nullable(),
-  LINK_CREATURE_TO_NOTE: z.object({ creature: z.object({ id: line, name: line }) }),
+  LINK_CREATURE_TO_NOTE: z.object({
+    creature: z.object({ id: line, name: line }),
+    path: line.optional(),
+  }),
 };
 export type CommandType = keyof typeof commandPayloads;
 export type Command = {

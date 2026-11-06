@@ -35,9 +35,8 @@ export const NoteViewerHeader: React.FC<NoteViewerHeaderProps> = ({
     if (!selectedToken) return;
     if (character.path) {
       wsBridge.send('OPEN_IN_OBSIDIAN', { path: character.path, name: character.name });
-      wsBridge.send('OPEN_NOTE', { path: character.path, name: character.name });
     }
-    wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken });
+    wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken, path: character.path });
     setJustLinked(true);
     setTimeout(() => setJustLinked(false), 2500);
   };

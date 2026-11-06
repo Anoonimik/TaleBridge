@@ -30996,7 +30996,10 @@ var commandPayloads = {
       count.nullish()
     )
   }).nullable(),
-  LINK_CREATURE_TO_NOTE: external_exports.object({ creature: external_exports.object({ id: line, name: line }) })
+  LINK_CREATURE_TO_NOTE: external_exports.object({
+    creature: external_exports.object({ id: line, name: line }),
+    path: line.optional()
+  })
 };
 var envelope = external_exports.object({
   protocolVersion: external_exports.literal(PROTOCOL_VERSION),
@@ -32277,7 +32280,12 @@ var BridgeApplication = class {
       }
       case "LINK_CREATURE_TO_NOTE":
         this.gm(client);
-        await this.ports.linkCreature(command.payload.creature.id, command.payload.creature.name);
+        await this.ports.linkCreature(
+          command.payload.creature.id,
+          command.payload.creature.name,
+          command.payload.path
+        );
+        for (const member of this.members()) await this.sendRoster(member);
         return;
       case "CREATURE_SELECTED":
         this.gm(client);
@@ -32812,13 +32820,14 @@ var TaleBridgePlugin = class extends import_obsidian.Plugin {
         openNote: async (path) => {
           await this.app.workspace.getLeaf(false).openFile(this.note(path));
         },
-        linkCreature: async (id, name) => {
-          const file2 = this.app.workspace.getActiveFile();
+        linkCreature: async (id, name, path) => {
+          const file2 = path ? this.note(path) : this.app.workspace.getActiveFile();
           if (!file2) throw new Error("\u041D\u0435\u0442 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0439 \u0437\u0430\u043C\u0435\u0442\u043A\u0438");
           await this.app.vault.process(
             file2,
             (content) => patchFrontmatter(content, { talespire_id: id, talespire_name: name })
           );
+          this.index?.invalidate(file2.path);
         },
         selectedCreature: async (id, name) => {
           if (!this.settings.autoOpenCreatureNote) return;

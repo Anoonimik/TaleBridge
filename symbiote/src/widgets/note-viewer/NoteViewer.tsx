@@ -49,7 +49,6 @@ export const NoteViewer: React.FC<NoteViewerProps> = ({ character, onClose }) =>
   const handleOpenObsidian = () => {
     if (character.path) {
       wsBridge.send('OPEN_IN_OBSIDIAN', { path: character.path, name: character.name });
-      wsBridge.send('OPEN_NOTE', { path: character.path, name: character.name });
     }
   };
 

@@ -144,3 +144,39 @@ test('SYNC_COMBAT_STATE accepts clean combatant synchronized from token HUD', ()
 
   assert.equal(cmd.type, 'SYNC_COMBAT_STATE');
 });
+
+test('LINK_CREATURE_TO_NOTE accepts creature and optional target path', async () => {
+  const cmd = parseCommand({
+    protocolVersion: PROTOCOL_VERSION,
+    requestId: 'req_link_creature',
+    type: 'LINK_CREATURE_TO_NOTE',
+    payload: {
+      creature: { id: 'creature-guid-456', name: 'Адепт Техномага' },
+      path: 'bestiary/Adept.md',
+    },
+  });
+  assert.equal(cmd.type, 'LINK_CREATURE_TO_NOTE');
+
+  let passedId = '';
+  let passedName = '';
+  let passedPath: string | undefined;
+
+  const f = fixture();
+  f.ports.linkCreature = async (id: string, name: string, path?: string) => {
+    passedId = id;
+    passedName = name;
+    passedPath = path;
+  };
+
+  const gm = await f.login('gm', 'gm-code');
+  const r = await f.send(gm, 'LINK_CREATURE_TO_NOTE', {
+    creature: { id: 'creature-guid-456', name: 'Адепт Техномага' },
+    path: 'bestiary/Adept.md',
+  });
+
+  assert.equal(r.type, 'ACK');
+  assert.equal(passedId, 'creature-guid-456');
+  assert.equal(passedName, 'Адепт Техномага');
+  assert.equal(passedPath, 'bestiary/Adept.md');
+  f.app.dispose();
+});

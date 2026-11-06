@@ -45,9 +45,8 @@ export const TokenLinkDropdown: React.FC<TokenLinkDropdownProps> = ({
   const handleLinkToCharacter = (char: Character) => {
     if (char.path) {
       wsBridge.send('OPEN_IN_OBSIDIAN', { path: char.path, name: char.name });
-      wsBridge.send('OPEN_NOTE', { path: char.path, name: char.name });
     }
-    wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: token });
+    wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: token, path: char.path });
     onLinked?.();
     onClose();
   };
