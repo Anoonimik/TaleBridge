@@ -49,7 +49,6 @@ export const TokenHud = () => {
   const handleOpenObsidian = () => {
     if (matchInRoster?.path) {
       wsBridge.send('OPEN_IN_OBSIDIAN', { path: matchInRoster.path, name: matchInRoster.name });
-      wsBridge.send('OPEN_NOTE', { path: matchInRoster.path, name: matchInRoster.name });
     }
   };
 

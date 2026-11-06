@@ -254,9 +254,8 @@ export const PlayerCockpit = () => {
                       path: playerData.path,
                       name: playerData.name,
                     });
-                    wsBridge.send('OPEN_NOTE', { path: playerData.path, name: playerData.name });
                   }
-                  wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken });
+                  wsBridge.send('LINK_CREATURE_TO_NOTE', { creature: selectedToken, path: playerData.path });
                 }}
                 className="hidden sm:inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 cursor-pointer font-medium transition-colors"
                 title={`Привязать выбранный токен "${selectedToken.name}" к ${playerData.name} в Obsidian`}

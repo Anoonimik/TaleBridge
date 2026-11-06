@@ -16,7 +16,10 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
   const matchInRoster = roster.find(
     (r) =>
       (token.name && r.name.toLowerCase() === token.name.toLowerCase()) ||
-      (token.id && r.talespire_id === token.id),
+      (token.id && r.talespire_id === token.id) ||
+      (r.talespire_name &&
+        token.name &&
+        r.talespire_name.toLowerCase() === token.name.toLowerCase()),
   );
 
   const getInitialSide = (): CombatSide => {
@@ -41,8 +44,21 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
   }, [onClose]);
 
   const handleAdd = () => {
+    const tokenHp =
+      typeof token.hp === 'number' && Number.isFinite(token.hp) ? Math.round(token.hp) : undefined;
+    const tokenMax =
+      typeof token.hpMax === 'number' && Number.isFinite(token.hpMax)
+        ? Math.round(token.hpMax)
+        : undefined;
+    const rosterHp = matchInRoster?.hp;
+    const rosterMax = matchInRoster?.hp_max ?? rosterHp;
+
+    const curHp = Math.max(0, tokenHp ?? rosterHp ?? 10);
+    const baseMax = rosterMax ?? tokenMax ?? curHp;
+    const maxHp = Math.max(baseMax, curHp, 1);
+
     addCombatant({
-      name: token.name,
+      name: matchInRoster?.name || token.name || 'Существо',
       side: selectedSide,
       category:
         selectedSide === 'player'
@@ -52,12 +68,12 @@ export const CombatTokenDropdown = ({ token, onClose }: CombatTokenDropdownProps
             : selectedSide === 'neutral'
               ? 'Нейтралы'
               : 'Враги',
-      hp: token.hp || matchInRoster?.hp || 10,
-      maxHp: token.hpMax || matchInRoster?.hp_max || token.hp || 10,
+      hp: curHp,
+      maxHp,
       ac: matchInRoster?.ac || 10,
       speed: matchInRoster?.speed || '30 фт.',
       path: matchInRoster?.path || null,
-      talespireId: token.id,
+      talespireId: token.id || matchInRoster?.talespire_id || null,
       isPlayer: selectedSide === 'player',
       stats: matchInRoster?.stats,
       dexMod: matchInRoster?.dexMod,

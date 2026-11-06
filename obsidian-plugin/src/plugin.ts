@@ -267,12 +267,13 @@ export default class TaleBridgePlugin extends Plugin {
         openNote: async (path) => {
           await this.app.workspace.getLeaf(false).openFile(this.note(path));
         },
-        linkCreature: async (id, name) => {
-          const file = this.app.workspace.getActiveFile();
+        linkCreature: async (id, name, path?: string) => {
+          const file = path ? this.note(path) : this.app.workspace.getActiveFile();
           if (!file) throw new Error('Нет активной заметки');
           await this.app.vault.process(file, (content) =>
             patchFrontmatter(content, { talespire_id: id, talespire_name: name }),
           );
+          this.index?.invalidate(file.path);
         },
         selectedCreature: async (id, name) => {
           if (!this.settings.autoOpenCreatureNote) return;

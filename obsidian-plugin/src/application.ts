@@ -32,7 +32,7 @@ export interface ApplicationPorts {
   listScenes(): Promise<Scene[]>;
   readNote(path: string): Promise<string>;
   openNote(path: string): Promise<void>;
-  linkCreature(id: string, name: string): Promise<void>;
+  linkCreature(id: string, name: string, path?: string): Promise<void>;
   selectedCreature?(id: string, name: string): Promise<void>;
   images(): { name: string; path: string }[];
   readAsset(path: string): Promise<Buffer>;
@@ -365,7 +365,8 @@ export class BridgeApplication {
         this.send(client, 'PLAYER_DATA', await this.target(client, command.payload));
         return;
       case 'GET_NOTE':
-      case 'OPEN_IN_OBSIDIAN': {
+      case 'OPEN_IN_OBSIDIAN':
+      case 'OPEN_NOTE': {
         this.gm(client);
         const list = await this.ports.listCharacters();
         const character = list.find(
@@ -373,7 +374,8 @@ export class BridgeApplication {
         );
         const path = command.payload.path || character?.path;
         if (!path) throw new ProtocolError('NOT_FOUND', 'Заметка не найдена');
-        if (command.type === 'OPEN_IN_OBSIDIAN') await this.ports.openNote(path);
+        if (command.type === 'OPEN_IN_OBSIDIAN' || command.type === 'OPEN_NOTE')
+          await this.ports.openNote(path);
         else
           this.send(client, 'NOTE_CONTENT', {
             name: character?.name || path,
@@ -384,7 +386,12 @@ export class BridgeApplication {
       }
       case 'LINK_CREATURE_TO_NOTE':
         this.gm(client);
-        await this.ports.linkCreature(command.payload.creature.id, command.payload.creature.name);
+        await this.ports.linkCreature(
+          command.payload.creature.id,
+          command.payload.creature.name,
+          command.payload.path,
+        );
+        for (const member of this.members()) await this.sendRoster(member);
         return;
       case 'CREATURE_SELECTED':
         this.gm(client);

@@ -4,6 +4,7 @@ import { wsBridge } from '../../../shared/api/websocket';
 import { taleSpireDriver } from '../../../shared/api/talespire';
 import { sideToCategory, categoryToSide } from '../../../shared/lib/dnd-rules';
 import { parseModifier, formatModifier } from '../../../shared/lib/text-utils';
+import { cleanCombatant } from '../../../../../packages/domain/combatant-clean';
 
 interface CombatStore {
   active: boolean;
@@ -100,35 +101,21 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     const defaultSide: CombatSide =
       c.side || (c.isPlayer ? 'player' : c.category ? categoryToSide(c.category) : 'enemy');
 
-    const newCombatant: Combatant = {
-      id: c.id || `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name: c.name || 'Существо',
+    const cleaned = cleanCombatant({
+      ...c,
       side: defaultSide,
-      initiative: c.initiative ?? (c.dexMod ? 10 + c.dexMod : 10),
-      hp: c.hp ?? 10,
-      maxHp: c.maxHp ?? c.hp ?? 10,
-      tempHp: c.tempHp ?? 0,
-      ac: c.ac ?? 10,
-      speed: c.speed ?? '30 фт.',
-      conditions: c.conditions || [],
-      notes: c.notes || '',
-      isPlayer: c.isPlayer || defaultSide === 'player',
+      isPlayer: c.isPlayer ?? defaultSide === 'player',
       category: c.category || sideToCategory(defaultSide),
-      path: c.path || null,
-      talespireId: c.talespireId || null,
-      stats: c.stats || null,
-      dexMod: c.dexMod ?? 0,
-      attacks: c.attacks || [],
-    };
+    });
 
     set((state) => {
       const exists = state.combatants.some(
         (existing) =>
-          existing.name.toLowerCase() === newCombatant.name.toLowerCase() &&
-          existing.id === newCombatant.id,
+          existing.id === cleaned.id ||
+          (cleaned.talespireId && existing.talespireId === cleaned.talespireId),
       );
       if (exists) return state;
-      return { combatants: [...state.combatants, newCombatant] };
+      return { combatants: [...state.combatants, cleaned] };
     });
 
     get().sortByInitiative();
@@ -256,12 +243,13 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
 
   syncWithObsidian: () => {
     const { active, round, turnIndex, combatants } = get();
+    const cleanedList = combatants.map(cleanCombatant);
     wsBridge.send('SYNC_COMBAT_STATE', {
       active,
-      round,
-      turnIndex,
-      combatants,
-      activeCombatantId: combatants[turnIndex]?.id || null,
+      round: Math.max(1, Math.round(round || 1)),
+      turnIndex: Math.max(0, Math.min(turnIndex || 0, Math.max(0, cleanedList.length - 1))),
+      combatants: cleanedList,
+      activeCombatantId: cleanedList[turnIndex]?.id || null,
     });
   },
 
@@ -271,7 +259,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       active: Boolean(data.active),
       round: typeof data.round === 'number' ? data.round : 1,
       turnIndex: typeof data.turnIndex === 'number' ? data.turnIndex : 0,
-      combatants: Array.isArray(data.combatants) ? data.combatants : [],
+      combatants: Array.isArray(data.combatants) ? data.combatants.map(cleanCombatant) : [],
     });
   },
 }));
