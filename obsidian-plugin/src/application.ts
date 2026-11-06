@@ -365,7 +365,8 @@ export class BridgeApplication {
         this.send(client, 'PLAYER_DATA', await this.target(client, command.payload));
         return;
       case 'GET_NOTE':
-      case 'OPEN_IN_OBSIDIAN': {
+      case 'OPEN_IN_OBSIDIAN':
+      case 'OPEN_NOTE': {
         this.gm(client);
         const list = await this.ports.listCharacters();
         const character = list.find(
@@ -373,7 +374,8 @@ export class BridgeApplication {
         );
         const path = command.payload.path || character?.path;
         if (!path) throw new ProtocolError('NOT_FOUND', 'Заметка не найдена');
-        if (command.type === 'OPEN_IN_OBSIDIAN') await this.ports.openNote(path);
+        if (command.type === 'OPEN_IN_OBSIDIAN' || command.type === 'OPEN_NOTE')
+          await this.ports.openNote(path);
         else
           this.send(client, 'NOTE_CONTENT', {
             name: character?.name || path,

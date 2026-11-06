@@ -11,7 +11,7 @@ const line = z
 const amount = z.number().finite().min(0).max(100000);
 const count = amount.int();
 const abilityValue = line.regex(/^(?:[1-9]|[12]\d|30)(?:\s*\([+-]?\d{1,2}\))?$/);
-const ability = z.object({
+export const ability = z.object({
   str: abilityValue,
   dex: abilityValue,
   con: abilityValue,
@@ -195,6 +195,9 @@ export const commandPayloads = {
     .object({ path: line.optional(), name: line.optional() })
     .refine((v) => Boolean(v.path || v.name)),
   OPEN_IN_OBSIDIAN: z.object({ path: line.optional(), name: line.optional() }),
+  OPEN_NOTE: z
+    .object({ path: line.optional(), name: line.optional() })
+    .refine((v) => Boolean(v.path || v.name)),
   UPDATE_CHARACTER_HP: target
     .safeExtend({ hp: count, maxHp: count.optional(), damage: count.optional() })
     .refine((v) => v.maxHp === undefined || v.hp <= v.maxHp),
@@ -221,7 +224,24 @@ export const commandPayloads = {
   DICE_RESULT: z.object({ rollId: line, total: z.number().finite(), raw: z.unknown().optional() }),
   GOTO_BOOKMARK: z.object({ id: line.optional(), name: line.optional() }),
   CREATURE_SELECTED: z
-    .object({ id: line, name: line, hp: count.optional(), hpMax: count.optional() })
+    .object({
+      id: line,
+      name: line,
+      hp: z.preprocess(
+        (v) =>
+          typeof v === 'number' && Number.isFinite(v)
+            ? Math.min(100000, Math.max(0, Math.round(v)))
+            : v,
+        count.nullish(),
+      ),
+      hpMax: z.preprocess(
+        (v) =>
+          typeof v === 'number' && Number.isFinite(v)
+            ? Math.min(100000, Math.max(0, Math.round(v)))
+            : v,
+        count.nullish(),
+      ),
+    })
     .nullable(),
   LINK_CREATURE_TO_NOTE: z.object({ creature: z.object({ id: line, name: line }) }),
 };

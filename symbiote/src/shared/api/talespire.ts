@@ -234,13 +234,22 @@ export class TaleSpireDriver {
         return;
       }
       const info = (await api.creatures.getMoreInfo([selected[0]]))[0];
-      if (info)
+      if (info) {
+        const curHp =
+          typeof info.hp?.current === 'number' && Number.isFinite(info.hp.current)
+            ? Math.min(100000, Math.max(0, Math.round(info.hp.current)))
+            : undefined;
+        const maxHp =
+          typeof info.hp?.max === 'number' && Number.isFinite(info.hp.max)
+            ? Math.min(100000, Math.max(0, Math.round(info.hp.max)))
+            : undefined;
         this.ports.token({
-          id: info.id,
-          name: info.name,
-          hp: info.hp?.current,
-          hpMax: info.hp?.max,
+          id: String(info.id || '').slice(0, 500),
+          name: String(info.name || 'Существо').replace(/[\r\n`]/g, ' ').slice(0, 500).trim(),
+          hp: curHp,
+          hpMax: maxHp,
         });
+      }
     } catch {
       this.ports.log('Не удалось прочитать выбранный токен');
     }

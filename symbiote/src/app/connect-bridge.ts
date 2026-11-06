@@ -50,8 +50,24 @@ export function connectBridge() {
     token: (token) => {
       const old = useRosterStore.getState().selectedToken;
       useRosterStore.getState().setSelectedToken(token);
-      if (useAppStore.getState().role === 'gm' && token?.id !== old?.id)
-        wsBridge.send('CREATURE_SELECTED', token);
+      if (useAppStore.getState().role === 'gm' && token?.id !== old?.id) {
+        if (!token) {
+          wsBridge.send('CREATURE_SELECTED', null);
+        } else {
+          wsBridge.send('CREATURE_SELECTED', {
+            id: token.id,
+            name: token.name,
+            hp:
+              typeof token.hp === 'number' && Number.isFinite(token.hp)
+                ? Math.min(100000, Math.max(0, Math.round(token.hp)))
+                : undefined,
+            hpMax:
+              typeof token.hpMax === 'number' && Number.isFinite(token.hpMax)
+                ? Math.min(100000, Math.max(0, Math.round(token.hpMax)))
+                : undefined,
+          });
+        }
+      }
     },
     bookmarks: (bookmarks) => useAppStore.getState().setBookmarks(bookmarks),
   });

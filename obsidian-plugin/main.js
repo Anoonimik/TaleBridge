@@ -30960,6 +30960,7 @@ var commandPayloads = {
   GET_PLAYER_DATA: target,
   GET_NOTE: external_exports.object({ path: line.optional(), name: line.optional() }).refine((v) => Boolean(v.path || v.name)),
   OPEN_IN_OBSIDIAN: external_exports.object({ path: line.optional(), name: line.optional() }),
+  OPEN_NOTE: external_exports.object({ path: line.optional(), name: line.optional() }).refine((v) => Boolean(v.path || v.name)),
   UPDATE_CHARACTER_HP: target.safeExtend({ hp: count, maxHp: count.optional(), damage: count.optional() }).refine((v) => v.maxHp === void 0 || v.hp <= v.maxHp),
   UPDATE_CHARACTER_PARAM: target.safeExtend({
     param: external_exports.enum(["ac", "speed", "level", "status", "race", "class", "hp_max"]),
@@ -30983,7 +30984,18 @@ var commandPayloads = {
   }),
   DICE_RESULT: external_exports.object({ rollId: line, total: external_exports.number().finite(), raw: external_exports.unknown().optional() }),
   GOTO_BOOKMARK: external_exports.object({ id: line.optional(), name: line.optional() }),
-  CREATURE_SELECTED: external_exports.object({ id: line, name: line, hp: count.optional(), hpMax: count.optional() }).nullable(),
+  CREATURE_SELECTED: external_exports.object({
+    id: line,
+    name: line,
+    hp: external_exports.preprocess(
+      (v) => typeof v === "number" && Number.isFinite(v) ? Math.min(1e5, Math.max(0, Math.round(v))) : v,
+      count.nullish()
+    ),
+    hpMax: external_exports.preprocess(
+      (v) => typeof v === "number" && Number.isFinite(v) ? Math.min(1e5, Math.max(0, Math.round(v))) : v,
+      count.nullish()
+    )
+  }).nullable(),
   LINK_CREATURE_TO_NOTE: external_exports.object({ creature: external_exports.object({ id: line, name: line }) })
 };
 var envelope = external_exports.object({
@@ -32244,7 +32256,8 @@ var BridgeApplication = class {
         this.send(client, "PLAYER_DATA", await this.target(client, command.payload));
         return;
       case "GET_NOTE":
-      case "OPEN_IN_OBSIDIAN": {
+      case "OPEN_IN_OBSIDIAN":
+      case "OPEN_NOTE": {
         this.gm(client);
         const list = await this.ports.listCharacters();
         const character = list.find(
@@ -32252,7 +32265,8 @@ var BridgeApplication = class {
         );
         const path = command.payload.path || character?.path;
         if (!path) throw new ProtocolError("NOT_FOUND", "\u0417\u0430\u043C\u0435\u0442\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
-        if (command.type === "OPEN_IN_OBSIDIAN") await this.ports.openNote(path);
+        if (command.type === "OPEN_IN_OBSIDIAN" || command.type === "OPEN_NOTE")
+          await this.ports.openNote(path);
         else
           this.send(client, "NOTE_CONTENT", {
             name: character?.name || path,
